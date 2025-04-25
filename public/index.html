@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WhatsApp Bot Control Panel</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+      :root {
+        --primary: #25d366;
+        --secondary: #128c7e;
+        --dark: #075e54;
+        --light: #dcf8c6;
+        --background: #f0f2f5;
+        --white: #ffffff;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+      }
+
+      body {
+        background-color: var(--background);
+        min-height: 100vh;
+        display: flex;
+      }
+
+      /* Navigation Styles */
+      .nav {
+        width: 250px;
+        background: var(--white);
+        padding: 1rem;
+        height: 100vh;
+        position: fixed;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .nav-logo {
+        padding: 1rem;
+        text-align: center;
+        border-bottom: 1px solid var(--background);
+        margin-bottom: 1rem;
+      }
+
+      .nav-items {
+        list-style: none;
+      }
+
+      .nav-item {
+        padding: 0.75rem 1rem;
+        margin: 0.5rem 0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .nav-item:hover {
+        background: var(--light);
+      }
+
+      .nav-item.active {
+        background: var(--primary);
+        color: var(--white);
+      }
+
+      /* Main Content */
+      .main-content {
+        margin-left: 250px;
+        padding: 2rem;
+        flex-grow: 1;
+      }
+
+      .section {
+        display: none;
+        background: var(--white);
+        border-radius: 10px;
+        padding: 2rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .section.active {
+        display: block;
+      }
+
+      /* Forms and Inputs */
+      .form-group {
+        margin-bottom: 1rem;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+      }
+
+      .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+      }
+
+      .btn-primary {
+        background: var(--primary);
+        color: var(--white);
+      }
+
+      .btn-danger {
+        background: #dc3545;
+        color: var(--white);
+      }
+
+      /* Lists */
+      .list-item {
+        padding: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* QR Code */
+      .qr-container {
+        text-align: center;
+        padding: 2rem;
+      }
+
+      .qr-container img {
+        max-width: 300px;
+        margin: 2rem auto;
+      }
+
+      /* Status indicators */
+      .status {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        display: inline-block;
+        margin-bottom: 1rem;
+      }
+
+      .status.online {
+        background: var(--primary);
+        color: var(--white);
+      }
+
+      .status.offline {
+        background: #dc3545;
+        color: var(--white);
+      }
+
+      /* Multi-select */
+      .multi-select {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .multi-select-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+      }
+
+      /* Command editor */
+      .command-editor {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .trigger-conditions {
+        padding: 1rem;
+        background: var(--background);
+        border-radius: 8px;
+        margin-bottom: 1rem;
+      }
+
+      .trigger-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.5rem;
+        background: #f0f0f0;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+      }
+
+      .multi-select-section {
+        margin-bottom: 1rem;
+      }
+
+      .multi-select-section h4 {
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+      }
+
+      .qr-image {
+        max-width: 300px;
+        margin: 2rem auto;
+        display: block;
+      }
+
+      .multi-select-section {
+        margin-bottom: 1.5rem;
+        border: 1px solid #ddd;
+        padding: 1rem;
+        border-radius: 8px;
+      }
+
+      .multi-select-item {
+        display: block;
+        padding: 0.5rem;
+        cursor: pointer;
+      }
+
+      .multi-select-item:hover {
+        background-color: #f5f5f5;
+      }
+
+      .multi-select-item input {
+        margin-right: 0.5rem;
+      }
+      .error-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #ff4444;
+        color: white;
+        padding: 15px;
+        border-radius: 5px;
+        z-index: 1000;
+        display: none;
+      }
+
+      /* Console log styles */
+      #console-logs {
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        font-family: monospace;
+        font-size: 14px;
+        height: 400px;
+        overflow-y: auto;
+        padding: 1rem;
+        border-radius: 8px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="error-message" class="error-message" style="display: none"></div>
+    <nav class="nav">
+      <div class="nav-logo">
+        <h2>WhatsApp Bot</h2>
+      </div>
+      <ul class="nav-items">
+        <li class="nav-item active" data-section="home">首頁</li>
+        <li class="nav-item" data-section="groups">群組</li>
+        <li class="nav-item" data-section="contacts">個人</li>
+        <li class="nav-item" data-section="commands">指令</li>
+        <li class="nav-item" data-section="console">Console</li>
+      </ul>
+    </nav>
+
+    <main class="main-content">
+      <!-- 首頁 Section -->
+      <section id="home" class="section active">
+        <h2>Bot 控制台</h2>
+        <div class="status offline" id="bot-status">離線</div>
+        <button class="btn btn-primary" id="toggle-bot">啟動 Bot</button>
+        <div class="qr-container" id="qrcode"></div>
+      </section>
+
+      <!-- 群組 Section -->
+      <section id="groups" class="section">
+        <h2>群組管理</h2>
+        <div class="form-group">
+          <input type="text" id="group-name" placeholder="群組名稱" />
+          <button class="btn btn-primary" onclick="addGroup()">
+            搜尋並添加群組
+          </button>
+        </div>
+        <div id="groups-list" class="list-container"></div>
+      </section>
+
+      <!-- 個人 Section -->
+      <section id="contacts" class="section">
+        <h2>個人聯絡人管理</h2>
+        <div class="form-group">
+          <input
+            type="text"
+            id="contact-prefix"
+            placeholder="國碼 (例: 852)"
+          />
+          <input type="text" id="contact-number" placeholder="電話號碼" />
+          <input type="text" id="contact-name" placeholder="備註名稱" />
+          <button class="btn btn-primary" onclick="addContact()">
+            新增聯絡人
+          </button>
+        </div>
+        <div id="contacts-list" class="list-container"></div>
+      </section>
+
+      <!-- 指令 Section -->
+      <section id="commands" class="section">
+        <h2>指令管理</h2>
+        <div class="command-editor">
+          <div class="form-group">
+            <label>觸發條件</label>
+            <div class="trigger-conditions" id="trigger-conditions">
+              <input type="text" placeholder="新增關鍵詞" />
+              <label>
+                <input type="checkbox" name="toLowerCase" /> 忽略大小寫
+              </label>
+              <label>
+                <input type="checkbox" name="startsWith" /> 開頭匹配
+              </label>
+              <button class="btn btn-primary" onclick="addTrigger()">
+                新增觸發條件
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>回應類型</label>
+            <select id="response-type">
+          <option value="text">文字</option>
+          <option value="image">圖片</option>
+          <option value="video">影片</option>
+        </select>
+        <textarea id="response-content" placeholder="回應內容"></textarea>
+        <input type="file" id="response-file" style="display:none" accept="image/*,video/*" />
+          </div>
+
+          <div class="form-group">
+            <label>觸發名單</label>
+            <div class="multi-select" id="trigger-targets">
+              <!-- 動態填充群組和聯絡人選項 -->
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="saveCommand()">
+            儲存指令
+          </button>
+        </div>
+        <div id="commands-list" class="list-container"></div>
+      </section>
+
+      <!-- Console Section -->
+      <section id="console" class="section">
+        <h2>系統日誌</h2>
+        <div class="console-controls">
+          <button class="btn btn-primary" onclick="clearConsole()">清除日誌</button>
+          <button class="btn btn-primary" onclick="exportLogs()">導出日誌</button>
+          <select id="logLevel" onchange="filterLogs()">
+            <option value="all">全部日誌</option>
+            <option value="log">一般日誌</option>
+            <option value="info">信息</option>
+            <option value="warn">警告</option>
+            <option value="error">錯誤</option>
+          </select>
+        </div>
+        <div id="console-logs"></div>
+      </section>
+    </main>
+
+    <script>
+      // 全局變量
+      let currentGroups = [];
+      let currentContacts = [];
+      let currentCommands = [];
+      let currentTriggers = [];
+      const socket = io();
+      let isConnected = false;
+
+      // Navigation
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          // Remove active class from all items
+          document
+            .querySelectorAll(".nav-item")
+            .forEach((i) => i.classList.remove("active"));
+          document
+            .querySelectorAll(".section")
+            .forEach((s) => s.classList.remove("active"));
+
+          // Add active class to clicked item
+          item.classList.add("active");
+          document.getElementById(item.dataset.section).classList.add("active");
+        });
+      });
+
+      async function initializeData() {
+        try {
+          const fetchData = async (url) => {
+            const response = await fetch(url);
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+              throw new TypeError("返回的數據不是 JSON 格式");
+            }
+            return response.json();
+          };
+
+          const [groups, contacts, commands] = await Promise.all([
+            fetchData("/api/groups").catch((error) => {
+              console.warn("Failed to load groups:", error);
+              return [];
+            }),
+            fetchData("/api/contacts").catch((error) => {
+              console.warn("Failed to load contacts:", error);
+              return [];
+            }),
+            fetchData("/api/commands").catch((error) => {
+              console.warn("Failed to load commands:", error);
+              return [];
+            }),
+          ]);
+
+          currentGroups = groups;
+          currentContacts = contacts;
+          currentCommands = commands;
+
+          renderGroups();
+          renderContacts();
+          renderCommands();
+          updateTriggerTargets();
+        } catch (error) {
+          console.error("Error loading data:", error);
+          showError("數據加載失敗，請刷新頁面重試");
+        }
+      }
+
+      // Bot Status
+      socket.on("qr", (qr) => {
+        const qrContainer = document.getElementById("qrcode");
+        qrContainer.innerHTML = "";
+        const qrImage = new Image();
+        qrImage.src = qr;
+        qrImage.classList.add("qr-image");
+        qrContainer.appendChild(qrImage);
+      });
+
+      socket.on("ready", () => {
+        document.getElementById("qrcode").innerHTML = "";
+        document.getElementById("bot-status").textContent = "已連接";
+        document.getElementById("bot-status").className = "status online";
+        isConnected = true;
+        updateToggleButton();
+      });
+
+      socket.on("disconnected", () => {
+        document.getElementById("bot-status").textContent = "離線";
+        document.getElementById("bot-status").className = "status offline";
+        isConnected = false;
+        updateToggleButton();
+      });
+
+      // 添加實時更新處理
+      socket.on("groupUpdate", (groups) => {
+        currentGroups = groups;
+        renderGroups();
+        updateTriggerTargets();
+      });
+
+      socket.on("commandUpdate", (commands) => {
+        currentCommands = commands;
+        renderCommands();
+      });
+
+      socket.on("updateData", (data) => {
+        currentGroups = data.groups;
+        currentContacts = data.contacts;
+        currentCommands = data.commands;
+        renderGroups();
+        renderContacts();
+        renderCommands();
+        updateTriggerTargets();
+      });
+
+      // Console 功能
+      function clearConsole() {
+        fetch('/api/logs/clear', { method: 'POST' })
+          .then(() => {
+            document.getElementById('console-logs').innerHTML = '';
+          })
+          .catch(error => console.error('清除日誌失敗:', error));
+      }
+
+      function exportLogs() {
+        fetch('/api/logs')
+          .then(response => response.json())
+          .then(logs => {
+            const blob = new Blob([JSON.stringify(logs, null, 2)], {
+              type: 'application/json'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `whatsapp-bot-logs-${new Date().toISOString()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          })
+          .catch(error => console.error('導出日誌失敗:', error));
+      }
+
+      function filterLogs() {
+        const level = document.getElementById('logLevel').value;
+        fetch(`/api/logs?level=${level}`)
+          .then(response => response.json())
+          .then(logs => {
+            const container = document.getElementById('console-logs');
+            container.innerHTML = logs.map(log => `
+              <div class="log-entry log-${log.level}">
+                <span class="log-time">[${new Date(log.timestamp).toLocaleString()}]</span>
+                <span class="log-level">[${log.level.toUpperCase()}]</span>
+                <span class="log-msg">${log.message}</span>
+              </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+          })
+          .catch(error => console.error('過濾日誌失敗:', error));
+      }
+
+      // Socket.IO 事件處理
+      socket.on('console-log', (log) => {
+        const container = document.getElementById('console-logs');
+        const logEntry = document.createElement('div');
+        logEntry.className = `log-entry log-${log.level}`;
+        logEntry.innerHTML = `
+          <span class="log-time">[${new Date(log.timestamp).toLocaleString()}]</span>
+          <span class="log-level">[${log.level.toUpperCase()}]</span>
+          <span class="log-msg">${log.message}</span>
+        `;
+        container.appendChild(logEntry);
+        container.scrollTop = container.scrollHeight;
+      });
+
+      socket.on('logs-cleared', () => {
+        document.getElementById('console-logs').innerHTML = '';
+      });
+
+      // Toggle Bot
+      document.getElementById("toggle-bot").addEventListener("click", () => {
+        if (isConnected) {
+          socket.emit("disconnect-bot");
+        } else {
+          socket.emit("connect-bot");
+        }
+      });
+
+      // Show/hide file input based on response type
+      document.getElementById("response-type").addEventListener("change", (e) => {
+        const fileInput = document.getElementById("response-file");
+        const textarea = document.getElementById("response-content");
+        if (e.target.value === "image" || e.target.value === "video") {
+          fileInput.style.display = "block";
+          textarea.style.display = "none";
+        } else {
+          fileInput.style.display = "none";
+          textarea.style.display = "block";
+        }
+      });
+
+      function updateToggleButton() {
+        const btn = document.getElementById("toggle-bot");
+        btn.textContent = isConnected ? "關閉 Bot" : "啟動 Bot";
+      }
+
+      // Groups Management
+      async function addGroup() {
+        const nameInput = document.getElementById("group-name");
+        const groupName = nameInput.value.trim();
+
+        if (!groupName) {
+          alert("請輸入群組名稱");
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/groups/search", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name: groupName }),
+          });
+
+          if (response.ok) {
+            nameInput.value = "";
+            await initializeData(); // 重新加載數據
+          } else {
+            const error = await response.json();
+            alert(error.message || "找不到群組");
+          }
+        } catch (error) {
+          console.error("Error adding group:", error);
+          alert("添加群組失敗");
+        }
+      }
+
+      function renderGroups() {
+        const container = document.getElementById("groups-list");
+        container.innerHTML = currentGroups
+          .map(
+            (group) => `
+        <div class="list-item">
+            <div>
+                <strong>${group.name}</strong>
+                <div class="text-gray-500">${group.id}</div>
+            </div>
+            <button class="btn btn-danger" onclick="deleteGroup('${group.id}')">刪除</button>
+        </div>
+    `
+          )
+          .join("");
+      }
+
+      async function deleteGroup(groupId) {
+        try {
+          const response = await fetch(`/api/groups/${groupId}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          await initializeData();
+        } catch (error) {
+          console.error("Error deleting group:", error);
+          showError("刪除群組失敗");
+        }
+      }
+
+      function showError(message) {
+        // 假設你有一個用於顯示錯誤的 div
+        const errorDiv = document.getElementById("error-message");
+        if (errorDiv) {
+          errorDiv.textContent = message;
+          errorDiv.style.display = "block";
+          setTimeout(() => {
+            errorDiv.style.display = "none";
+          }, 5000);
+        } else {
+          alert(message);
+        }
+      }
+
+      // Contacts Management
+      async function addContact() {
+        const prefixInput = document.getElementById("contact-prefix");
+        const numberInput = document.getElementById("contact-number");
+        const nameInput = document.getElementById("contact-name");
+
+        const prefix = prefixInput.value.trim();
+        const number = numberInput.value.trim();
+        const name = nameInput.value.trim();
+
+        if (!prefix || !number || !name) {
+          alert("請填寫完整的聯絡人信息");
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/contacts", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              prefix,
+              number,
+              name,
+            }),
+          });
+
+          if (response.ok) {
+            prefixInput.value = "";
+            numberInput.value = "";
+            nameInput.value = "";
+            await initializeData();
+          }
+        } catch (error) {
+          console.error("Error adding contact:", error);
+          alert("添加聯絡人失敗");
+        }
+      }
+
+      function renderContacts() {
+        const container = document.getElementById("contacts-list");
+        container.innerHTML = currentContacts
+          .map(
+            (contact) => `
+        <div class="list-item">
+            <div>
+                <strong>${contact.name}</strong>
+                <div class="text-gray-500">${contact.number}</div>
+            </div>
+            <button class="btn btn-danger" onclick="deleteContact('${contact.id}')">刪除</button>
+        </div>
+    `
+          )
+          .join("");
+      }
+
+      async function deleteContact(id) {
+        if (!confirm("確定要刪除此聯絡人嗎？")) return;
+
+        try {
+          const response = await fetch(`/api/contacts/${id}`, {
+            method: "DELETE",
+          });
+
+          if (response.ok) {
+            await initializeData();
+          }
+        } catch (error) {
+          console.error("Error deleting contact:", error);
+          alert("刪除聯絡人失敗");
+        }
+      }
+
+      // Commands Management
+      function addTrigger() {
+        const triggerInput = document.querySelector(
+          '#trigger-conditions input[type="text"]'
+        );
+        const toLowerCase = document.querySelector(
+          '#trigger-conditions input[name="toLowerCase"]'
+        );
+        const startsWith = document.querySelector(
+          '#trigger-conditions input[name="startsWith"]'
+        );
+
+        const keyword = triggerInput.value.trim();
+        if (!keyword) {
+          alert("請輸入觸發關鍵詞");
+          return;
+        }
+
+        currentTriggers.push({
+          keyword,
+          toLowerCase: toLowerCase.checked,
+          startsWith: startsWith.checked,
+        });
+
+        triggerInput.value = "";
+        toLowerCase.checked = false;
+        startsWith.checked = false;
+
+        renderTriggers();
+      }
+
+      function renderTriggers() {
+        const container = document.getElementById("current-triggers");
+        if (!container) return;
+
+        container.innerHTML = currentTriggers
+          .map(
+            (trigger, index) => `
+        <div class="trigger-item">
+            <span>${trigger.keyword}</span>
+            <span>${trigger.toLowerCase ? "忽略大小寫" : ""}</span>
+            <span>${trigger.startsWith ? "開頭匹配" : ""}</span>
+            <button class="btn btn-danger" onclick="removeTrigger(${index})">刪除</button>
+        </div>
+    `
+          )
+          .join("");
+      }
+
+      function removeTrigger(index) {
+        currentTriggers.splice(index, 1);
+        renderTriggers();
+      }
+
+      async function saveCommand() {
+        const responseType = document.getElementById("response-type").value;
+        const responseContent =
+          document.getElementById("response-content").value;
+        const fileInput = document.getElementById("response-file");
+        const triggerTargets = Array.from(
+          document.querySelectorAll("#trigger-targets input:checked")
+        ).map((input) => ({
+          type: input.dataset.type,
+          id: input.value,
+        }));
+
+        if (currentTriggers.length === 0) {
+          alert("請至少添加一個觸發條件");
+          return;
+        }
+
+        if ((responseType === "text" || responseType === "code") && !responseContent) {
+          alert("請輸入回應內容");
+          return;
+        }
+
+        if ((responseType === "image" || responseType === "video") && fileInput.files.length === 0) {
+          alert("請上傳媒體文件");
+          return;
+        }
+
+        let content = responseContent;
+
+        if (responseType === "image" || responseType === "video") {
+          // Read file as base64
+          const file = fileInput.files[0];
+          content = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        }
+
+        const commandData = {
+          id: Date.now().toString(),
+          triggers: currentTriggers,
+          response: {
+            type: responseType,
+            content: content,
+          },
+          targets: triggerTargets,
+        };
+
+        try {
+          const response = await fetch("/api/commands", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(commandData),
+          });
+
+          if (response.ok) {
+            // 清空表單
+            document.getElementById("response-content").value = "";
+            fileInput.value = "";
+            currentTriggers = [];
+            renderTriggers();
+            await initializeData();
+          }
+        } catch (error) {
+          console.error("Error saving command:", error);
+          alert("保存指令失敗");
+        }
+      }
+
+      function renderCommands() {
+        const container = document.getElementById("commands-list");
+        container.innerHTML = currentCommands
+          .map(
+            (command) => `
+        <div class="list-item">
+            <div>
+                <strong>觸發條件：</strong>
+                ${command.triggers.map((t) => t.keyword).join(", ")}
+                <div class="text-gray-500">
+                    <strong>回應類型：</strong>${command.response.type}
+                </div>
+                <div class="text-gray-500">
+                    <strong>觸發對象：</strong>${command.targets.length} 個
+                </div>
+            </div>
+            <button class="btn btn-danger" onclick="deleteCommand('${
+              command.id
+            }')">刪除</button>
+        </div>
+    `
+          )
+          .join("");
+      }
+
+      async function deleteCommand(id) {
+        if (!confirm("確定要刪除此指令嗎？")) return;
+
+        try {
+          const response = await fetch(`/api/commands/${id}`, {
+            method: "DELETE",
+          });
+
+          if (response.ok) {
+            await initializeData();
+          }
+        } catch (error) {
+          console.error("Error deleting command:", error);
+          alert("刪除指令失敗");
+        }
+      }
+
+      // 更新觸發對象選擇列表
+      function updateTriggerTargets() {
+        const container = document.getElementById("trigger-targets");
+        if (!container) return;
+
+        // 清除現有內容
+        container.innerHTML = "";
+
+        // 添加群組選項
+        const groupsSection = document.createElement("div");
+        groupsSection.className = "multi-select-section";
+        groupsSection.innerHTML = `<h4>群組</h4>`;
+        currentGroups.forEach((group) => {
+          const label = document.createElement("label");
+          label.className = "multi-select-item";
+          label.innerHTML = `
+            <input type="checkbox" value="${group.id}" data-type="group">
+            ${group.name}
+        `;
+          groupsSection.appendChild(label);
+        });
+        container.appendChild(groupsSection);
+
+        // 添加聯絡人選項
+        const contactsSection = document.createElement("div");
+        contactsSection.className = "multi-select-section";
+        contactsSection.innerHTML = `<h4>聯絡人</h4>`;
+        currentContacts.forEach((contact) => {
+          const label = document.createElement("label");
+          label.className = "multi-select-item";
+          label.innerHTML = `
+            <input type="checkbox" value="${contact.id}" data-type="contact">
+            ${contact.name} (${contact.number})
+        `;
+          contactsSection.appendChild(label);
+        });
+        container.appendChild(contactsSection);
+      }
+
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", () => {
+          if (item.dataset.section === "commands") {
+            updateTriggerTargets();
+          }
+        });
+      });
+
+      // 在 HTML 加載完成後初始化數據
+      document.addEventListener("DOMContentLoaded", () => {
+        initializeData();
+
+        // Fetch bot status from /health API and update UI
+        fetch("/health")
+          .then((response) => response.json())
+          .then((data) => {
+            const botStatusElem = document.getElementById("bot-status");
+            const toggleBtn = document.getElementById("toggle-bot");
+            if (data.bot && data.bot.initialized) {
+              botStatusElem.textContent = "已連接";
+              botStatusElem.className = "status online";
+              toggleBtn.textContent = "關閉 Bot";
+              isConnected = true;
+            } else {
+              botStatusElem.textContent = "離線";
+              botStatusElem.className = "status offline";
+              toggleBtn.textContent = "啟動 Bot";
+              isConnected = false;
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching bot status:", error);
+          });
+
+        // 添加觸發條件容器
+        const triggerConditions = document.querySelector("#trigger-conditions");
+        triggerConditions.insertAdjacentHTML(
+          "beforeend",
+          '<div id="current-triggers"></div>'
+        );
+
+        // Override console methods to capture logs
+        const consoleLogs = document.getElementById("console-logs");
+        ["log", "error", "warn", "info"].forEach((method) => {
+          const original = console[method];
+          console[method] = function (...args) {
+            original.apply(console, args);
+            const message = args.map((arg) =>
+              typeof arg === "object" ? JSON.stringify(arg) : String(arg)
+            ).join(" ");
+            const logEntry = document.createElement("div");
+            logEntry.textContent = `[${method.toUpperCase()}] ${message}`;
+            consoleLogs.appendChild(logEntry);
+            consoleLogs.scrollTop = consoleLogs.scrollHeight;
+          };
+        });
+      });
+
+      // Initial load
+      updateToggleButton();
+    </script>
+  </body>
+</html>
