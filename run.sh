@@ -44,13 +44,13 @@ fi
 
 # 下載檔案
 echo "下載檔案中..."
-if [ ! -f "app.js" ]; then
-    echo "下載 app.js..."
-    curl -O https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/app.js
+if [ ! -f "package.json" ]; then
     echo "下載 package.json..."
     curl -O https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/package.json
 fi
 
+echo "下載 app.js..."
+curl -O https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/app.js
 # 下載 HTML 檔案
 mkdir -p public
 echo "下載 index.html..."
