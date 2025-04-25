@@ -157,6 +157,11 @@ class WhatsAppBot {
       takeoverTimeoutMs: 60000,
     });
 
+    const functionDir = path.join(__dirname, "data", "functions");
+    if (!existsSync(functionDir)) {
+      fs.mkdir(functionDir, { recursive: true });
+    }
+
     this.setupEventHandlers();
     return this.client.initialize().catch((error) => {
       console.error("Failed to initialize client:", error);
@@ -293,13 +298,31 @@ class WhatsAppBot {
         });
 
         if (isTargetMatch) {
-          await this.sendResponse(msg, command.response);
+          await this.sendResponse(msg, command.response, command.id);
         }
       }
     }
   }
 
-  async sendResponse(msg, response) {
+  // 動態執行 data/functions/{id}.js
+  async runDynamicFunction(id, msg) {
+    const funcPath = path.join(this.dataDir, "functions", `${id}.js`);
+    if (!existsSync(funcPath)) {
+      return "找不到對應的 function 指令檔案。";
+    }
+    try {
+      // 清除 require 快取，確保每次都載入最新內容
+      delete require.cache[require.resolve(funcPath)];
+      const fn = require(funcPath);
+      if (typeof fn !== "function") return "function 檔案未正確導出函式。";
+      // 支援 async function
+      return await fn(msg);
+    } catch (e) {
+      return `執行 function 指令時發生錯誤：${e.message}`;
+    }
+  }
+
+  async sendResponse(msg, response, commandId) {
     try {
       switch (response.type) {
         case "text":
@@ -338,6 +361,14 @@ class WhatsAppBot {
           } catch (mediaError) {
             console.error("Video loading error:", mediaError);
             await msg.reply("Sorry, video content is not available.");
+          }
+          break;
+        case "function":
+          if (commandId) {
+            const result = await this.runDynamicFunction(commandId, msg);
+            await msg.reply(result);
+          } else {
+            await msg.reply("找不到 function 指令 id。");
           }
           break;
         default:
@@ -624,6 +655,19 @@ app.post("/api/commands", async (req, res) => {
   try {
     const commandData = req.body;
     commandData.id = Date.now().toString();
+    // 如果是 function 指令，寫入 data/functions/{id}.js
+    if (commandData.response && commandData.response.type === "function") {
+      const funcDir = path.join(__dirname, "data", "functions");
+      if (!existsSync(funcDir)) {
+        await fs.mkdir(funcDir, { recursive: true });
+      }
+      const funcPath = path.join(funcDir, `${commandData.id}.js`);
+      // 包裝成 module.exports = async function(msg) { ... }
+      const code = `module.exports = async function(msg) {\n${commandData.response.content}\n}`;
+      await fs.writeFile(funcPath, code, "utf8");
+      // 只存原始內容在 commands.json
+      commandData.response.content = commandData.response.content;
+    }
     bot.activeCommands.set(commandData.id, commandData);
     await bot.saveData("commands");
     res.json({ success: true, command: commandData });
@@ -659,6 +703,31 @@ app.delete("/api/commands/:id", async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ message: "刪除指令失敗" });
+  }
+});
+
+// 新增：編輯指令
+app.put("/api/commands/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const commandData = req.body;
+    commandData.id = id;
+    // 如果是 function 指令，寫入 data/functions/{id}.js
+    if (commandData.response && commandData.response.type === "function") {
+      const funcDir = path.join(__dirname, "data", "functions");
+      if (!existsSync(funcDir)) {
+        await fs.mkdir(funcDir, { recursive: true });
+      }
+      const funcPath = path.join(funcDir, `${id}.js`);
+      const code = `module.exports = async function(msg) {\n${commandData.response.content}\n}`;
+      await fs.writeFile(funcPath, code, "utf8");
+      commandData.response.content = commandData.response.content;
+    }
+    bot.activeCommands.set(id, commandData);
+    await bot.saveData("commands");
+    res.json({ success: true, command: commandData });
+  } catch (error) {
+    res.status(500).json({ message: "更新指令失敗" });
   }
 });
 

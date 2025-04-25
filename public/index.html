@@ -5,266 +5,300 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WhatsApp Bot Control Panel</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
     <style>
       :root {
-        --primary: #25d366;
-        --secondary: #128c7e;
-        --dark: #075e54;
-        --light: #dcf8c6;
-        --background: #f0f2f5;
-        --white: #ffffff;
+        --primary: #4caf50;
+        --primary-light: #81c784;
+        --primary-dark: #388e3c;
+        --secondary: #66bb6a;
+        --error: #f44336;
+        --success: #2e7d32;
+        --background: #f1f8e9;
+        --surface: #ffffff;
+        --text-primary: rgba(0, 0, 0, 0.87);
+        --text-secondary: rgba(0, 0, 0, 0.6);
+        --border-radius: 8px;
+        --spacing: 8px;
       }
 
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        font-family: 'Roboto', sans-serif;
       }
 
       body {
         background-color: var(--background);
+        color: var(--text-primary);
         min-height: 100vh;
         display: flex;
       }
 
-      /* Navigation Styles */
       .nav {
-        width: 250px;
-        background: var(--white);
-        padding: 1rem;
+        width: 280px;
+        background: var(--surface);
         height: 100vh;
         position: fixed;
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 8px rgba(76, 175, 80, 0.1);
+        z-index: 1;
       }
 
       .nav-logo {
-        padding: 1rem;
+        padding: 20px;
         text-align: center;
-        border-bottom: 1px solid var(--background);
-        margin-bottom: 1rem;
-      }
-
-      .nav-items {
-        list-style: none;
+        border-bottom: 1px solid rgba(0,0,0,0.12);
+        margin-bottom: var(--spacing);
       }
 
       .nav-item {
-        padding: 0.75rem 1rem;
-        margin: 0.5rem 0;
-        border-radius: 8px;
+        padding: 12px 16px;
+        margin: 4px 12px;
+        border-radius: var(--border-radius);
         cursor: pointer;
-        transition: all 0.3s;
+        transition: all 0.3s ease;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
       }
 
       .nav-item:hover {
-        background: var(--light);
+        background: rgba(76, 175, 80, 0.08);
       }
 
       .nav-item.active {
-        background: var(--primary);
-        color: var(--white);
+        background: rgba(76, 175, 80, 0.12);
+        color: var(--primary);
       }
 
-      /* Main Content */
       .main-content {
-        margin-left: 250px;
-        padding: 2rem;
+        margin-left: 280px;
+        padding: 24px;
         flex-grow: 1;
       }
 
       .section {
         display: none;
-        background: var(--white);
-        border-radius: 10px;
-        padding: 2rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: var(--surface);
+        border-radius: var(--border-radius);
+        padding: 24px;
+        margin: 16px 0;
+        box-shadow: 0 2px 12px rgba(76, 175, 80, 0.08);
       }
 
       .section.active {
         display: block;
       }
 
-      /* Forms and Inputs */
       .form-group {
-        margin-bottom: 1rem;
+        margin-bottom: 20px;
       }
 
       .form-group label {
         display: block;
-        margin-bottom: 0.5rem;
-        color: var(--dark);
+        margin-bottom: 8px;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
       }
 
-      input,
-      select,
-      textarea {
+      input, select, textarea {
         width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        margin-bottom: 1rem;
+        padding: 12px 16px;
+        border: 1px solid rgba(76, 175, 80, 0.23);
+        border-radius: var(--border-radius);
+        font-size: 1rem;
+        transition: border-color 0.2s;
+        background: var(--surface);
+        margin: 8px 0;
+      }
+
+      input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
       }
 
       .btn {
-        padding: 0.75rem 1.5rem;
+        padding: 10px 24px;
         border: none;
-        border-radius: 8px;
+        border-radius: var(--border-radius);
         cursor: pointer;
-        transition: all 0.3s;
+        transition: all 0.3s ease;
         font-weight: 500;
+        text-transform: uppercase;
+        font-size: 0.875rem;
+        letter-spacing: 0.5px;
+        min-width: 64px;
+        box-shadow: 0 1px 5px rgba(0,0,0,0.2);
       }
 
       .btn-primary {
         background: var(--primary);
-        color: var(--white);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: var(--primary-dark);
+        box-shadow: 0 2px 12px rgba(76, 175, 80, 0.2);
       }
 
       .btn-danger {
-        background: #dc3545;
-        color: var(--white);
+        background: var(--error);
+        color: white;
       }
 
-      /* Lists */
       .list-item {
-        padding: 1rem;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        margin-bottom: 1rem;
+        padding: 16px;
+        border: 1px solid rgba(76, 175, 80, 0.12);
+        border-radius: var(--border-radius);
+        margin: 8px 0;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        transition: all 0.3s ease;
       }
 
-      /* QR Code */
-      .qr-container {
-        text-align: center;
-        padding: 2rem;
+      .list-item:hover {
+        box-shadow: 0 2px 12px rgba(76, 175, 80, 0.08);
+        border-color: var(--primary-light);
       }
 
-      .qr-container img {
-        max-width: 300px;
-        margin: 2rem auto;
-      }
-
-      /* Status indicators */
       .status {
-        padding: 0.5rem 1rem;
+        padding: 8px 20px;
         border-radius: 20px;
         display: inline-block;
-        margin-bottom: 1rem;
+        margin: 16px 0;
+        font-size: 0.875rem;
+        font-weight: 500;
       }
 
       .status.online {
-        background: var(--primary);
-        color: var(--white);
+        background: rgba(76, 175, 80, 0.12);
+        color: var(--success);
       }
 
       .status.offline {
-        background: #dc3545;
-        color: var(--white);
+        background: rgba(244, 67, 54, 0.12);
+        color: var(--error);
       }
 
-      /* Multi-select */
-      .multi-select {
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
+      #console-logs {
+        background: #1b5e20;
+        color: #ffffff;
+        font-family: 'Roboto Mono', monospace;
+        font-size: 0.875rem;
+        height: 400px;
+        overflow-y: auto;
+        padding: 16px;
+        border-radius: var(--border-radius);
+      }
+
+      .error-message {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        background: var(--error);
+        color: white;
+        padding: 16px;
+        border-radius: var(--border-radius);
+        box-shadow: 0 4px 12px rgba(244, 67, 54, 0.2);
+        z-index: 1000;
+        display: none;
+      }
+
+      .multi-select-section {
+        border: 1px solid rgba(76, 175, 80, 0.12);
+        border-radius: var(--border-radius);
+        padding: 20px;
+        margin: 16px 0;
+        background: rgba(76, 175, 80, 0.02);
+      }
+
+      .multi-select-section h4 {
+        margin-bottom: 12px;
+        color: var(--primary);
+        font-weight: 500;
       }
 
       .multi-select-item {
         display: flex;
         align-items: center;
-        padding: 0.5rem;
+        padding: 10px;
+        margin: 4px 0;
+        border-radius: var(--border-radius);
+        transition: all 0.2s ease;
       }
 
-      /* Command editor */
-      .command-editor {
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
+      .multi-select-item:hover {
+        background: rgba(76, 175, 80, 0.08);
+      }
+
+      .multi-select-item input[type="checkbox"] {
+        margin-right: 12px;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
       }
 
       .trigger-conditions {
-        padding: 1rem;
-        background: var(--background);
-        border-radius: 8px;
-        margin-bottom: 1rem;
+        background: rgba(76, 175, 80, 0.02);
+        border-radius: var(--border-radius);
+        padding: 24px;
+        margin: 16px 0;
+        border: 1px solid rgba(76, 175, 80, 0.12);
+      }
+
+      .trigger-conditions input[type="text"] {
+        margin-bottom: 16px;
+      }
+
+      .trigger-conditions .checkbox-group {
+        display: flex;
+        gap: 24px;
+        margin-bottom: 16px;
+        align-items: center;
+      }
+
+      .trigger-conditions label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        padding: 8px 12px;
+        border-radius: var(--border-radius);
+        transition: background-color 0.2s;
+      }
+
+      .trigger-conditions label:hover {
+        background: rgba(76, 175, 80, 0.08);
+      }
+
+      #current-triggers {
+        margin-top: 16px;
       }
 
       .trigger-item {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        padding: 0.5rem;
-        background: #f0f0f0;
-        border-radius: 4px;
-        margin-bottom: 0.5rem;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: var(--surface);
+        border-radius: var(--border-radius);
+        margin: 8px 0;
+        box-shadow: 0 2px 8px rgba(76, 175, 80, 0.08);
+        border: 1px solid rgba(76, 175, 80, 0.12);
       }
 
-      .multi-select-section {
-        margin-bottom: 1rem;
-      }
-
-      .multi-select-section h4 {
-        margin-bottom: 0.5rem;
-        color: var(--dark);
-      }
-
-      .qr-image {
-        max-width: 300px;
-        margin: 2rem auto;
-        display: block;
-      }
-
-      .multi-select-section {
-        margin-bottom: 1.5rem;
-        border: 1px solid #ddd;
-        padding: 1rem;
-        border-radius: 8px;
-      }
-
-      .multi-select-item {
-        display: block;
-        padding: 0.5rem;
-        cursor: pointer;
-      }
-
-      .multi-select-item:hover {
-        background-color: #f5f5f5;
-      }
-
-      .multi-select-item input {
-        margin-right: 0.5rem;
-      }
-      .error-message {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background-color: #ff4444;
-        color: white;
-        padding: 15px;
-        border-radius: 5px;
-        z-index: 1000;
-        display: none;
-      }
-
-      /* Console log styles */
-      #console-logs {
-        background-color: #1e1e1e;
-        color: #d4d4d4;
-        font-family: monospace;
-        font-size: 14px;
-        height: 400px;
-        overflow-y: auto;
-        padding: 1rem;
-        border-radius: 8px;
-        white-space: pre-wrap;
-        word-wrap: break-word;
+      .trigger-item button {
+        padding: 6px 12px;
+        font-size: 0.8rem;
       }
     </style>
   </head>
@@ -345,17 +379,29 @@
           <div class="form-group">
             <label>回應類型</label>
             <select id="response-type">
-          <option value="text">文字</option>
-          <option value="image">圖片</option>
-          <option value="video">影片</option>
-        </select>
-        <textarea id="response-content" placeholder="回應內容"></textarea>
-        <input type="file" id="response-file" style="display:none" accept="image/*,video/*" />
+              <option value="text">文字</option>
+              <option value="image">圖片</option>
+              <option value="video">影片</option>
+              <option value="function">函式</option>
+            </select>
+            <textarea id="response-content" placeholder="回應內容" style="min-height: 120px; height: 120px;"></textarea>
+            <input type="file" id="response-file" style="display:none" accept="image/*,video/*" />
+            <div id="function-help" style="display:none; color:#388e3c; background:#e8f5e9; border-radius:6px; padding:12px; margin-top:8px; font-size:0.95em;">
+              <strong>【函式指令使用說明】</strong><br>
+              1. 直接填寫 <b>async function(msg)</b> 的主體內容，例如：<br>
+              <pre style="background:#f1f8e9; border-radius:4px; padding:8px; margin:6px 0;">const axios = require('axios');
+const res = await axios.get('https://api.github.com');
+return res.data;</pre>
+              2. <b>msg</b> 參數即為 WhatsApp message 物件，可用 <code>msg.reply()</code> 或直接 <code>return</code> 字串。<br>
+              3. 如需第三方套件，請先於主機 <code>npm install</code>，並用 <code>require</code> 載入。<br>
+              4. <b>不能</b>使用 import，只能 require。<br>
+              5. 你寫的內容會自動包裝成 <code>module.exports = async function(msg) { ... }</code> 並儲存於 <code>data/functions/指令ID.js</code>。
+            </div>
           </div>
 
           <div class="form-group">
             <label>觸發名單</label>
-            <div class="multi-select" id="trigger-targets">
+            <div class="multi-select" id="trigger-targets"></div>
               <!-- 動態填充群組和聯絡人選項 -->
             </div>
           </div>
@@ -373,7 +419,7 @@
         <div class="console-controls">
           <button class="btn btn-primary" onclick="clearConsole()">清除日誌</button>
           <button class="btn btn-primary" onclick="exportLogs()">導出日誌</button>
-          <select id="logLevel" onchange="filterLogs()">
+          <select id="logLevel" onchange="filterLogs()"></select>
             <option value="all">全部日誌</option>
             <option value="log">一般日誌</option>
             <option value="info">信息</option>
@@ -391,8 +437,36 @@
       let currentContacts = [];
       let currentCommands = [];
       let currentTriggers = [];
+      let editingCommandId = null; // 新增：追蹤目前是否在編輯指令
       const socket = io();
       let isConnected = false;
+      let codeMirrorEditor = null;
+
+      function setupCodeMirror() {
+        if (codeMirrorEditor) return;
+        const textarea = document.getElementById("response-content");
+        codeMirrorEditor = CodeMirror.fromTextArea(textarea, {
+          mode: "javascript",
+          theme: "material",
+          lineNumbers: true,
+          lineWrapping: true,
+          indentUnit: 2,
+          tabSize: 2,
+          autofocus: true,
+          viewportMargin: Infinity,
+          matchBrackets: true,
+          autoCloseBrackets: true,
+          styleActiveLine: true
+        });
+        codeMirrorEditor.setSize("100%", "240px");
+      }
+
+      function destroyCodeMirror() {
+        if (codeMirrorEditor) {
+          codeMirrorEditor.toTextArea();
+          codeMirrorEditor = null;
+        }
+      }
 
       // Navigation
       document.querySelectorAll(".nav-item").forEach((item) => {
@@ -408,6 +482,29 @@
           // Add active class to clicked item
           item.classList.add("active");
           document.getElementById(item.dataset.section).classList.add("active");
+
+          // 清空指令編輯區內容（只在切換到 commands）
+          if (item.dataset.section === "commands") {
+            // 清空觸發條件
+            currentTriggers = [];
+            renderTriggers();
+            // 回應類型預設為 text
+            document.getElementById("response-type").value = "text";
+            // 觸發回應類型切換事件，確保 UI 狀態正確
+            document.getElementById("response-type").dispatchEvent(new Event("change"));
+            // 清空回應內容
+            if (codeMirrorEditor) codeMirrorEditor.setValue("");
+            document.getElementById("response-content").value = "";
+            document.getElementById("response-file").value = "";
+            // 清空觸發名單
+            updateTriggerTargets();
+            const checkboxes = document.querySelectorAll("#trigger-targets input[type='checkbox']");
+            checkboxes.forEach(checkbox => { checkbox.checked = false; });
+            // 重置編輯狀態與按鈕
+            editingCommandId = null;
+            const saveBtn = document.querySelector("#commands .btn.btn-primary");
+            if (saveBtn) saveBtn.textContent = "儲存指令";
+          }
         });
       });
 
@@ -578,12 +675,22 @@
       document.getElementById("response-type").addEventListener("change", (e) => {
         const fileInput = document.getElementById("response-file");
         const textarea = document.getElementById("response-content");
+        const functionHelp = document.getElementById("function-help");
         if (e.target.value === "image" || e.target.value === "video") {
           fileInput.style.display = "block";
+          if (codeMirrorEditor) destroyCodeMirror();
           textarea.style.display = "none";
-        } else {
+          functionHelp.style.display = "none";
+        } else if (e.target.value === "function") {
           fileInput.style.display = "none";
           textarea.style.display = "block";
+          functionHelp.style.display = "block";
+          setTimeout(setupCodeMirror, 0);
+        } else {
+          fileInput.style.display = "none";
+          if (codeMirrorEditor) destroyCodeMirror();
+          textarea.style.display = "block";
+          functionHelp.style.display = "none";
         }
       });
 
@@ -800,10 +907,64 @@
         renderTriggers();
       }
 
+      function editCommand(id) {
+        const command = currentCommands.find(cmd => cmd.id === id);
+        if (!command) return;
+        // 填入觸發條件
+        currentTriggers = command.triggers.map(t => ({ ...t }));
+        renderTriggers();
+        // 填入回應類型
+        document.getElementById("response-type").value = command.response.type;
+        // 觸發回應類型切換事件，確保 CodeMirror 正確初始化
+        const event = new Event("change");
+        document.getElementById("response-type").dispatchEvent(event);
+        // 填入回應內容
+        setTimeout(async () => {
+          if (command.response.type === "function" && codeMirrorEditor) {
+            // 讀取 js 檔案內容（去除 module.exports 包裝）
+            try {
+              const res = await fetch(`/data/functions/${command.id}.js?_=${Date.now()}`);
+              if (res.ok) {
+                let jsText = await res.text();
+                // 移除 module.exports = async function(msg) { ... }
+                jsText = jsText.replace(/^module\.exports\s*=\s*async function\s*\(msg\)\s*{([\s\S]*)}$/m, (m, body) => body.trim().replace(/\n}$/,'').replace(/^\s*|\s*$/g, ''));
+                codeMirrorEditor.setValue(jsText.trim());
+              } else {
+                codeMirrorEditor.setValue(command.response.content || "");
+              }
+            } catch (e) {
+              codeMirrorEditor.setValue(command.response.content || "");
+            }
+          } else {
+            document.getElementById("response-content").value = command.response.content;
+          }
+        }, 0);
+        document.getElementById("response-file").value = "";
+        // 填入觸發名單
+        updateTriggerTargets();
+        setTimeout(() => {
+          const checkboxes = document.querySelectorAll("#trigger-targets input[type='checkbox']");
+          checkboxes.forEach(checkbox => {
+            if (command.targets.some(t => t.type === checkbox.dataset.type && t.id == checkbox.value)) {
+              checkbox.checked = true;
+            } else {
+              checkbox.checked = false;
+            }
+          });
+        }, 0);
+        // 設定編輯狀態
+        editingCommandId = id;
+        // 切換儲存按鈕文字
+        const saveBtn = document.querySelector("#commands .btn.btn-primary");
+        if (saveBtn) saveBtn.textContent = "更新指令";
+      }
+
       async function saveCommand() {
         const responseType = document.getElementById("response-type").value;
-        const responseContent =
-          document.getElementById("response-content").value;
+        let responseContent = document.getElementById("response-content").value;
+        if (responseType === "function" && codeMirrorEditor) {
+          responseContent = codeMirrorEditor.getValue();
+        }
         const fileInput = document.getElementById("response-file");
         const triggerTargets = Array.from(
           document.querySelectorAll("#trigger-targets input:checked")
@@ -816,20 +977,16 @@
           alert("請至少添加一個觸發條件");
           return;
         }
-
-        if ((responseType === "text" || responseType === "code") && !responseContent) {
+        if ((responseType === "text" || responseType === "code" || responseType === "function") && !responseContent) {
           alert("請輸入回應內容");
           return;
         }
-
-        if ((responseType === "image" || responseType === "video") && fileInput.files.length === 0) {
+        if ((responseType === "image" || responseType === "video") && fileInput.files.length === 0 && !editingCommandId) {
           alert("請上傳媒體文件");
           return;
         }
-
         let content = responseContent;
-
-        if (responseType === "image" || responseType === "video") {
+        if ((responseType === "image" || responseType === "video") && fileInput.files.length > 0) {
           // Read file as base64
           const file = fileInput.files[0];
           content = await new Promise((resolve, reject) => {
@@ -839,9 +996,8 @@
             reader.readAsDataURL(file);
           });
         }
-
         const commandData = {
-          id: Date.now().toString(),
+          id: editingCommandId || Date.now().toString(),
           triggers: currentTriggers,
           response: {
             type: responseType,
@@ -849,27 +1005,31 @@
           },
           targets: triggerTargets,
         };
-
         try {
-          const response = await fetch("/api/commands", {
-            method: "POST",
+          const url = editingCommandId ? `/api/commands/${editingCommandId}` : "/api/commands";
+          const method = editingCommandId ? "PUT" : "POST";
+          const response = await fetch(url, {
+            method,
             headers: {
               "Content-Type": "application/json",
             },
             body: JSON.stringify(commandData),
           });
-
           if (response.ok) {
             // 清空表單
             document.getElementById("response-content").value = "";
             fileInput.value = "";
             currentTriggers = [];
             renderTriggers();
+            editingCommandId = null;
+            // 恢復儲存按鈕文字
+            const saveBtn = document.querySelector("#commands .btn.btn-primary");
+            if (saveBtn) saveBtn.textContent = "儲存指令";
             await initializeData();
           }
         } catch (error) {
           console.error("Error saving command:", error);
-          alert("保存指令失敗");
+          alert(editingCommandId ? "更新指令失敗" : "保存指令失敗");
         }
       }
 
@@ -889,9 +1049,10 @@
                     <strong>觸發對象：</strong>${command.targets.length} 個
                 </div>
             </div>
-            <button class="btn btn-danger" onclick="deleteCommand('${
-              command.id
-            }')">刪除</button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" onclick="editCommand('${command.id}')">編輯</button>
+              <button class="btn btn-danger" onclick="deleteCommand('${command.id}')">刪除</button>
+            </div>
         </div>
     `
           )
