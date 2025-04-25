@@ -419,7 +419,7 @@ return res.data;</pre>
         <div class="console-controls">
           <button class="btn btn-primary" onclick="clearConsole()">清除日誌</button>
           <button class="btn btn-primary" onclick="exportLogs()">導出日誌</button>
-          <select id="logLevel" onchange="filterLogs()"></select>
+          <select id="logLevel" onchange="filterLogs()">
             <option value="all">全部日誌</option>
             <option value="log">一般日誌</option>
             <option value="info">信息</option>
@@ -428,6 +428,14 @@ return res.data;</pre>
           </select>
         </div>
         <div id="console-logs"></div>
+        <div id="terminal-section" style="margin-top:24px;">
+          <h3 style="margin-bottom:8px;">管理員 Terminal（僅限 npm install 指令）</h3>
+          <form id="terminal-form" style="display:flex;gap:8px;align-items:center;">
+            <input id="terminal-input" type="text" placeholder="例如：npm i axios" style="flex:1;padding:8px;border-radius:4px;border:1px solid #ccc;" autocomplete="off" />
+            <button type="submit" class="btn btn-primary">執行</button>
+          </form>
+          <pre id="terminal-output" style="background:#222;color:#b9f6ca;padding:12px;border-radius:6px;margin-top:8px;min-height:60px;max-height:200px;overflow:auto;font-size:0.95em;"></pre>
+        </div>
       </section>
     </main>
 
@@ -1171,6 +1179,30 @@ return res.data;</pre>
             consoleLogs.scrollTop = consoleLogs.scrollHeight;
           };
         });
+
+        // Terminal form submission
+        const terminalForm = document.getElementById("terminal-form");
+        const terminalInput = document.getElementById("terminal-input");
+        const terminalOutput = document.getElementById("terminal-output");
+        if (terminalForm) {
+          terminalForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const cmd = terminalInput.value.trim();
+            if (!cmd) return;
+            terminalOutput.textContent = "執行中...";
+            try {
+              const res = await fetch("/api/terminal", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ command: cmd })
+              });
+              const data = await res.json();
+              terminalOutput.textContent = data.output || data.error || "(無輸出)";
+            } catch (err) {
+              terminalOutput.textContent = "執行失敗：" + err.message;
+            }
+          });
+        }
       });
 
       // Initial load

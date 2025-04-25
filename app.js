@@ -8,6 +8,7 @@ const bodyParser = require("body-parser");
 const fs = require("fs").promises;
 const path = require("path");
 const existsSync = require("fs").existsSync;
+const { exec } = require("child_process");
 
 class WhatsAppBot {
   constructor() {
@@ -470,6 +471,7 @@ app.use(cors());
 app.use(bodyParser.json());
 // 修改靜態文件服務
 app.use(express.static(path.join(__dirname, "public")));
+app.use('/data/functions', express.static(path.join(__dirname, 'data', 'functions')));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -728,6 +730,25 @@ app.put("/api/commands/:id", async (req, res) => {
     res.json({ success: true, command: commandData });
   } catch (error) {
     res.status(500).json({ message: "更新指令失敗" });
+  }
+});
+
+// Terminal API：僅允許 npm install 指令
+app.post("/api/terminal", async (req, res) => {
+  try {
+    const { command } = req.body;
+    // 僅允許 npm install/i 指令，且不能有 &&、;、| 等危險符號
+    if (!/^npm\s+(i|install)\s+[a-zA-Z0-9@\-_/]+(\s+[a-zA-Z0-9@\-_/]+)*$/.test(command.trim())) {
+      return res.json({ error: "只允許執行 npm install 指令，且不能包含特殊符號。" });
+    }
+    exec(command, { cwd: process.cwd(), timeout: 120000 }, (err, stdout, stderr) => {
+      if (err) {
+        return res.json({ error: stderr || err.message });
+      }
+      res.json({ output: stdout || stderr || "(無輸出)" });
+    });
+  } catch (e) {
+    res.json({ error: e.message });
   }
 });
 
