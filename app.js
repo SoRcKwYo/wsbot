@@ -752,6 +752,19 @@ app.post("/api/terminal", async (req, res) => {
   }
 });
 
+// 新增 /api/update-html 路由
+app.post('/api/update-html', async (req, res) => {
+  const { exec } = require('child_process');
+  const htmlPath = path.join(__dirname, 'public', 'index.html');
+  const url = 'https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/public/index.html';
+  exec(`curl -o "${htmlPath}" "${url}"`, (err, stdout, stderr) => {
+    if (err) {
+      return res.json({ error: stderr || err.message });
+    }
+    res.json({ success: true });
+  });
+});
+
 // Socket.io connection handling
 io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);

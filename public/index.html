@@ -315,6 +315,10 @@
         <li class="nav-item" data-section="commands">指令</li>
         <li class="nav-item" data-section="console">Console</li>
       </ul>
+      <div style="margin-top:auto;padding:16px 0 8px 0;display:flex;flex-direction:column;gap:10px;align-items:center;">
+        <button id="lang-toggle" class="btn btn-primary" style="width:90%;">English</button>
+        <button id="update-html-btn" class="btn btn-primary" style="width:90%;background:#388e3c;">下載/更新 HTML 並重新整理</button>
+      </div>
     </nav>
 
     <main class="main-content">
@@ -1203,6 +1207,40 @@ return res.data;</pre>
             }
           });
         }
+
+        // 中英文切換（僅切換主要標題與按鈕，示範用）
+        let currentLang = 'zh';
+        document.getElementById('lang-toggle').onclick = function() {
+          currentLang = currentLang === 'zh' ? 'en' : 'zh';
+          this.textContent = currentLang === 'zh' ? 'English' : '中文';
+          document.querySelector('.nav-logo h2').textContent = currentLang === 'zh' ? 'WhatsApp Bot' : 'WhatsApp Bot';
+          document.querySelector('[data-section="home"]').textContent = currentLang === 'zh' ? '首頁' : 'Home';
+          document.querySelector('[data-section="groups"]').textContent = currentLang === 'zh' ? '群組' : 'Groups';
+          document.querySelector('[data-section="contacts"]').textContent = currentLang === 'zh' ? '個人' : 'Contacts';
+          document.querySelector('[data-section="commands"]').textContent = currentLang === 'zh' ? '指令' : 'Commands';
+          document.querySelector('[data-section="console"]').textContent = currentLang === 'zh' ? '系統日誌' : 'Console';
+        };
+
+        // 下載/更新 HTML 並 F5
+        const updateBtn = document.getElementById('update-html-btn');
+        updateBtn.onclick = async function() {
+          updateBtn.disabled = true;
+          updateBtn.textContent = currentLang === 'zh' ? '下載中...' : 'Updating...';
+          try {
+            const res = await fetch('/api/update-html', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+              updateBtn.textContent = currentLang === 'zh' ? '完成，重新整理中...' : 'Done, refreshing...';
+              setTimeout(() => location.reload(), 1200);
+            } else {
+              updateBtn.textContent = data.error || '失敗';
+              setTimeout(() => { updateBtn.textContent = currentLang === 'zh' ? '下載/更新 HTML 並重新整理' : 'Update HTML & Refresh'; updateBtn.disabled = false; }, 2000);
+            }
+          } catch (e) {
+            updateBtn.textContent = '錯誤';
+            setTimeout(() => { updateBtn.textContent = currentLang === 'zh' ? '下載/更新 HTML 並重新整理' : 'Update HTML & Refresh'; updateBtn.disabled = false; }, 2000);
+          }
+        };
       });
 
       // Initial load
