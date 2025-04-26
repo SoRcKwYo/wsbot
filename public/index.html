@@ -300,6 +300,114 @@
         padding: 6px 12px;
         font-size: 0.8rem;
       }
+
+      .nav-bottom-actions-floating {
+        position: fixed;
+        left: 18px;
+        bottom: 18px;
+        z-index: 1001;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+      }
+
+      .nav-action-btn {
+        width: 180px;
+        padding: 8px 0;
+        font-size: 0.98rem;
+        border: none;
+        border-radius: 5px;
+        background: var(--primary-light);
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        box-shadow: 0 1px 4px rgba(76,175,80,0.10);
+        transition: background 0.2s, box-shadow 0.2s, color 0.2s;
+        cursor: pointer;
+      }
+
+      .nav-action-btn:hover {
+        background: var(--primary);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(76,175,80,0.18);
+      }
+
+      .update-btn {
+        background: var(--primary-dark);
+        color: #fff;
+      }
+
+      .update-btn:hover {
+        background: #256029;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+        margin-right: 8px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .3s;
+        border-radius: 24px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+      }
+
+      input:checked + .slider {
+        background-color: var(--primary);
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+
+      .switch-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.98rem;
+        color: var(--text-secondary);
+        margin-right: 18px;
+        user-select: none;
+      }
+
+      .switch input:focus + .slider {
+        outline: none;
+        box-shadow: none;
+      }
+
+      .switch input:active + .slider {
+        outline: none;
+        box-shadow: none;
+      }
     </style>
   </head>
   <body>
@@ -315,11 +423,16 @@
         <li class="nav-item" data-section="commands">指令</li>
         <li class="nav-item" data-section="console">Console</li>
       </ul>
-      <div style="margin-top:auto;padding:16px 0 8px 0;display:flex;flex-direction:column;gap:10px;align-items:center;">
-        <button id="lang-toggle" class="btn btn-primary" style="width:90%;">English</button>
-        <button id="update-html-btn" class="btn btn-primary" style="width:90%;background:#388e3c;">下載/更新 HTML 並重新整理</button>
-      </div>
     </nav>
+
+    <div class="nav-bottom-actions-floating">
+      <button id="lang-toggle" class="nav-action-btn" title="切換語言" style="display:flex;align-items:center;justify-content:center;padding:6px 0;width:44px;height:44px;min-width:44px;min-height:44px;background:#fff;border:1.5px solid var(--primary-light);border-radius:50%;box-shadow:0 1px 4px rgba(76,175,80,0.10);">
+      <img id="lang-icon" src="https://fonts.gstatic.com/s/i/materialicons/translate/v1/24px.svg" alt="Lang" style="width:22px;height:22px;" />
+      </button>
+      <button id="update-html-btn" class="nav-action-btn update-btn" style="padding:6px 0;width:44px;height:44px;min-width:44px;min-height:44px;background:var(--primary-dark);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+      <img src="https://fonts.gstatic.com/s/i/materialicons/refresh/v1/24px.svg" alt="Update" style="width:22px;height:22px;filter:invert(1);" />
+      </button>
+    </div>
 
     <main class="main-content">
       <!-- 首頁 Section -->
@@ -368,15 +481,21 @@
             <label>觸發條件</label>
             <div class="trigger-conditions" id="trigger-conditions">
               <input type="text" placeholder="新增關鍵詞" />
-              <label>
-                <input type="checkbox" name="toLowerCase" /> 忽略大小寫
+              <label class="switch-label">
+                <span>忽略大小寫</span>
+                <span class="switch">
+                  <input type="checkbox" name="toLowerCase" />
+                  <span class="slider"></span>
+                </span>
               </label>
-              <label>
-                <input type="checkbox" name="startsWith" /> 開頭匹配
+              <label class="switch-label">
+                <span>開頭匹配</span>
+                <span class="switch">
+                  <input type="checkbox" name="startsWith" />
+                  <span class="slider"></span>
+                </span>
               </label>
-              <button class="btn btn-primary" onclick="addTrigger()">
-                新增觸發條件
-              </button>
+              <button class="btn btn-primary" onclick="addTrigger()">新增觸發條件</button>
             </div>
           </div>
 
@@ -1208,17 +1327,134 @@ return res.data;</pre>
           });
         }
 
-        // 中英文切換（僅切換主要標題與按鈕，示範用）
+        // 中英文切換（用 Material Icons translate 圖示）
         let currentLang = 'zh';
+        const translations = {
+          zh: {
+            'nav-title': 'WhatsApp Bot',
+            'nav-home': '首頁',
+            'nav-groups': '群組',
+            'nav-contacts': '個人',
+            'nav-commands': '指令',
+            'nav-console': '系統日誌',
+            'home-title': 'Bot 控制台',
+            'status-online': '已連接',
+            'status-offline': '離線',
+            'bot-start': '啟動 Bot',
+            'bot-stop': '關閉 Bot',
+            'groups-title': '群組管理',
+            'group-name-placeholder': '群組名稱',
+            'group-search-btn': '搜尋並添加群組',
+            'contacts-title': '個人聯絡人管理',
+            'contact-prefix-placeholder': '國碼 (例: 852)',
+            'contact-number-placeholder': '電話號碼',
+            'contact-name-placeholder': '備註名稱',
+            'contact-add-btn': '新增聯絡人',
+            'commands-title': '指令管理',
+            'trigger-label': '觸發條件',
+            'trigger-keyword-placeholder': '新增關鍵詞',
+            'ignore-case': '忽略大小寫',
+            'match-start': '開頭匹配',
+            'add-trigger-btn': '新增觸發條件',
+            'response-type-label': '回應類型',
+            'response-content-placeholder': '回應內容',
+            'save-command-btn': '儲存指令',
+            'update-command-btn': '更新指令',
+            'delete-btn': '刪除',
+            'edit-btn': '編輯',
+            'console-title': '系統日誌',
+            'clear-logs-btn': '清除日誌',
+            'export-logs-btn': '導出日誌',
+            'terminal-title': '管理員 Terminal（僅限 npm install 指令）',
+            'terminal-placeholder': '例如：npm i axios',
+            'execute-btn': '執行'
+          },
+          en: {
+            'nav-title': 'WhatsApp Bot',
+            'nav-home': 'Home',
+            'nav-groups': 'Groups',
+            'nav-contacts': 'Contacts',
+            'nav-commands': 'Commands',
+            'nav-console': 'Console',
+            'home-title': 'Bot Control Panel',
+            'status-online': 'Connected',
+            'status-offline': 'Offline',
+            'bot-start': 'Start Bot',
+            'bot-stop': 'Stop Bot',
+            'groups-title': 'Groups Management',
+            'group-name-placeholder': 'Group Name',
+            'group-search-btn': 'Search & Add Group',
+            'contacts-title': 'Contacts Management',
+            'contact-prefix-placeholder': 'Country Code (e.g. 852)',
+            'contact-number-placeholder': 'Phone Number',
+            'contact-name-placeholder': 'Display Name',
+            'contact-add-btn': 'Add Contact',
+            'commands-title': 'Commands Management',
+            'trigger-label': 'Trigger Conditions',
+            'trigger-keyword-placeholder': 'Add Keyword',
+            'ignore-case': 'Ignore Case',
+            'match-start': 'Match Start',
+            'add-trigger-btn': 'Add Trigger',
+            'response-type-label': 'Response Type',
+            'response-content-placeholder': 'Response Content',
+            'save-command-btn': 'Save Command',
+            'update-command-btn': 'Update Command',
+            'delete-btn': 'Delete',
+            'edit-btn': 'Edit',
+            'console-title': 'System Logs',
+            'clear-logs-btn': 'Clear Logs',
+            'export-logs-btn': 'Export Logs',
+            'terminal-title': 'Admin Terminal (npm install only)',
+            'terminal-placeholder': 'e.g. npm i axios',
+            'execute-btn': 'Execute'
+          }
+        };
+
+        function updatePageLanguage() {
+          const t = translations[currentLang];
+          
+          // Update nav
+          document.querySelector('.nav-logo h2').textContent = t['nav-title'];
+          document.querySelector('[data-section="home"]').textContent = t['nav-home'];
+          document.querySelector('[data-section="groups"]').textContent = t['nav-groups'];
+          document.querySelector('[data-section="contacts"]').textContent = t['nav-contacts'];
+          document.querySelector('[data-section="commands"]').textContent = t['nav-commands'];
+          document.querySelector('[data-section="console"]').textContent = t['nav-console'];
+
+          // Update sections
+          document.querySelector('#home h2').textContent = t['home-title'];
+          document.querySelector('#groups h2').textContent = t['groups-title'];
+          document.querySelector('#contacts h2').textContent = t['contacts-title'];
+          document.querySelector('#commands h2').textContent = t['commands-title'];
+          document.querySelector('#console h2').textContent = t['console-title'];
+
+          // Update placeholders
+          document.querySelector('#group-name').placeholder = t['group-name-placeholder'];
+          document.querySelector('#contact-prefix').placeholder = t['contact-prefix-placeholder'];
+          document.querySelector('#contact-number').placeholder = t['contact-number-placeholder'];
+          document.querySelector('#contact-name').placeholder = t['contact-name-placeholder'];
+
+          // Update buttons
+          document.querySelector('#toggle-bot').textContent = isConnected ? t['bot-stop'] : t['bot-start'];
+          document.querySelectorAll('.btn-danger').forEach(btn => btn.textContent = t['delete-btn']);
+
+          // Update status text
+          if (document.querySelector('#bot-status').classList.contains('online')) {
+            document.querySelector('#bot-status').textContent = t['status-online'];
+          } else {
+            document.querySelector('#bot-status').textContent = t['status-offline'];
+          }
+          
+          // Update terminal section
+          document.querySelector('#terminal-section h3').textContent = t['terminal-title'];
+          document.querySelector('#terminal-input').placeholder = t['terminal-placeholder'];
+          document.querySelector('#terminal-form button').textContent = t['execute-btn'];
+        }
+
         document.getElementById('lang-toggle').onclick = function() {
           currentLang = currentLang === 'zh' ? 'en' : 'zh';
-          this.textContent = currentLang === 'zh' ? 'English' : '中文';
-          document.querySelector('.nav-logo h2').textContent = currentLang === 'zh' ? 'WhatsApp Bot' : 'WhatsApp Bot';
-          document.querySelector('[data-section="home"]').textContent = currentLang === 'zh' ? '首頁' : 'Home';
-          document.querySelector('[data-section="groups"]').textContent = currentLang === 'zh' ? '群組' : 'Groups';
-          document.querySelector('[data-section="contacts"]').textContent = currentLang === 'zh' ? '個人' : 'Contacts';
-          document.querySelector('[data-section="commands"]').textContent = currentLang === 'zh' ? '指令' : 'Commands';
-          document.querySelector('[data-section="console"]').textContent = currentLang === 'zh' ? '系統日誌' : 'Console';
+          document.getElementById('lang-icon').src = "https://fonts.gstatic.com/s/i/materialicons/translate/v1/24px.svg";
+          updatePageLanguage();
         };
 
         // 下載/更新 HTML 並 F5
