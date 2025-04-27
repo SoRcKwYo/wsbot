@@ -1,3 +1,9 @@
 /.DS_Store
 /.blackboxrules
-/run.bat
+/.wwebjs_cache/*
+/node_modules/*
+/data/*
+/package-lock.json
+/auth/*
+public/.DS_Store
+/.gitignore

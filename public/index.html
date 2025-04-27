@@ -410,6 +410,115 @@
         outline: none;
         box-shadow: none;
       }
+
+      /* Modal 美化 */
+      #target-modal .modal-content {
+        background: #fff;
+        padding: 28px 24px 20px 24px;
+        border-radius: 14px;
+        min-width: 340px;
+        max-width: 96vw;
+        max-height: 90vh;
+        overflow: auto;
+        box-shadow: 0 8px 32px rgba(76,175,80,0.18);
+      }
+      #target-modal .modal-tab {
+        border: none;
+        background: #f1f8e9;
+        color: #388e3c;
+        font-weight: 600;
+        font-size: 1.05em;
+        padding: 7px 22px;
+        border-radius: 18px 18px 0 0;
+        margin-right: 4px;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+        outline: none;
+      }
+      #target-modal .modal-tab.active {
+        background: var(--primary);
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(76,175,80,0.10);
+      }
+      #target-modal #target-search {
+        border-radius: 18px;
+        border: 1.5px solid #c8e6c9;
+        padding: 7px 16px;
+        font-size: 1em;
+        margin-left: 8px;
+        background: #f9fbe7;
+        transition: border 0.2s;
+      }
+      #target-modal #target-search:focus {
+        border: 1.5px solid var(--primary);
+        background: #fff;
+      }
+      #target-modal #modal-list {
+        margin-top: 6px;
+        border-radius: 8px;
+        background: #f7faf7;
+        border: 1px solid #e0e0e0;
+        padding: 4px 0;
+      }
+      #target-modal #modal-list label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid #e0e0e0;
+        font-size: 1.04em;
+        transition: background 0.18s;
+      }
+      #target-modal #modal-list label:last-child {
+        border-bottom: none;
+      }
+      #target-modal #modal-list label:hover {
+        background: #e8f5e9;
+      }
+      #target-modal #modal-list input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--primary);
+        margin-right: 2px;
+      }
+      #target-modal #modal-selected-tags {
+        margin-bottom: 10px;
+        min-height: 24px;
+      }
+      #target-modal .tag {
+        background: #e8f5e9;
+        color: #388e3c;
+        padding: 2px 12px;
+        border-radius: 12px;
+        font-size: 0.97em;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-right: 4px;
+        margin-bottom: 4px;
+      }
+      #target-modal .btn {
+        min-width: 90px;
+        font-size: 1em;
+        border-radius: 8px;
+        margin-left: 8px;
+        padding: 8px 0;
+      }
+      #target-modal .btn-primary {
+        background: var(--primary);
+        color: #fff;
+      }
+      #target-modal .btn-primary:hover {
+        background: #256029;
+      }
+      #target-modal .btn-danger {
+        background: #f44336;
+        color: #fff;
+      }
+      #target-modal .btn-danger:hover {
+        background: #b71c1c;
+      }
     </style>
   </head>
   <body>
@@ -533,8 +642,19 @@ return res.data;</pre>
 
           <div class="form-group">
             <label>觸發名單</label>
-            <div class="multi-select" id="trigger-targets"></div>
-              <!-- 動態填充群組和聯絡人選項 -->
+            <div id="trigger-targets-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+            <button type="button" class="btn btn-primary" id="open-target-modal">選擇觸發對象</button>
+          </div>
+          <!-- Modal 彈窗 -->
+          <div id="target-modal" class="modal" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);align-items:center;justify-content:center;">
+            <div class="modal-content" style="background:#fff;padding:24px 20px;border-radius:10px;min-width:340px;max-width:96vw;max-height:90vh;overflow:auto;box-shadow:0 4px 24px rgba(0,0,0,0.18);">
+              <div id="modal-header" style="display:flex;gap:12px;margin-bottom:16px;"></div>
+              <div id="modal-selected-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+              <div id="modal-list" style="max-height:320px;overflow:auto;"></div>
+              <div style="margin-top:18px;text-align:right;">
+                <button class="btn btn-primary" id="modal-confirm">確定</button>
+                <button class="btn btn-danger" id="modal-cancel">取消</button>
+              </div>
             </div>
           </div>
 
@@ -582,6 +702,7 @@ return res.data;</pre>
       const socket = io();
       let isConnected = false;
       let codeMirrorEditor = null;
+      let selectedTargets = [];
 
       function setupCodeMirror() {
         if (codeMirrorEditor) return;
@@ -638,9 +759,8 @@ return res.data;</pre>
             document.getElementById("response-content").value = "";
             document.getElementById("response-file").value = "";
             // 清空觸發名單
-            updateTriggerTargets();
-            const checkboxes = document.querySelectorAll("#trigger-targets input[type='checkbox']");
-            checkboxes.forEach(checkbox => { checkbox.checked = false; });
+            selectedTargets = [];
+            renderTargetTags();
             // 重置編輯狀態與按鈕
             editingCommandId = null;
             const saveBtn = document.querySelector("#commands .btn.btn-primary");
@@ -695,7 +815,6 @@ return res.data;</pre>
           renderGroups();
           renderContacts();
           renderCommands();
-          updateTriggerTargets();
         } catch (error) {
           console.error("Error loading data:", error);
           showError("數據加載失敗，請刷新頁面重試");
@@ -731,7 +850,6 @@ return res.data;</pre>
       socket.on("groupUpdate", (groups) => {
         currentGroups = groups;
         renderGroups();
-        updateTriggerTargets();
       });
 
       socket.on("commandUpdate", (commands) => {
@@ -746,7 +864,6 @@ return res.data;</pre>
         renderGroups();
         renderContacts();
         renderCommands();
-        updateTriggerTargets();
       });
 
       // Console 功能
@@ -1085,6 +1202,84 @@ return res.data;</pre>
         renderTriggers();
       }
 
+      function renderTargetTags() {
+        const tagBox = document.getElementById('trigger-targets-tags');
+        tagBox.innerHTML = selectedTargets.map(t => `<span class="tag" style="background:#e8f5e9;color:#388e3c;padding:2px 10px;border-radius:12px;font-size:0.95em;display:inline-flex;align-items:center;gap:4px;">${t.name}<span style="cursor:pointer;font-weight:bold;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`).join('');
+      }
+
+      function removeTargetTag(type, id) {
+        selectedTargets = selectedTargets.filter(t => !(t.type === type && t.id === id));
+        renderTargetTags();
+      }
+
+      document.getElementById('open-target-modal').onclick = function() {
+        document.getElementById('target-modal').style.display = 'flex';
+        renderTargetModal('group');
+      };
+
+      document.getElementById('modal-cancel').onclick = function() {
+        document.getElementById('target-modal').style.display = 'none';
+      };
+
+      document.getElementById('modal-confirm').onclick = function() {
+        document.getElementById('target-modal').style.display = 'none';
+        renderTargetTags();
+      };
+
+      function renderTargetModal(tab) {
+        const modalHeader = document.getElementById('modal-header');
+        const modalList = document.getElementById('modal-list');
+        const totalCount = currentGroups.length + currentContacts.length;
+        let showTabs = totalCount > 10;
+        let showSearch = totalCount > 10;
+        let items = [];
+        if (showTabs) {
+          modalHeader.innerHTML = `
+            <button id="tab-group" class="modal-tab ${tab==='group'?'active':''}">群組</button>
+            <button id="tab-contact" class="modal-tab ${tab==='contact'?'active':''}">聯絡人</button>
+            <input id="target-search" type="text" placeholder="搜尋名稱..." style="flex:1;padding:6px 10px;border-radius:4px;border:1px solid #ccc;${showSearch?'':'display:none;'}" />
+          `;
+          items = tab === 'group' ? currentGroups : currentContacts;
+          if (showSearch) {
+            document.getElementById('target-search').oninput = function() {
+              renderTargetModal(tab);
+            };
+            const search = document.getElementById('target-search').value.trim().toLowerCase();
+            items = items.filter(item => item.name.toLowerCase().includes(search));
+          }
+          document.getElementById('tab-group').onclick = function() {
+            renderTargetModal('group');
+          };
+          document.getElementById('tab-contact').onclick = function() {
+            renderTargetModal('contact');
+          };
+        } else {
+          modalHeader.innerHTML = '';
+          items = [...currentGroups, ...currentContacts];
+        }
+        modalList.innerHTML = items.map(item => {
+          const type = currentGroups.some(g => g.id === item.id) ? 'group' : 'contact';
+          const checked = selectedTargets.some(t => t.type === type && t.id === item.id);
+          return `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
+            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleTargetSelect('${type}','${item.id}','${item.name.replace(/'/g,'')}')" />
+            <span>${item.name}${type==='contact'?` (${item.number})`:''}</span>
+          </label>`;
+        }).join('');
+        document.getElementById('modal-selected-tags').innerHTML = selectedTargets.length ? selectedTargets.map(t => `<span class="tag" style="background:#e8f5e9;color:#388e3c;padding:2px 10px;border-radius:12px;font-size:0.95em;display:inline-flex;align-items:center;gap:4px;">${t.name}<span style="cursor:pointer;font-weight:bold;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`).join('') : '';
+      }
+
+      window.toggleTargetSelect = function(type, id, name) {
+        const idx = selectedTargets.findIndex(t => t.type === type && t.id === id);
+        if (idx >= 0) {
+          selectedTargets.splice(idx, 1);
+        } else {
+          selectedTargets.push({ type, id, name });
+        }
+        renderTargetModal(type);
+      };
+
+      window.removeTargetTag = removeTargetTag;
+
       function editCommand(id) {
         const command = currentCommands.find(cmd => cmd.id === id);
         if (!command) return;
@@ -1119,17 +1314,18 @@ return res.data;</pre>
         }, 0);
         document.getElementById("response-file").value = "";
         // 填入觸發名單
-        updateTriggerTargets();
-        setTimeout(() => {
-          const checkboxes = document.querySelectorAll("#trigger-targets input[type='checkbox']");
-          checkboxes.forEach(checkbox => {
-            if (command.targets.some(t => t.type === checkbox.dataset.type && t.id == checkbox.value)) {
-              checkbox.checked = true;
-            } else {
-              checkbox.checked = false;
-            }
-          });
-        }, 0);
+        selectedTargets = command.targets.map(t => {
+          let name = '';
+          if (t.type === 'group') {
+            const g = currentGroups.find(g => g.id === t.id);
+            name = g ? g.name : t.id;
+          } else if (t.type === 'contact') {
+            const c = currentContacts.find(c => c.id === t.id);
+            name = c ? c.name : t.id;
+          }
+          return { ...t, name };
+        });
+        renderTargetTags();
         // 設定編輯狀態
         editingCommandId = id;
         // 切換儲存按鈕文字
@@ -1144,12 +1340,6 @@ return res.data;</pre>
           responseContent = codeMirrorEditor.getValue();
         }
         const fileInput = document.getElementById("response-file");
-        const triggerTargets = Array.from(
-          document.querySelectorAll("#trigger-targets input:checked")
-        ).map((input) => ({
-          type: input.dataset.type,
-          id: input.value,
-        }));
 
         if (currentTriggers.length === 0) {
           alert("請至少添加一個觸發條件");
@@ -1181,7 +1371,7 @@ return res.data;</pre>
             type: responseType,
             content: content,
           },
-          targets: triggerTargets,
+          targets: selectedTargets,
         };
         try {
           const url = editingCommandId ? `/api/commands/${editingCommandId}` : "/api/commands";
@@ -1199,6 +1389,8 @@ return res.data;</pre>
             fileInput.value = "";
             currentTriggers = [];
             renderTriggers();
+            selectedTargets = [];
+            renderTargetTags();
             editingCommandId = null;
             // 恢復儲存按鈕文字
             const saveBtn = document.querySelector("#commands .btn.btn-primary");
@@ -1206,9 +1398,6 @@ return res.data;</pre>
             // 清空指令編輯區內容
             document.getElementById("response-type").value = "text";
             document.getElementById("response-type").dispatchEvent(new Event("change"));
-            updateTriggerTargets();
-            const checkboxes = document.querySelectorAll("#trigger-targets input[type='checkbox']");
-            checkboxes.forEach(checkbox => { checkbox.checked = false; });
             await initializeData();
           }
         } catch (error) {
@@ -1260,49 +1449,10 @@ return res.data;</pre>
         }
       }
 
-      // 更新觸發對象選擇列表
-      function updateTriggerTargets() {
-        const container = document.getElementById("trigger-targets");
-        if (!container) return;
-
-        // 清除現有內容
-        container.innerHTML = "";
-
-        // 添加群組選項
-        const groupsSection = document.createElement("div");
-        groupsSection.className = "multi-select-section";
-        groupsSection.innerHTML = `<h4>群組</h4>`;
-        currentGroups.forEach((group) => {
-          const label = document.createElement("label");
-          label.className = "multi-select-item";
-          label.innerHTML = `
-            <input type="checkbox" value="${group.id}" data-type="group">
-            ${group.name}
-        `;
-          groupsSection.appendChild(label);
-        });
-        container.appendChild(groupsSection);
-
-        // 添加聯絡人選項
-        const contactsSection = document.createElement("div");
-        contactsSection.className = "multi-select-section";
-        contactsSection.innerHTML = `<h4>聯絡人</h4>`;
-        currentContacts.forEach((contact) => {
-          const label = document.createElement("label");
-          label.className = "multi-select-item";
-          label.innerHTML = `
-            <input type="checkbox" value="${contact.id}" data-type="contact">
-            ${contact.name} (${contact.number})
-        `;
-          contactsSection.appendChild(label);
-        });
-        container.appendChild(contactsSection);
-      }
-
       document.querySelectorAll(".nav-item").forEach((item) => {
         item.addEventListener("click", () => {
           if (item.dataset.section === "commands") {
-            updateTriggerTargets();
+            renderTargetTags();
           }
         });
       });
