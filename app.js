@@ -244,6 +244,14 @@ class WhatsAppBot {
 
     // Register message event to trigger handleMessage
     this.client.on("message", (msg) => this.handleMessage(msg));
+
+    this.client.on("message_create", (msg) => {
+      if (msg.fromMe) {
+        this.handleMessage(msg);
+        console.log("Message sent:", msg.body);
+        console.log("Message sent from:", msg.from);
+      }
+    });
   }
 
   async updateGroups() {
@@ -286,7 +294,10 @@ class WhatsAppBot {
         const isReply = msg.hasQuotedMsg || (msg._data && msg._data.quotedMsg);
         if (trigger.isRegex) {
           try {
-            const regex = new RegExp(trigger.keyword, trigger.toLowerCase ? 'i' : undefined);
+            const regex = new RegExp(
+              trigger.keyword,
+              trigger.toLowerCase ? "i" : undefined
+            );
             if (regex.test(content)) {
               if (trigger.quotedMsg) {
                 if (isReply) shouldTrigger = true;
@@ -298,7 +309,9 @@ class WhatsAppBot {
             // 無效正則不觸發
           }
         } else if (trigger.keyword) {
-          const match = trigger.startsWith ? content.startsWith(trigger.keyword) : content.includes(trigger.keyword);
+          const match = trigger.startsWith
+            ? content.startsWith(trigger.keyword)
+            : content.includes(trigger.keyword);
           if (match) {
             if (trigger.quotedMsg) {
               if (isReply) shouldTrigger = true;
@@ -313,7 +326,6 @@ class WhatsAppBot {
       }
 
       if (shouldTrigger) {
-        console.log('觸發條件 matched triggers:', JSON.stringify(command.triggers, null, 2));
         const isTargetMatch = command.targets.some((target) => {
           if (chat.isGroup) {
             return target.type === "group" && target.id === chat.id._serialized;
@@ -341,7 +353,7 @@ class WhatsAppBot {
       const fn = require(funcPath);
       if (typeof fn !== "function") return "function 檔案未正確導出函式。";
       // 支援 async function
-      return await fn(msg);
+      return await fn(msg,this.client);
     } catch (e) {
       return `執行 function 指令時發生錯誤：${e.message}`;
     }
@@ -383,8 +395,18 @@ class WhatsAppBot {
             } else {
               media = await MessageMedia.fromUrl(response.content);
             }
-            await msg.reply(media);
+            await client.sendMessage(msg.from, media);
           } catch (mediaError) {
+            if (response.content.startsWith("/data/video/")) {
+              const filePath = path.join(__dirname, response.content);
+              try {
+                const stat = require("fs").statSync(filePath);
+                console.error("[Video debug] filePath:", filePath);
+                console.error("[Video debug] stat:", stat);
+              } catch (e) {
+                console.error("[Video debug] stat error:", e);
+              }
+            }
             console.error("Video loading error:", mediaError);
             await msg.reply("Sorry, video content is not available.");
           }
@@ -493,12 +515,15 @@ const bot = new WhatsAppBot();
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json({ limit: '100mb' }));
-app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
+app.use(bodyParser.json({ limit: "100mb" }));
+app.use(bodyParser.urlencoded({ limit: "100mb", extended: true }));
 // 修改靜態文件服務
 app.use(express.static(path.join(__dirname, "public")));
-app.use('/data/functions', express.static(path.join(__dirname, 'data', 'functions')));
-app.use('/data/video', express.static(path.join(__dirname, 'data', 'video')));
+app.use(
+  "/data/functions",
+  express.static(path.join(__dirname, "data", "functions"))
+);
+app.use("/data/video", express.static(path.join(__dirname, "data", "video")));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -512,46 +537,48 @@ function addLogEntry(level, message) {
   const entry = {
     timestamp,
     level,
-    message
+    message,
   };
-  
+
   logHistory.push(entry);
   if (logHistory.length > maxLogEntries) {
     logHistory.shift();
   }
-  
+
   // 通知前端更新日誌
-  io.emit('console-log', entry);
+  io.emit("console-log", entry);
 }
 
 // 替換原有的 console 方法
-['log', 'error', 'warn', 'info'].forEach(level => {
+["log", "error", "warn", "info"].forEach((level) => {
   const originalMethod = console[level];
   console[level] = (...args) => {
     originalMethod.apply(console, args);
-    const message = args.map(arg => 
-      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(' ');
+    const message = args
+      .map((arg) =>
+        typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+      )
+      .join(" ");
     addLogEntry(level, message);
   };
 });
 
 // API 路由
-app.get('/api/logs', (req, res) => {
+app.get("/api/logs", (req, res) => {
   const { level } = req.query;
   let filteredLogs = logHistory;
-  
-  if (level && level !== 'all') {
-    filteredLogs = logHistory.filter(log => log.level === level);
+
+  if (level && level !== "all") {
+    filteredLogs = logHistory.filter((log) => log.level === level);
   }
-  
+
   res.json(filteredLogs);
 });
 
 // 清除日誌
-app.post('/api/logs/clear', (req, res) => {
+app.post("/api/logs/clear", (req, res) => {
   logHistory = [];
-  io.emit('logs-cleared');
+  io.emit("logs-cleared");
   res.sendStatus(200);
 });
 
@@ -698,12 +725,19 @@ app.post("/api/commands", async (req, res) => {
       commandData.response.content = commandData.response.content;
     }
     // 如果是 video，將 base64 存檔到 /data/video
-    if (commandData.response && commandData.response.type === "video" && commandData.response.content.startsWith("data:")) {
+    if (
+      commandData.response &&
+      commandData.response.type === "video" &&
+      commandData.response.content.startsWith("data:")
+    ) {
       const videoDir = path.join(__dirname, "data", "video");
       if (!existsSync(videoDir)) {
         await fs.mkdir(videoDir, { recursive: true });
       }
-      const ext = commandData.response.content.substring(11, commandData.response.content.indexOf(";"));
+      const ext = commandData.response.content.substring(
+        11,
+        commandData.response.content.indexOf(";")
+      );
       const fileExt = ext.split("/")[1] || "mp4";
       const fileName = `${commandData.id}.${fileExt}`;
       const filePath = path.join(videoDir, fileName);
@@ -735,12 +769,19 @@ app.put("/api/commands/:id", async (req, res) => {
       await fs.writeFile(funcPath, code, "utf8");
       commandData.response.content = commandData.response.content;
     }
-    if (commandData.response && commandData.response.type === "video" && commandData.response.content.startsWith("data:")) {
+    if (
+      commandData.response &&
+      commandData.response.type === "video" &&
+      commandData.response.content.startsWith("data:")
+    ) {
       const videoDir = path.join(__dirname, "data", "video");
       if (!existsSync(videoDir)) {
         await fs.mkdir(videoDir, { recursive: true });
       }
-      const ext = commandData.response.content.substring(11, commandData.response.content.indexOf(";"));
+      const ext = commandData.response.content.substring(
+        11,
+        commandData.response.content.indexOf(";")
+      );
       const fileExt = ext.split("/")[1] || "mp4";
       const fileName = `${id}.${fileExt}`;
       const filePath = path.join(videoDir, fileName);
@@ -791,26 +832,37 @@ app.post("/api/terminal", async (req, res) => {
   try {
     const { command } = req.body;
     // 僅允許 npm install/i 指令，且不能有 &&、;、| 等危險符號
-    if (!/^npm\s+(i|install)\s+[a-zA-Z0-9@\-_/]+(\s+[a-zA-Z0-9@\-_/]+)*$/.test(command.trim())) {
-      return res.json({ error: "只允許執行 npm install 指令，且不能包含特殊符號。" });
+    if (
+      !/^npm\s+(i|install)\s+[a-zA-Z0-9@\-_/]+(\s+[a-zA-Z0-9@\-_/]+)*$/.test(
+        command.trim()
+      )
+    ) {
+      return res.json({
+        error: "只允許執行 npm install 指令，且不能包含特殊符號。",
+      });
     }
     command = "sudo " + command; // 加上 sudo
-    exec(command, { cwd: process.cwd(), timeout: 120000 }, (err, stdout, stderr) => {
-      if (err) {
-        return res.json({ error: stderr || err.message });
+    exec(
+      command,
+      { cwd: process.cwd(), timeout: 120000 },
+      (err, stdout, stderr) => {
+        if (err) {
+          return res.json({ error: stderr || err.message });
+        }
+        res.json({ output: stdout || stderr || "(無輸出)" });
       }
-      res.json({ output: stdout || stderr || "(無輸出)" });
-    });
+    );
   } catch (e) {
     res.json({ error: e.message });
   }
 });
 
 // 新增 /api/update-html 路由
-app.post('/api/update-html', async (req, res) => {
-  const { exec } = require('child_process');
-  const htmlPath = path.join(__dirname, 'public', 'index.html');
-  const url = 'https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/public/index.html';
+app.post("/api/update-html", async (req, res) => {
+  const { exec } = require("child_process");
+  const htmlPath = path.join(__dirname, "public", "index.html");
+  const url =
+    "https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/public/index.html";
   exec(`curl -o "${htmlPath}" "${url}"`, (err, stdout, stderr) => {
     if (err) {
       return res.json({ error: stderr || err.message });

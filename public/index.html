@@ -1375,6 +1375,13 @@
           alert("請上傳媒體文件");
           return;
         }
+        if ((responseType === "image" || responseType === "video") && fileInput.files.length > 0) {
+          const file = fileInput.files[0];
+          if (responseType === "video" && file.size > 16 * 1024 * 1024) {
+            alert("影片檔案超過 16MB，請先壓縮後再上傳。");
+            return;
+          }
+        }
         let content = responseContent;
         if ((responseType === "image" || responseType === "video") && fileInput.files.length > 0) {
           // Read file as base64
