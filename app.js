@@ -274,18 +274,28 @@ class WhatsAppBot {
 
     for (const command of this.activeCommands.values()) {
       let shouldTrigger = false;
-
       for (const trigger of command.triggers) {
         const content = trigger.toLowerCase
           ? messageContent.toLowerCase()
           : messageContent;
-
-        if (trigger.startsWith) {
-          shouldTrigger = content.startsWith(trigger.keyword);
-        } else {
-          shouldTrigger = content.includes(trigger.keyword);
+        // 判斷 quotedMsg 條件
+        const isReply = msg.hasQuotedMsg || (msg._data && msg._data.quotedMsg);
+        if (trigger.keyword && trigger.quotedMsg) {
+          // 需要同時符合 keyword 與 reply
+          if ((trigger.startsWith ? content.startsWith(trigger.keyword) : content.includes(trigger.keyword)) && isReply) {
+            shouldTrigger = true;
+          }
+        } else if (trigger.keyword && !trigger.quotedMsg) {
+          // 只需符合 keyword
+          if (trigger.startsWith ? content.startsWith(trigger.keyword) : content.includes(trigger.keyword)) {
+            shouldTrigger = true;
+          }
+        } else if (!trigger.keyword && trigger.quotedMsg) {
+          // 只需是 reply
+          if (isReply) {
+            shouldTrigger = true;
+          }
         }
-
         if (shouldTrigger) break;
       }
 
