@@ -2,8 +2,8 @@
 /.blackboxrules
 /.wwebjs_cache/*
 /node_modules/*
-/data/*
 /package-lock.json
 /auth/*
 public/.DS_Store
 /temp/*
+/data/*

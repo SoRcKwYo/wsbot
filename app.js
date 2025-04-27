@@ -282,7 +282,7 @@ class WhatsAppBot {
 
   async handleMessage(msg) {
     const messageContent = msg.body;
-    const sender = msg.from;
+    const sender = msg.fromMe ? msg.to : msg.from;
     const chat = await msg.getChat();
 
     for (const command of this.activeCommands.values()) {
