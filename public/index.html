@@ -631,8 +631,8 @@
               <strong>【函式指令使用說明】</strong><br>
               1. 直接填寫 <b>async function(msg)</b> 的主體內容，例如：<br>
               <pre style="background:#f1f8e9; border-radius:4px; padding:8px; margin:6px 0;">const axios = require('axios');
-      const res = await axios.get('https://api.github.com');
-      return res.data;</pre>
+              const res = await axios.get('https://api.github.com');
+              return res.data;</pre>
               2. <b>msg</b> 參數即為 WhatsApp message 物件，可用 <code>msg.reply()</code> 或直接 <code>return</code> 字串。<br>
               3. 如需第三方套件，請先於主機 <code>npm install</code>，並用 <code>require</code> 載入。<br>
               4. <b>不能</b>使用 import，只能 require。<br>
@@ -641,13 +641,13 @@
               <strong>【AI提示詞範例】</strong><br>
               在詢問 AI 時，可以這樣描述你要的功能:<br>
               <pre style="background:#f1f8e9; border-radius:4px; padding:8px; margin:6px 0;">請幫我寫一個 WhatsApp bot function:
-      - 使用 node.js
-      - 接收 msg 參數
-      - 使用 async/await
-      - 只用 require (不要用 import)
-      - 功能: [描述你想要的功能]
-      - 回傳文字或用 msg.reply()回覆</pre>
-            </div>
+              - 使用 node.js
+              - 接收 msg 參數
+              - 使用 async/await
+              - 只用 require (不要用 import)
+              - 功能: [描述你想要的功能]
+              - 回傳文字或用 msg.reply()回覆</pre>
+              </div>
           </div>
 
           <div class="form-group">
@@ -1237,7 +1237,6 @@
       };
 
       function renderTargetModal(tab) {
-        const t = translations[currentLang];
         const modalHeader = document.getElementById('modal-header');
         const modalList = document.getElementById('modal-list');
         const totalCount = currentGroups.length + currentContacts.length;
@@ -1246,9 +1245,9 @@
         let items = [];
         if (showTabs) {
           modalHeader.innerHTML = `
-            <button id="tab-group" class="modal-tab ${tab==='group'?'active':''}">${t['modal-group']}</button>
-            <button id="tab-contact" class="modal-tab ${tab==='contact'?'active':''}">${t['modal-contact']}</button>
-            <input id="target-search" type="text" placeholder="${t['modal-search']}" style="flex:1;padding:6px 10px;border-radius:4px;border:1px solid #ccc;${showSearch?'':'display:none;'}" />
+            <button id="tab-group" class="modal-tab ${tab==='group'?'active':''}">群組</button>
+            <button id="tab-contact" class="modal-tab ${tab==='contact'?'active':''}">聯絡人</button>
+            <input id="target-search" type="text" placeholder="搜尋名稱..." style="flex:1;padding:6px 10px;border-radius:4px;border:1px solid #ccc;${showSearch?'':'display:none;'}" />
           `;
           items = tab === 'group' ? currentGroups : currentContacts;
           if (showSearch) {
@@ -1277,8 +1276,6 @@
           </label>`;
         }).join('');
         document.getElementById('modal-selected-tags').innerHTML = selectedTargets.length ? selectedTargets.map(t => `<span class="tag" style="background:#e8f5e9;color:#388e3c;padding:2px 10px;border-radius:12px;font-size:0.95em;display:inline-flex;align-items:center;gap:4px;">${t.name}<span style="cursor:pointer;font-weight:bold;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`).join('') : '';
-        document.getElementById('modal-confirm').textContent = t['modal-confirm'];
-        document.getElementById('modal-cancel').textContent = t['modal-cancel'];
       }
 
       window.toggleTargetSelect = function(type, id, name) {
@@ -1583,12 +1580,7 @@
             'export-logs-btn': '導出日誌',
             'terminal-title': '管理員 Terminal（僅限 npm install 指令）',
             'terminal-placeholder': '例如：npm i axios',
-            'execute-btn': '執行',
-            'modal-group': '群組',
-            'modal-contact': '聯絡人',
-            'modal-search': '搜尋名稱...',
-            'modal-confirm': '確定',
-            'modal-cancel': '取消'
+            'execute-btn': '執行'
           },
           en: {
             'nav-title': 'WhatsApp Bot',
@@ -1627,12 +1619,7 @@
             'export-logs-btn': 'Export Logs',
             'terminal-title': 'Admin Terminal (npm install only)',
             'terminal-placeholder': 'e.g. npm i axios',
-            'execute-btn': 'Execute',
-            'modal-group': 'Groups',
-            'modal-contact': 'Contacts',
-            'modal-search': 'Search name...',
-            'modal-confirm': 'OK',
-            'modal-cancel': 'Cancel'
+            'execute-btn': 'Execute'
           }
         };
 
@@ -1681,10 +1668,6 @@
           currentLang = currentLang === 'zh' ? 'en' : 'zh';
           document.getElementById('lang-icon').src = "https://fonts.gstatic.com/s/i/materialicons/translate/v1/24px.svg";
           updatePageLanguage();
-          // 語言切換時同步更新 modal 內容
-          if (document.getElementById('target-modal').style.display === 'flex') {
-            renderTargetModal('group');
-          }
         };
 
         // 下載/更新 HTML 並 F5
