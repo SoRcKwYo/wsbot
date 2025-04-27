@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WhatsApp Bot Control Panel</title>
+    <link data-default-icon="https://static.whatsapp.net/rsrc.php/v4/yP/r/rYZqPCBaG70.png" rel="shortcut icon" href="https://static.whatsapp.net/rsrc.php/v4/yP/r/rYZqPCBaG70.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="https://static.whatsapp.net/rsrc.php/v4/yc/r/hUUuVTz6ZVi.png">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
@@ -1223,7 +1225,7 @@ return res.data;</pre>
         <div class="list-item">
             <div>
                 <strong>觸發條件：</strong>
-                ${command.triggers.map((t) => t.keyword).join(", ")}
+                    ${command.triggers.map((t) => t.quotedMsg ? "(reply)" : t.keyword).join(", ")}
                 <div class="text-gray-500">
                     <strong>回應類型：</strong>${command.response.type}
                 </div>
