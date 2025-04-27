@@ -116,6 +116,7 @@ class WhatsAppBot {
       console.error(`Error saving ${type}:`, error);
     }
   }
+
   initialize() {
     this.client = new Client({
       authStrategy: new LocalAuth({
@@ -128,34 +129,65 @@ class WhatsAppBot {
           "--no-sandbox",
           "--disable-setuid-sandbox",
           "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--disable-extensions",
           "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--disable-web-security",
-          "--disable-features=site-per-process",
-          "--single-process",
-          "--no-zygote",
-          "--disable-background-networking",
-          "--disable-background-timer-throttling",
-          "--disable-client-side-phishing-detection",
-          "--disable-default-apps",
-          "--disable-hang-monitor",
-          "--disable-popup-blocking",
-          "--disable-prompt-on-repost",
-          "--disable-sync",
-          "--metrics-recording-only",
-          "--safebrowsing-disable-auto-update",
-          "--password-store=basic",
-          "--use-mock-keychain",
+          "--disable-gpu",
           "--window-size=1280,720",
+          "--disable-extensions",
+          "--disable-component-extensions-with-background-pages",
+          "--disable-default-apps",
+          "--mute-audio",
+          "--no-default-browser-check",
+          "--no-first-run",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-renderer-backgrounding",
+          "--disable-background-timer-throttling",
+          "--disable-ipc-flooding-protection",
+          "--disable-site-isolation-trials"
         ],
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
-        timeout: 60000,
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (() => {
+          const platform = process.platform;
+          
+          if (platform === 'darwin') { // macOS
+            // 常見的 Chrome 路徑
+            const macPaths = [
+              '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+              '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',
+              '/Applications/Chromium.app/Contents/MacOS/Chromium'
+            ];
+            
+            for (const path of macPaths) {
+              if (existsSync(path)) return path;
+            }
+          } else if (platform === 'win32') { // Windows
+            // 常見的 Chrome 路徑
+            const winPaths = [
+              'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+              'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+              process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe',
+              process.env.PROGRAMFILES + '\\Google\\Chrome\\Application\\chrome.exe',
+              process.env['PROGRAMFILES(X86)'] + '\\Google\\Chrome\\Application\\chrome.exe'
+            ];
+            
+            for (const path of winPaths) {
+              if (existsSync(path)) return path;
+            }
+          }
+          
+          return null; // 找不到時回傳 null，讓 puppeteer 使用內建的
+        })(),
+        ignoreHTTPSErrors: true,
+        timeout: 120000,
+        handleSIGINT: false,
+        protocolTimeout: 60000
       },
+      webVersionCache: {
+        type: "local"
+      },
+      webVersion: '2.2326.10',
       qrMaxRetries: 5,
       authTimeoutMs: 60000,
       takeoverTimeoutMs: 60000,
+      restartOnAuthFail: true
     });
 
     const functionDir = path.join(__dirname, "data", "functions");
@@ -174,9 +206,10 @@ class WhatsAppBot {
     if (this.retryCount < this.maxRetries) {
       this.retryCount++;
       console.log(
-        `Retrying initialization (attempt ${this.retryCount}/${this.maxRetries})...`
+        `Retrying initialization (attempt ${this.retryCount}/${this.maxRetries}) in 8 seconds...`
       );
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 8000));
+      console.log("Attempting reconnection now...");
       await this.initialize();
     } else {
       console.error(
@@ -248,8 +281,6 @@ class WhatsAppBot {
     this.client.on("message_create", (msg) => {
       if (msg.fromMe) {
         this.handleMessage(msg);
-        console.log("Message sent:", msg.body);
-        console.log("Message sent from:", msg.from);
       }
     });
   }
@@ -335,7 +366,7 @@ class WhatsAppBot {
         });
 
         if (isTargetMatch) {
-          await this.sendResponse(msg, command.response, command.id);
+          await this.sendResponse(command, msg);
         }
       }
     }
@@ -353,77 +384,71 @@ class WhatsAppBot {
       const fn = require(funcPath);
       if (typeof fn !== "function") return "function 檔案未正確導出函式。";
       // 支援 async function
-      return await fn(msg,this.client);
+      return await fn(msg, this.client);
     } catch (e) {
       return `執行 function 指令時發生錯誤：${e.message}`;
     }
   }
 
-  async sendResponse(msg, response, commandId) {
+  // 在 sendResponse 中處理不同的回應類型
+ async sendResponse(command, msg) {
+    const sender = msg.fromMe ? msg.to : msg.from; 
     try {
-      switch (response.type) {
+      switch (command.response.type) {
         case "text":
-          await msg.reply(response.content);
+          await msg.reply(command.response.content);
           break;
-        case "image":
+        case "image": {
+          const media = new MessageMedia(
+            "image/jpeg",
+            command.response.content.replace(/^data:image\/(png|jpeg|jpg);base64,/, ""),
+            "image.jpg"
+          );
+          await this.client.sendMessage(sender, media);
+          break;
+        }
+        case "video": {
           try {
-            let media;
-            if (response.content.startsWith("data:")) {
-              // base64 data URL
-              media = new MessageMedia(
-                response.content.split(";")[0].split(":")[1],
-                response.content.split(",")[1]
-              );
-            } else {
-              // assume URL
-              media = await MessageMedia.fromUrl(response.content);
+            // 從 base64 內容建立媒體對象
+            const base64Data = command.response.content.replace(/^data:video\/mp4;base64,/, "");
+            const media = new MessageMedia("video/mp4", base64Data, "video.mp4");
+            
+            // 嘗試直接發送
+            try {
+              await this.client.sendMessage(sender, media);
+              console.log("影片發送成功");
+            } catch (error) {
+              console.error("直接發送影片失敗:", error.message);
+              
+              // 如果直接發送失敗，嘗試使用備份方法
+              const tempFile = path.join(this.tempDir, `temp_video_${Date.now()}.mp4`);
+              console.log("嘗試使用臨時文件發送影片:", tempFile);
+              
+              // 將 base64 數據寫入臨時文件
+              await fs.writeFile(tempFile, Buffer.from(base64Data, 'base64'));
+              
+              // 從文件載入並發送
+              const fileMedia = MessageMedia.fromFilePath(tempFile);
+              await this.client.sendMessage(sender, fileMedia);
+              
+              // 清理臨時文件
+              try { await fs.unlink(tempFile); } catch (e) { console.error("刪除臨時文件失敗:", e); }
             }
-            await msg.reply(media);
-          } catch (mediaError) {
-            console.error("Image loading error:", mediaError);
-            await msg.reply("Sorry, image content is not available.");
+          } catch (error) {
+            console.error("影片發送流程錯誤:", error);
+            console.log("影片內容長度:", command.response.content.length);
+            await msg.reply("影片發送失敗，請再試一次或通知管理員檢查影片檔案大小。");
           }
           break;
-        case "video":
-          try {
-            let media;
-            if (response.content.startsWith("/data/video/")) {
-              const filePath = path.join(__dirname, response.content);
-              media = MessageMedia.fromFilePath(filePath);
-            } else if (response.content.startsWith("data:")) {
-              media = MessageMedia.fromDataUrl(response.content);
-            } else {
-              media = await MessageMedia.fromUrl(response.content);
-            }
-            await client.sendMessage(msg.from, media);
-          } catch (mediaError) {
-            if (response.content.startsWith("/data/video/")) {
-              const filePath = path.join(__dirname, response.content);
-              try {
-                const stat = require("fs").statSync(filePath);
-                console.error("[Video debug] filePath:", filePath);
-                console.error("[Video debug] stat:", stat);
-              } catch (e) {
-                console.error("[Video debug] stat error:", e);
-              }
-            }
-            console.error("Video loading error:", mediaError);
-            await msg.reply("Sorry, video content is not available.");
-          }
+        }
+        case "function": {
+          await this.runDynamicFunction(command.id, msg);
           break;
-        case "function":
-          if (commandId) {
-            const result = await this.runDynamicFunction(commandId, msg);
-            await msg.reply(result);
-          } else {
-            await msg.reply("找不到 function 指令 id。");
-          }
-          break;
-        default:
-          console.warn("Unknown response type:", response.type);
+        }
       }
     } catch (error) {
-      console.error("Error sending response:", error);
+      console.error("執行指令回應錯誤:", error);
+      await msg.reply("執行指令時出錯，請稍後重試或通知管理員。");
     }
   }
 
@@ -724,27 +749,6 @@ app.post("/api/commands", async (req, res) => {
       // 只存原始內容在 commands.json
       commandData.response.content = commandData.response.content;
     }
-    // 如果是 video，將 base64 存檔到 /data/video
-    if (
-      commandData.response &&
-      commandData.response.type === "video" &&
-      commandData.response.content.startsWith("data:")
-    ) {
-      const videoDir = path.join(__dirname, "data", "video");
-      if (!existsSync(videoDir)) {
-        await fs.mkdir(videoDir, { recursive: true });
-      }
-      const ext = commandData.response.content.substring(
-        11,
-        commandData.response.content.indexOf(";")
-      );
-      const fileExt = ext.split("/")[1] || "mp4";
-      const fileName = `${commandData.id}.${fileExt}`;
-      const filePath = path.join(videoDir, fileName);
-      const base64Data = commandData.response.content.split(",")[1];
-      await fs.writeFile(filePath, base64Data, "base64");
-      commandData.response.content = `/data/video/${fileName}`;
-    }
     bot.activeCommands.set(commandData.id, commandData);
     await bot.saveData("commands");
     res.json({ success: true, command: commandData });
@@ -768,26 +772,6 @@ app.put("/api/commands/:id", async (req, res) => {
       const code = `module.exports = async function(msg) {\n${commandData.response.content}\n}`;
       await fs.writeFile(funcPath, code, "utf8");
       commandData.response.content = commandData.response.content;
-    }
-    if (
-      commandData.response &&
-      commandData.response.type === "video" &&
-      commandData.response.content.startsWith("data:")
-    ) {
-      const videoDir = path.join(__dirname, "data", "video");
-      if (!existsSync(videoDir)) {
-        await fs.mkdir(videoDir, { recursive: true });
-      }
-      const ext = commandData.response.content.substring(
-        11,
-        commandData.response.content.indexOf(";")
-      );
-      const fileExt = ext.split("/")[1] || "mp4";
-      const fileName = `${id}.${fileExt}`;
-      const filePath = path.join(videoDir, fileName);
-      const base64Data = commandData.response.content.split(",")[1];
-      await fs.writeFile(filePath, base64Data, "base64");
-      commandData.response.content = `/data/video/${fileName}`;
     }
     bot.activeCommands.set(id, commandData);
     await bot.saveData("commands");

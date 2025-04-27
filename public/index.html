@@ -29,6 +29,19 @@
         --spacing: 8px;
       }
 
+      :root[data-theme="dark"] {
+        --primary: #81c784;
+        --primary-light: #a5d6a7;
+        --primary-dark: #519657;
+        --secondary: #66bb6a;
+        --error: #ef5350;
+        --success: #66bb6a;
+        --background: #121212;
+        --surface: #1e1e1e;
+        --text-primary: rgba(255, 255, 255, 0.87);
+        --text-secondary: rgba(255, 255, 255, 0.6);
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -537,7 +550,10 @@
     </nav>
 
     <div class="nav-bottom-actions-floating">
-      <button id="lang-toggle" class="nav-action-btn" title="切換語言" style="display:flex;align-items:center;justify-content:center;padding:6px 0;width:44px;height:44px;min-width:44px;min-height:44px;background:#fff;border:1.5px solid var(--primary-light);border-radius:50%;box-shadow:0 1px 4px rgba(76,175,80,0.10);">
+      <button id="theme-toggle" class="nav-action-btn" title="切換深淺色" style="display:flex;align-items:center;justify-content:center;padding:6px 0;width:44px;height:44px;min-width:44px;min-height:44px;background:#fff;border:1.5px solid var(--primary-light);border-radius:50%;box-shadow:0 1px 4px rgba(76,175,80,0.10);">
+        <img id="theme-icon" src="https://fonts.gstatic.com/s/i/materialicons/dark_mode/v1/24px.svg" alt="Theme" style="width:22px;height:22px;" />
+      </button>
+      <button id="lang-toggle" class="nav-action-btn" title="切換語言" style="display:flex;align-items:center;justify-content:center;padding:6px 0;width:44px;height:44px;min-width:44px;min-height:44px;background:#fff;border:1.5px solid var(--primary-light);border-radius:50%;box-shadow:0 1px 4px rgba(76,175,80,0.10);margin:10px 0;">
       <img id="lang-icon" src="https://fonts.gstatic.com/s/i/materialicons/translate/v1/24px.svg" alt="Lang" style="width:22px;height:22px;" />
       </button>
       <button id="update-html-btn" class="nav-action-btn update-btn" style="padding:6px 0;width:44px;height:44px;min-width:44px;min-height:44px;background:var(--primary-dark);border-radius:50%;display:flex;align-items:center;justify-content:center;">
@@ -1687,6 +1703,27 @@
           currentLang = currentLang === 'zh' ? 'en' : 'zh';
           document.getElementById('lang-icon').src = "https://fonts.gstatic.com/s/i/materialicons/translate/v1/24px.svg";
           updatePageLanguage();
+        };
+
+        // 深淺色模式切換
+        let isDark = localStorage.getItem('theme') === 'dark';
+        const root = document.documentElement;
+        if (isDark) {
+          root.setAttribute('data-theme', 'dark');
+          document.getElementById('theme-icon').src = "https://fonts.gstatic.com/s/i/materialicons/light_mode/v1/24px.svg";
+        }
+        
+        document.getElementById('theme-toggle').onclick = function() {
+          isDark = !isDark;
+          if (isDark) {
+            root.setAttribute('data-theme', 'dark');
+            document.getElementById('theme-icon').src = "https://fonts.gstatic.com/s/i/materialicons/light_mode/v1/24px.svg";
+            localStorage.setItem('theme', 'dark');
+          } else {
+            root.removeAttribute('data-theme');
+            document.getElementById('theme-icon').src = "https://fonts.gstatic.com/s/i/materialicons/dark_mode/v1/24px.svg";
+            localStorage.setItem('theme', 'light');
+          }
         };
 
         // 下載/更新 HTML 並 F5
