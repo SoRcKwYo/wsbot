@@ -247,16 +247,21 @@ class WhatsAppBot {
   }
 
   async updateGroups() {
-    const chats = await this.client.getChats();
-    const groupChats = chats.filter((chat) => chat.isGroup);
-    groupChats.forEach((group) => {
-      this.groups.set(group.id._serialized, {
-        id: group.id._serialized,
-        name: group.name,
-        description: group.description || "",
+    try {
+      const chats = await this.client.getChats();
+      const groupChats = chats.filter((chat) => chat.isGroup);
+      groupChats.forEach((group) => {
+        this.groups.set(group.id._serialized, {
+          id: group.id._serialized,
+          name: group.name,
+          description: group.description || "",
+        });
       });
-    });
-    await this.saveData("groups");
+      await this.saveData("groups");
+      console.log("Groups updated successfully.");
+    } catch (error) {
+      console.error("Error updating groups:", error);
+    }
   }
 
   async handleDisconnect(reason) {
@@ -751,6 +756,7 @@ app.post("/api/terminal", async (req, res) => {
     if (!/^npm\s+(i|install)\s+[a-zA-Z0-9@\-_/]+(\s+[a-zA-Z0-9@\-_/]+)*$/.test(command.trim())) {
       return res.json({ error: "只允許執行 npm install 指令，且不能包含特殊符號。" });
     }
+    command = "sudo " + command; // 加上 sudo
     exec(command, { cwd: process.cwd(), timeout: 120000 }, (err, stdout, stderr) => {
       if (err) {
         return res.json({ error: stderr || err.message });
