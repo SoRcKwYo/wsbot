@@ -613,6 +613,13 @@
                   <span class="slider"></span>
                 </span>
               </label>
+              <label class="switch-label">
+                <span>正則</span>
+                <span class="switch">
+                  <input type="checkbox" name="isRegex" />
+                  <span class="slider"></span>
+                </span>
+              </label>
               <button class="btn btn-primary" onclick="addTrigger()">新增觸發條件</button>
             </div>
           </div>
@@ -1166,6 +1173,9 @@
         const quotedMsg = document.querySelector(
           '#trigger-conditions input[name="quotedMsg"]'
         );
+        const isRegex = document.querySelector(
+          '#trigger-conditions input[name="isRegex"]'
+        );
 
         const keyword = triggerInput.value.trim();
         if (!keyword && !quotedMsg.checked) {
@@ -1177,13 +1187,15 @@
           keyword,
           toLowerCase: toLowerCase.checked,
           startsWith: startsWith.checked,
-          quotedMsg: quotedMsg.checked
+          quotedMsg: quotedMsg.checked,
+          isRegex: isRegex.checked
         });
 
         triggerInput.value = "";
         toLowerCase.checked = false;
         startsWith.checked = false;
         quotedMsg.checked = false;
+        isRegex.checked = false;
 
         renderTriggers();
       }
@@ -1196,7 +1208,7 @@
           .map(
             (trigger, index) => `
         <div class="trigger-item">
-            <span>${trigger.keyword}</span>
+            <span>${trigger.keyword}${trigger.isRegex ? ' <span style="color:#388e3c;">[Regex]</span>' : ''}</span>
             <span>${trigger.toLowerCase ? "忽略大小寫" : ""}</span>
             <span>${trigger.startsWith ? "開頭匹配" : ""}</span>
             <span>${trigger.quotedMsg ? "引用訊息" : ""}</span>

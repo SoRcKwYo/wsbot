@@ -283,28 +283,37 @@ class WhatsAppBot {
         const content = trigger.toLowerCase
           ? messageContent.toLowerCase()
           : messageContent;
-        // 判斷 quotedMsg 條件
         const isReply = msg.hasQuotedMsg || (msg._data && msg._data.quotedMsg);
-        if (trigger.keyword && trigger.quotedMsg) {
-          // 需要同時符合 keyword 與 reply
-          if ((trigger.startsWith ? content.startsWith(trigger.keyword) : content.includes(trigger.keyword)) && isReply) {
-            shouldTrigger = true;
+        if (trigger.isRegex) {
+          try {
+            const regex = new RegExp(trigger.keyword, trigger.toLowerCase ? 'i' : undefined);
+            if (regex.test(content)) {
+              if (trigger.quotedMsg) {
+                if (isReply) shouldTrigger = true;
+              } else {
+                shouldTrigger = true;
+              }
+            }
+          } catch (e) {
+            // 無效正則不觸發
           }
-        } else if (trigger.keyword && !trigger.quotedMsg) {
-          // 只需符合 keyword
-          if (trigger.startsWith ? content.startsWith(trigger.keyword) : content.includes(trigger.keyword)) {
-            shouldTrigger = true;
+        } else if (trigger.keyword) {
+          const match = trigger.startsWith ? content.startsWith(trigger.keyword) : content.includes(trigger.keyword);
+          if (match) {
+            if (trigger.quotedMsg) {
+              if (isReply) shouldTrigger = true;
+            } else {
+              shouldTrigger = true;
+            }
           }
-        } else if (!trigger.keyword && trigger.quotedMsg) {
-          // 只需是 reply
-          if (isReply) {
-            shouldTrigger = true;
-          }
+        } else if (trigger.quotedMsg && !trigger.keyword && !trigger.isRegex) {
+          if (isReply) shouldTrigger = true;
         }
         if (shouldTrigger) break;
       }
 
       if (shouldTrigger) {
+        console.log('觸發條件 matched triggers:', JSON.stringify(command.triggers, null, 2));
         const isTargetMatch = command.targets.some((target) => {
           if (chat.isGroup) {
             return target.type === "group" && target.id === chat.id._serialized;
@@ -366,11 +375,12 @@ class WhatsAppBot {
         case "video":
           try {
             let media;
-            if (response.content.startsWith("data:")) {
-              // base64 data URL
+            if (response.content.startsWith("/data/video/")) {
+              const filePath = path.join(__dirname, response.content);
+              media = MessageMedia.fromFilePath(filePath);
+            } else if (response.content.startsWith("data:")) {
               media = MessageMedia.fromDataUrl(response.content);
             } else {
-              // assume URL
               media = await MessageMedia.fromUrl(response.content);
             }
             await msg.reply(media);
@@ -483,10 +493,12 @@ const bot = new WhatsAppBot();
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '100mb' }));
+app.use(bodyParser.urlencoded({ limit: '100mb', extended: true }));
 // 修改靜態文件服務
 app.use(express.static(path.join(__dirname, "public")));
 app.use('/data/functions', express.static(path.join(__dirname, 'data', 'functions')));
+app.use('/data/video', express.static(path.join(__dirname, 'data', 'video')));
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
@@ -685,11 +697,62 @@ app.post("/api/commands", async (req, res) => {
       // 只存原始內容在 commands.json
       commandData.response.content = commandData.response.content;
     }
+    // 如果是 video，將 base64 存檔到 /data/video
+    if (commandData.response && commandData.response.type === "video" && commandData.response.content.startsWith("data:")) {
+      const videoDir = path.join(__dirname, "data", "video");
+      if (!existsSync(videoDir)) {
+        await fs.mkdir(videoDir, { recursive: true });
+      }
+      const ext = commandData.response.content.substring(11, commandData.response.content.indexOf(";"));
+      const fileExt = ext.split("/")[1] || "mp4";
+      const fileName = `${commandData.id}.${fileExt}`;
+      const filePath = path.join(videoDir, fileName);
+      const base64Data = commandData.response.content.split(",")[1];
+      await fs.writeFile(filePath, base64Data, "base64");
+      commandData.response.content = `/data/video/${fileName}`;
+    }
     bot.activeCommands.set(commandData.id, commandData);
     await bot.saveData("commands");
     res.json({ success: true, command: commandData });
   } catch (error) {
     res.status(500).json({ message: "添加指令失敗" });
+  }
+});
+
+app.put("/api/commands/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const commandData = req.body;
+    commandData.id = id;
+    // 如果是 function 指令，寫入 data/functions/{id}.js
+    if (commandData.response && commandData.response.type === "function") {
+      const funcDir = path.join(__dirname, "data", "functions");
+      if (!existsSync(funcDir)) {
+        await fs.mkdir(funcDir, { recursive: true });
+      }
+      const funcPath = path.join(funcDir, `${id}.js`);
+      const code = `module.exports = async function(msg) {\n${commandData.response.content}\n}`;
+      await fs.writeFile(funcPath, code, "utf8");
+      commandData.response.content = commandData.response.content;
+    }
+    if (commandData.response && commandData.response.type === "video" && commandData.response.content.startsWith("data:")) {
+      const videoDir = path.join(__dirname, "data", "video");
+      if (!existsSync(videoDir)) {
+        await fs.mkdir(videoDir, { recursive: true });
+      }
+      const ext = commandData.response.content.substring(11, commandData.response.content.indexOf(";"));
+      const fileExt = ext.split("/")[1] || "mp4";
+      const fileName = `${id}.${fileExt}`;
+      const filePath = path.join(videoDir, fileName);
+      const base64Data = commandData.response.content.split(",")[1];
+      await fs.writeFile(filePath, base64Data, "base64");
+      commandData.response.content = `/data/video/${fileName}`;
+    }
+    bot.activeCommands.set(id, commandData);
+    await bot.saveData("commands");
+    res.json({ success: true, command: commandData });
+  } catch (error) {
+    res.status(500).json({ message: "更新指令失敗" });
   }
 });
 
@@ -720,31 +783,6 @@ app.delete("/api/commands/:id", async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ message: "刪除指令失敗" });
-  }
-});
-
-// 新增：編輯指令
-app.put("/api/commands/:id", async (req, res) => {
-  try {
-    const id = req.params.id;
-    const commandData = req.body;
-    commandData.id = id;
-    // 如果是 function 指令，寫入 data/functions/{id}.js
-    if (commandData.response && commandData.response.type === "function") {
-      const funcDir = path.join(__dirname, "data", "functions");
-      if (!existsSync(funcDir)) {
-        await fs.mkdir(funcDir, { recursive: true });
-      }
-      const funcPath = path.join(funcDir, `${id}.js`);
-      const code = `module.exports = async function(msg) {\n${commandData.response.content}\n}`;
-      await fs.writeFile(funcPath, code, "utf8");
-      commandData.response.content = commandData.response.content;
-    }
-    bot.activeCommands.set(id, commandData);
-    await bot.saveData("commands");
-    res.json({ success: true, command: commandData });
-  } catch (error) {
-    res.status(500).json({ message: "更新指令失敗" });
   }
 });
 
