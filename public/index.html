@@ -495,6 +495,13 @@
                   <span class="slider"></span>
                 </span>
               </label>
+              <label class="switch-label">
+                <span>引用訊息</span>
+                <span class="switch">
+                  <input type="checkbox" name="quotedMsg" />
+                  <span class="slider"></span>
+                </span>
+              </label>
               <button class="btn btn-primary" onclick="addTrigger()">新增觸發條件</button>
             </div>
           </div>
@@ -569,6 +576,7 @@ return res.data;</pre>
       let currentCommands = [];
       let currentTriggers = [];
       let editingCommandId = null; // 新增：追蹤目前是否在編輯指令
+      let editingContactId = null;
       const socket = io();
       let isConnected = false;
       let codeMirrorEditor = null;
@@ -635,6 +643,16 @@ return res.data;</pre>
             editingCommandId = null;
             const saveBtn = document.querySelector("#commands .btn.btn-primary");
             if (saveBtn) saveBtn.textContent = "儲存指令";
+          }
+
+          // 清空聯絡人表單內容（只在切換到 contacts）
+          if (item.dataset.section === "contacts") {
+            document.getElementById("contact-prefix").value = "";
+            document.getElementById("contact-number").value = "";
+            document.getElementById("contact-name").value = "";
+            editingContactId = null;
+            const saveBtn = document.querySelector("#contacts .btn.btn-primary");
+            if (saveBtn) saveBtn.textContent = "新增聯絡人";
           }
         });
       });
@@ -926,27 +944,34 @@ return res.data;</pre>
         }
 
         try {
-          const response = await fetch("/api/contacts", {
-            method: "POST",
+          let url = "/api/contacts";
+          let method = "POST";
+          let body = { prefix, number, name };
+          if (editingContactId) {
+            url = `/api/contacts/${editingContactId}`;
+            method = "PUT";
+            body = { prefix, number, name };
+          }
+          const response = await fetch(url, {
+            method,
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              prefix,
-              number,
-              name,
-            }),
+            body: JSON.stringify(body),
           });
 
           if (response.ok) {
             prefixInput.value = "";
             numberInput.value = "";
             nameInput.value = "";
+            editingContactId = null;
+            const saveBtn = document.querySelector("#contacts .btn.btn-primary");
+            if (saveBtn) saveBtn.textContent = "新增聯絡人";
             await initializeData();
           }
         } catch (error) {
           console.error("Error adding contact:", error);
-          alert("添加聯絡人失敗");
+          alert(editingContactId ? "更新聯絡人失敗" : "添加聯絡人失敗");
         }
       }
 
@@ -960,11 +985,25 @@ return res.data;</pre>
                 <strong>${contact.name}</strong>
                 <div class="text-gray-500">${contact.number}</div>
             </div>
-            <button class="btn btn-danger" onclick="deleteContact('${contact.id}')">刪除</button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" onclick="editContact('${contact.id}')">編輯</button>
+              <button class="btn btn-danger" onclick="deleteContact('${contact.id}')">刪除</button>
+            </div>
         </div>
     `
           )
           .join("");
+      }
+
+      function editContact(id) {
+        const contact = currentContacts.find(c => c.id === id);
+        if (!contact) return;
+        document.getElementById("contact-prefix").value = contact.number.slice(0, contact.number.length - (contact.number.length > 8 ? 8 : 0));
+        document.getElementById("contact-number").value = contact.number.slice(-8);
+        document.getElementById("contact-name").value = contact.name;
+        editingContactId = id;
+        const saveBtn = document.querySelector("#contacts .btn.btn-primary");
+        if (saveBtn) saveBtn.textContent = "更新聯絡人";
       }
 
       async function deleteContact(id) {
@@ -995,10 +1034,13 @@ return res.data;</pre>
         const startsWith = document.querySelector(
           '#trigger-conditions input[name="startsWith"]'
         );
+        const quotedMsg = document.querySelector(
+          '#trigger-conditions input[name="quotedMsg"]'
+        );
 
         const keyword = triggerInput.value.trim();
-        if (!keyword) {
-          alert("請輸入觸發關鍵詞");
+        if (!keyword && !quotedMsg.checked) {
+          alert("請輸入觸發關鍵詞或勾選引用訊息");
           return;
         }
 
@@ -1006,11 +1048,13 @@ return res.data;</pre>
           keyword,
           toLowerCase: toLowerCase.checked,
           startsWith: startsWith.checked,
+          quotedMsg: quotedMsg.checked
         });
 
         triggerInput.value = "";
         toLowerCase.checked = false;
         startsWith.checked = false;
+        quotedMsg.checked = false;
 
         renderTriggers();
       }
@@ -1026,6 +1070,7 @@ return res.data;</pre>
             <span>${trigger.keyword}</span>
             <span>${trigger.toLowerCase ? "忽略大小寫" : ""}</span>
             <span>${trigger.startsWith ? "開頭匹配" : ""}</span>
+            <span>${trigger.quotedMsg ? "引用訊息" : ""}</span>
             <button class="btn btn-danger" onclick="removeTrigger(${index})">刪除</button>
         </div>
     `
@@ -1156,6 +1201,12 @@ return res.data;</pre>
             // 恢復儲存按鈕文字
             const saveBtn = document.querySelector("#commands .btn.btn-primary");
             if (saveBtn) saveBtn.textContent = "儲存指令";
+            // 清空指令編輯區內容
+            document.getElementById("response-type").value = "text";
+            document.getElementById("response-type").dispatchEvent(new Event("change"));
+            updateTriggerTargets();
+            const checkboxes = document.querySelectorAll("#trigger-targets input[type='checkbox']");
+            checkboxes.forEach(checkbox => { checkbox.checked = false; });
             await initializeData();
           }
         } catch (error) {
