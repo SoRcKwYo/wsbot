@@ -119,6 +119,18 @@ class WhatsAppBot {
   }
 
   initialize() {
+    // 清除潛在的鎖檔案先
+    try {
+      const sessionPath = path.join(this.authDir, 'session-whatsapp-bot');
+      const lockFile = path.join(sessionPath, 'SingletonLock');
+      if (existsSync(lockFile)) {
+        rimraf(lockFile);
+        console.log("預先清除鎖檔案 SingletonLock");
+      }
+    } catch (e) {
+      console.log("清除鎖檔案時出錯 (可忽略):", e.message);
+    }
+
     this.client = new Client({
       authStrategy: new LocalAuth({
         clientId: "whatsapp-bot",
@@ -143,7 +155,8 @@ class WhatsAppBot {
           "--disable-renderer-backgrounding",
           "--disable-background-timer-throttling",
           "--disable-ipc-flooding-protection",
-          "--disable-site-isolation-trials"
+          "--disable-site-isolation-trials",
+          "--disable-features=IsolateOrigins,site-per-process",
         ],
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (() => {
           const platform = process.platform;
@@ -177,18 +190,20 @@ class WhatsAppBot {
           return null; // 找不到時回傳 null，讓 puppeteer 使用內建的
         })(),
         ignoreHTTPSErrors: true,
-        timeout: 120000,
+        timeout: 180000, // 增加到 180 秒
         handleSIGINT: false,
-        protocolTimeout: 60000
+        protocolTimeout: 120000 // 增加到 120 秒
       },
       webVersionCache: {
         type: "local"
       },
       webVersion: '2.2326.10',
-      qrMaxRetries: 5,
-      authTimeoutMs: 60000,
-      takeoverTimeoutMs: 60000,
-      restartOnAuthFail: true
+      qrMaxRetries: 5,  // 降低 QR 碼重試次數，避免不必要的重試
+      authTimeoutMs: 180000, // 增加認證超時時間
+      takeoverTimeoutMs: 180000, // 增加接管超時時間
+      restartOnAuthFail: true,
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36', // 使用與您環境匹配的用戶代理
+      fallbackUserAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
     });
 
     const functionDir = path.join(__dirname, "data", "functions");
@@ -196,9 +211,19 @@ class WhatsAppBot {
       fs.mkdir(functionDir, { recursive: true });
     }
 
+    console.log("正在初始化 WhatsApp 客戶端，嘗試恢復會話...");
     this.setupEventHandlers();
+    
+    // 特殊檢查：在初始化前先檢查一下會話狀態
+    this.client.pupBrowser = null; // 防止初始化前訪問未定義的 pupBrowser
+    const sessionDir = path.join(this.authDir, 'session-whatsapp-bot', 'Default');
+    const cookiesFile = path.join(sessionDir, 'Cookies');
+    const hasExistingSession = existsSync(cookiesFile);
+
+    console.log("會話狀態檢查:", hasExistingSession ? "發現已有會話，嘗試恢復" : "未發現會話，將顯示 QR 碼");
+
     return this.client.initialize().catch((error) => {
-      console.error("Failed to initialize client:", error);
+      console.error("初始化客戶端失敗:", error);
       this.handleInitializationError(error);
     });
   }
@@ -388,10 +413,17 @@ class WhatsAppBot {
   }
 
   async handleDisconnect(reason) {
+    // 只有在非用戶主動退出時才嘗試重新連接
     if (reason !== "user" && this.retryCount < this.maxRetries) {
       console.log("Attempting to reconnect...");
       await new Promise((resolve) => setTimeout(resolve, 5000));
       await this.initialize();
+    } else if (reason === "user") {
+      console.log("User initiated disconnect, not attempting reconnection.");
+      // 用戶主動退出時正確關閉客戶端，但不清除會話數據
+      if (this.client) {
+        console.log("Properly closing WhatsApp session without destroying auth data...");
+      }
     }
   }
 
@@ -592,10 +624,20 @@ class WhatsAppBot {
           console.error("Error in destroy event handler:", error);
         }
       }
-      await this.client.destroy();
+      
+      // 使用更優雅的方式關閉客戶端，避免刪除認證數據
+      try {
+        console.log("正常關閉 WhatsApp 客戶端，保留認證資料...");
+        // 等待瀏覽器優雅關閉
+        await this.client.pupBrowser.close().catch(e => console.log("關閉瀏覽器時出錯，但可以忽略:", e.message));
+        await this.client.destroy();
+      } catch (e) {
+        console.log("關閉客戶端時出錯，但可以忽略:", e.message);
+      }
+      
       this.client = null;
       this.isInitialized = false;
-      console.log("client destroy done");
+      console.log("客戶端已正確關閉，認證資料已保留");
     }
   }
 }
@@ -712,7 +754,7 @@ bot.on("qr", async (qrData) => {
       type: "jpg",
       quality: 0.9,
       margin: 1,
-      width: 800,
+      width: 600,
       color: {
         dark: "#000000",
         light: "#ffffff",
@@ -991,6 +1033,51 @@ const startServer = async () => {
   const PORT = process.env.PORT || 3333;
   server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+  });
+  
+  // 添加處理系統信號的代碼，確保優雅關閉
+  const handleGracefulShutdown = async (signal) => {
+    console.log(`收到 ${signal} 信號，準備優雅關閉...`);
+    try {
+      // 確保瀏覽器和會話資料正確保存
+      if (bot && bot.client && bot.client.pupBrowser) {
+        console.log('保存 WhatsApp 會話狀態...');
+        // 保存會話狀態但不真正關閉
+        await bot.client.pupBrowser.disconnect();
+        console.log('會話狀態保存完成');
+      }
+      
+      // 保存各類數據
+      if (bot.groups.size > 0) await bot.saveData("groups");
+      if (bot.contacts.size > 0) await bot.saveData("contacts");
+      if (bot.activeCommands.size > 0) await bot.saveData("commands");
+      
+      console.log('所有數據保存完成，程序將退出');
+      
+      // 延遲一秒確保數據寫入完成
+      setTimeout(() => {
+        process.exit(0);
+      }, 1000);
+    } catch (err) {
+      console.error('關閉過程中發生錯誤:', err);
+      process.exit(1);
+    }
+  };
+  
+  // 註冊信號處理器
+  process.on('SIGINT', () => handleGracefulShutdown('SIGINT')); // Ctrl+C
+  process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM')); // kill
+  process.on('SIGHUP', () => handleGracefulShutdown('SIGHUP')); // 終端關閉
+  
+  // 處理未捕獲的異常，避免進程崩潰
+  process.on('uncaughtException', async (err) => {
+    console.error('未捕獲的異常:', err);
+    await handleGracefulShutdown('uncaughtException');
+  });
+  
+  process.on('unhandledRejection', async (reason, promise) => {
+    console.error('未處理的 Promise 拒絕:', reason);
+    await handleGracefulShutdown('unhandledRejection');
   });
 };
 
