@@ -8,6 +8,7 @@ const bodyParser = require("body-parser");
 const fs = require("fs").promises;
 const path = require("path");
 const existsSync = require("fs").existsSync;
+const rimraf = require("rimraf").sync; // 用於清除目錄
 const { exec } = require("child_process");
 
 class WhatsAppBot {
@@ -203,6 +204,89 @@ class WhatsAppBot {
   }
 
   async handleInitializationError(error) {
+    const errorText = error.toString();
+    
+    // 處理 SingletonLock 或 Failed to launch browser 錯誤
+    if (errorText.includes("SingletonLock") || errorText.includes("Failed to launch the browser process")) {
+      console.log("檢測到 Chrome 啟動問題，嘗試徹底清理 Chrome 設定檔...");
+      
+      try {
+        // 徹底清理所有 Chrome 設定目錄
+        const sessionPath = path.join(this.authDir, 'session-whatsapp-bot');
+        
+        // 查看是否有進程在使用 Chrome
+        try {
+          if (process.platform === 'darwin' || process.platform === 'linux') {
+            // 使用 ps 查找可能持有 Chrome 檔案鎖的進程
+            exec("ps aux | grep -i chrome | grep -v grep", async (err, stdout) => {
+              if (stdout && stdout.length > 0) {
+                console.log("發現可能的 Chrome 進程:", stdout);
+                console.log("嘗試終止這些進程...");
+                exec("pkill -f chrome", () => {
+                  console.log("已嘗試終止 Chrome 相關進程");
+                });
+              }
+            });
+          } else if (process.platform === 'win32') {
+            exec("tasklist | findstr chrome", async (err, stdout) => {
+              if (stdout && stdout.length > 0) {
+                console.log("發現可能的 Chrome 進程:", stdout);
+                exec("taskkill /F /IM chrome.exe", () => {
+                  console.log("已嘗試終止 Chrome 相關進程");
+                });
+              }
+            });
+          }
+        } catch (e) {
+          console.log("查找進程時出錯:", e);
+        }
+        
+        // 等待進程終止
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // 1. 首先嘗試刪除鎖文件
+        const lockFile = path.join(sessionPath, 'SingletonLock');
+        if (existsSync(lockFile)) {
+          console.log("刪除鎖文件:", lockFile);
+          try { 
+            await fs.unlink(lockFile);
+          } catch (e) {
+            console.log("無法直接刪除鎖文件，將使用強制方式");
+            rimraf(lockFile);
+          }
+        }
+        
+        // 2. 如果還是無法解決，嘗試重命名整個 Chrome 設定目錄
+        if (existsSync(sessionPath)) {
+          const backupDir = `${sessionPath}_backup_${Date.now()}`;
+          console.log(`備份並重建 Chrome 設定目錄: ${sessionPath} -> ${backupDir}`);
+          
+          try {
+            // 重命名舊目錄
+            await fs.rename(sessionPath, backupDir);
+          } catch (e) {
+            console.log("無法重命名目錄，嘗試使用 rimraf 強制刪除");
+            rimraf(sessionPath);
+          }
+          
+          // 確保 Chrome 設定目錄存在
+          await fs.mkdir(sessionPath, { recursive: true });
+        }
+        
+        console.log("Chrome 設定檔清理完成，等待 5 秒後重新嘗試...");
+        // 等待一段時間再重試，讓系統有時間釋放所有資源
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        console.log("重新嘗試初始化 WhatsApp 客戶端...");
+        
+        // 重製重試計數，因為我們進行了徹底清理
+        this.retryCount = 0;
+        return this.initialize();
+      } catch (clearError) {
+        console.error("清理 Chrome 設定檔時發生錯誤:", clearError);
+      }
+    }
+    
+    // 一般性重試邏輯
     if (this.retryCount < this.maxRetries) {
       this.retryCount++;
       console.log(

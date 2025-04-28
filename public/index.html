@@ -640,6 +640,24 @@
             </div>
           </div>
 
+          <!-- 回應類型選擇區塊 -->
+          <div class="form-group">
+            <label for="responseType">回應類型</label>
+            <div class="d-flex align-items-center">
+              <select id="responseType" class="form-control" required>
+                <option value="text">文字</option>
+                <option value="image">圖片</option>
+                <option value="video">影片</option>
+                <option value="function">自定義功能</option>
+              </select>
+              <div id="templateBtnContainer" style="display: none; margin-left: 10px;">
+                <button type="button" id="templateBtn" class="btn btn-sm btn-info">
+                  <i class="material-icons" style="font-size:18px">code</i> AI範本
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div class="form-group">
             <label>回應類型</label>
             <select id="response-type">
@@ -687,6 +705,78 @@
               <div style="margin-top:18px;text-align:right;">
                 <button class="btn btn-primary" id="modal-confirm">確定</button>
                 <button class="btn btn-danger" id="modal-cancel">取消</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 範本選擇彈窗 -->
+          <div class="modal fade" id="templateModal" tabindex="-1" role="dialog" aria-labelledby="templateModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="templateModalLabel">選擇功能範本</h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action" data-template="ai.js">
+                      <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">AI 聊天機器人</h5>
+                        <small>OpenRouter API</small>
+                      </div>
+                      <p class="mb-1">使用 OpenRouter API 實現 AI 聊天功能，支援對話歷史記錄保存。</p>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI 範本配置彈窗 -->
+          <div class="modal fade" id="aiConfigModal" tabindex="-1" role="dialog" aria-labelledby="aiConfigModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="aiConfigModalLabel">AI 範本配置</h5>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <form id="aiConfigForm">
+                    <div class="form-group">
+                      <label for="openrouterApiKey">OPENROUTER_API_KEY <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" id="openrouterApiKey" required>
+                      <small class="form-text text-muted">請輸入您的 OpenRouter API 金鑰</small>
+                    </div>
+                    <div class="form-group">
+                      <label for="aiModel">MODEL <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" id="aiModel" required>
+                      <small class="form-text text-muted">例如：openai/gpt-4-turbo, anthropic/claude-3-opus-20240229</small>
+                    </div>
+                    <div class="form-group">
+                      <label for="apiUrl">API_URL <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" id="apiUrl" required>
+                      <small class="form-text text-muted">例如：https://openrouter.ai/api/v1/chat/completions</small>
+                    </div>
+                    <div class="form-group">
+                      <label for="defaultSystemPrompt">defaultSystemPrompt</label>
+                      <textarea class="form-control" id="defaultSystemPrompt" rows="3"></textarea>
+                      <small class="form-text text-muted">系統提示詞，可留空</small>
+                    </div>
+                    <div class="form-group">
+                      <label for="userSystemPrompts">userSystemPrompts</label>
+                      <textarea class="form-control" id="userSystemPrompts" rows="3"></textarea>
+                      <small class="form-text text-muted">格式：{"userId": "提示詞"} 可留空</small>
+                    </div>
+                  </form>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                  <button type="button" class="btn btn-primary" id="applyAiConfig">應用配置</button>
+                </div>
               </div>
             </div>
           </div>
@@ -993,6 +1083,94 @@
           textarea.style.display = "block";
           functionHelp.style.display = "none";
         }
+      });
+
+      // 監聽回應類型變化，顯示或隱藏範本按鈕
+      document.getElementById("responseType").addEventListener("change", function() {
+        const templateBtnContainer = document.getElementById("templateBtnContainer");
+        if (this.value === "function") {
+          templateBtnContainer.style.display = "block";
+        } else {
+          templateBtnContainer.style.display = "none";
+        }
+      });
+
+      // 範本按鈕點擊事件
+      document.getElementById("templateBtn").addEventListener("click", function() {
+        $("#templateModal").modal("show");
+      });
+
+      // 範本選擇事件
+      document.querySelectorAll(".list-group-item[data-template]").forEach(item => {
+        item.addEventListener("click", function(e) {
+          e.preventDefault();
+          const template = this.getAttribute("data-template");
+          $("#templateModal").modal("hide");
+          
+          if (template === "ai.js") {
+            loadAiTemplate();
+          }
+        });
+      });
+
+      // 加載 AI 範本
+      function loadAiTemplate() {
+        fetch("https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/lib/ai.js")
+          .then(response => {
+            if (!response.ok) {
+              throw new Error("無法加載範本文件");
+            }
+            return response.text();
+          })
+          .then(code => {
+            const apiKeyMatch = code.match(/OPENROUTER_API_KEY\s*=\s*"(.*)"/);
+            const modelMatch = code.match(/MODEL\s*=\s*"(.*)"/);
+            const apiUrlMatch = code.match(/API_URL\s*=\s*"(.*)"/);
+            const defaultPromptMatch = code.match(/defaultSystemPrompt\s*=\s*"(.*)"/);
+            
+            document.getElementById("openrouterApiKey").value = apiKeyMatch ? apiKeyMatch[1] : "";
+            document.getElementById("aiModel").value = modelMatch ? modelMatch[1] : "";
+            document.getElementById("apiUrl").value = apiUrlMatch ? apiUrlMatch[1] : "";
+            document.getElementById("defaultSystemPrompt").value = defaultPromptMatch ? defaultPromptMatch[1] : "";
+            document.getElementById("userSystemPrompts").value = "{}";
+            
+            $("#aiConfigModal").modal("show");
+            
+            window.aiTemplateCode = code;
+          })
+          .catch(error => {
+            console.error("載入範本失敗:", error);
+            alert("無法加載範本文件，請檢查網絡連接");
+          });
+      }
+
+      // 應用 AI 配置
+      document.getElementById("applyAiConfig").addEventListener("click", function() {
+        const form = document.getElementById("aiConfigForm");
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+        
+        const apiKey = document.getElementById("openrouterApiKey").value;
+        const model = document.getElementById("aiModel").value;
+        const apiUrl = document.getElementById("apiUrl").value;
+        const defaultPrompt = document.getElementById("defaultSystemPrompt").value;
+        const userPrompts = document.getElementById("userSystemPrompts").value;
+        
+        let updatedCode = window.aiTemplateCode;
+        updatedCode = updatedCode.replace(/OPENROUTER_API_KEY\s*=\s*".*"/, `OPENROUTER_API_KEY = "${apiKey}"`);
+        updatedCode = updatedCode.replace(/MODEL\s*=\s*".*"/, `MODEL = "${model}"`);
+        updatedCode = updatedCode.replace(/API_URL\s*=\s*".*"/, `API_URL = "${apiUrl}"`);
+        updatedCode = updatedCode.replace(/defaultSystemPrompt\s*=\s*".*"/, `defaultSystemPrompt = "${defaultPrompt}"`);
+        
+        if (editor) {
+          editor.setValue(updatedCode);
+        } else {
+          document.getElementById("responseContent").value = updatedCode;
+        }
+        
+        $("#aiConfigModal").modal("hide");
       });
 
       function updateToggleButton() {
