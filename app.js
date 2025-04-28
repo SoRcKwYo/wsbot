@@ -190,16 +190,12 @@ class WhatsAppBot {
           return null; // 找不到時回傳 null，讓 puppeteer 使用內建的
         })(),
         ignoreHTTPSErrors: true,
-        timeout: 180000, // 增加到 180 秒
         handleSIGINT: false,
-        protocolTimeout: 120000 // 增加到 120 秒
       },
       webVersionCache: {
         type: "local"
       },
       webVersion: '2.2326.10',
-      qrMaxRetries: 5,  // 降低 QR 碼重試次數，避免不必要的重試
-      authTimeoutMs: 180000, // 增加認證超時時間
       takeoverTimeoutMs: 180000, // 增加接管超時時間
       restartOnAuthFail: true,
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36', // 使用與您環境匹配的用戶代理
@@ -507,23 +503,40 @@ class WhatsAppBot {
   }
 
   // 在 sendResponse 中處理不同的回應類型
- async sendResponse(command, msg) {
+  async sendResponse(command, msg) {
     const sender = msg.fromMe ? msg.to : msg.from; 
+    const chat = await msg.getChat();
+    
     try {
       switch (command.response.type) {
         case "text":
-          await msg.reply(command.response.content);
+          // 直接回覆文字訊息
+          await this.client.sendMessage(sender, command.response.content, {
+            quotedMessageId: msg.id._serialized
+          });
           break;
         case "image": {
-          const media = new MessageMedia(
-            "image/jpeg",
-            command.response.content.replace(/^data:image\/(png|jpeg|jpg);base64,/, ""),
-            "image.jpg"
-          );
-          await this.client.sendMessage(sender, media);
+          // 處理圖片
+          try {
+            const media = new MessageMedia(
+              "image/jpeg",
+              command.response.content.replace(/^data:image\/(png|jpeg|jpg);base64,/, ""),
+              "image.jpg"
+            );
+            await this.client.sendMessage(sender, media, {
+              quotedMessageId: msg.id._serialized
+            });
+            console.log("圖片發送成功");
+          } catch (error) {
+            console.error("圖片發送失敗:", error);
+            await this.client.sendMessage(sender, "圖片發送失敗，請再試一次。", {
+              quotedMessageId: msg.id._serialized
+            });
+          }
           break;
         }
         case "video": {
+          // 處理影片
           try {
             // 從 base64 內容建立媒體對象
             const base64Data = command.response.content.replace(/^data:video\/mp4;base64,/, "");
@@ -531,40 +544,77 @@ class WhatsAppBot {
             
             // 嘗試直接發送
             try {
-              await this.client.sendMessage(sender, media);
+              await this.client.sendMessage(sender, media, {
+                quotedMessageId: msg.id._serialized
+              });
               console.log("影片發送成功");
             } catch (error) {
               console.error("直接發送影片失敗:", error.message);
               
-              // 如果直接發送失敗，嘗試使用備份方法
+              // 如果直接發送失敗，嘗試使用臨時檔案方法
               const tempFile = path.join(this.tempDir, `temp_video_${Date.now()}.mp4`);
-              console.log("嘗試使用臨時文件發送影片:", tempFile);
+              console.log("嘗試使用臨時檔案發送影片:", tempFile);
               
-              // 將 base64 數據寫入臨時文件
+              // 確保臨時目錄存在
+              await fs.mkdir(this.tempDir, { recursive: true });
+              
+              // 將 base64 數據寫入臨時檔案
               await fs.writeFile(tempFile, Buffer.from(base64Data, 'base64'));
               
-              // 從文件載入並發送
+              // 從檔案載入並發送
               const fileMedia = MessageMedia.fromFilePath(tempFile);
-              await this.client.sendMessage(sender, fileMedia);
+              await this.client.sendMessage(sender, fileMedia, {
+                quotedMessageId: msg.id._serialized
+              });
               
-              // 清理臨時文件
-              try { await fs.unlink(tempFile); } catch (e) { console.error("刪除臨時文件失敗:", e); }
+              // 清理臨時檔案
+              setTimeout(async () => {
+                try { 
+                  await fs.unlink(tempFile); 
+                  console.log("已刪除臨時影片檔案:", tempFile);
+                } catch (e) { 
+                  console.error("刪除臨時檔案失敗:", e); 
+                }
+              }, 5000); // 延遲 5 秒後刪除，避免檔案仍在使用中
             }
           } catch (error) {
             console.error("影片發送流程錯誤:", error);
-            console.log("影片內容長度:", command.response.content.length);
-            await msg.reply("影片發送失敗，請再試一次或通知管理員檢查影片檔案大小。");
+            console.log("影片內容長度:", command.response.content ? command.response.content.length : "無內容");
+            await this.client.sendMessage(sender, "影片發送失敗，請再試一次或通知管理員檢查影片檔案大小。", {
+              quotedMessageId: msg.id._serialized
+            });
           }
           break;
         }
         case "function": {
-          await this.runDynamicFunction(command.id, msg);
+          // 處理函數指令
+          try {
+            const result = await this.runDynamicFunction(command.id, msg);
+            // 如果函數已經處理了回覆，就不需要再執行
+            if (result && typeof result === 'string') {
+              await this.client.sendMessage(sender, result, {
+                quotedMessageId: msg.id._serialized
+              });
+            }
+          } catch (error) {
+            console.error("執行函數指令錯誤:", error);
+            await this.client.sendMessage(sender, `執行函數時發生錯誤: ${error.message}`, {
+              quotedMessageId: msg.id._serialized
+            });
+          }
           break;
         }
       }
     } catch (error) {
       console.error("執行指令回應錯誤:", error);
-      await msg.reply("執行指令時出錯，請稍後重試或通知管理員。");
+      // 確保即使出錯也發送通知
+      try {
+        await this.client.sendMessage(sender, "執行指令時出錯，請稍後重試或通知管理員。", {
+          quotedMessageId: msg.id._serialized
+        });
+      } catch (e) {
+        console.error("發送錯誤通知失敗:", e);
+      }
     }
   }
 
@@ -1035,26 +1085,24 @@ const startServer = async () => {
     console.log(`Server is running on port ${PORT}`);
   });
   
-  // 添加處理系統信號的代碼，確保優雅關閉
+  // 處理系統信號，確保優雅關閉
   const handleGracefulShutdown = async (signal) => {
     console.log(`收到 ${signal} 信號，準備優雅關閉...`);
     try {
-      // 確保瀏覽器和會話資料正確保存
-      if (bot && bot.client && bot.client.pupBrowser) {
-        console.log('保存 WhatsApp 會話狀態...');
-        // 保存會話狀態但不真正關閉
-        await bot.client.pupBrowser.disconnect();
-        console.log('會話狀態保存完成');
+      // 正確優雅關閉 WhatsApp 客戶端，確保 session 寫入硬碟
+      if (bot && bot.client) {
+        console.log('正在優雅關閉 WhatsApp 客戶端...');
+        try {
+          await bot.client.destroy(); // 這會正確 flush session
+        } catch (e) {
+          console.log('client.destroy() 發生錯誤:', e.message);
+        }
       }
-      
       // 保存各類數據
       if (bot.groups.size > 0) await bot.saveData("groups");
       if (bot.contacts.size > 0) await bot.saveData("contacts");
       if (bot.activeCommands.size > 0) await bot.saveData("commands");
-      
       console.log('所有數據保存完成，程序將退出');
-      
-      // 延遲一秒確保數據寫入完成
       setTimeout(() => {
         process.exit(0);
       }, 1000);
@@ -1064,17 +1112,13 @@ const startServer = async () => {
     }
   };
   
-  // 註冊信號處理器
-  process.on('SIGINT', () => handleGracefulShutdown('SIGINT')); // Ctrl+C
-  process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM')); // kill
-  process.on('SIGHUP', () => handleGracefulShutdown('SIGHUP')); // 終端關閉
-  
-  // 處理未捕獲的異常，避免進程崩潰
+  process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
+  process.on('SIGHUP', () => handleGracefulShutdown('SIGHUP'));
   process.on('uncaughtException', async (err) => {
     console.error('未捕獲的異常:', err);
     await handleGracefulShutdown('uncaughtException');
   });
-  
   process.on('unhandledRejection', async (reason, promise) => {
     console.error('未處理的 Promise 拒絕:', reason);
     await handleGracefulShutdown('unhandledRejection');
