@@ -140,6 +140,63 @@
         box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
       }
 
+      /* 範本按鈕和模態窗口樣式 */
+      .template-btn {
+        display: flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      }
+      
+      .template-btn:hover {
+        background: #303f9f;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+      }
+
+      #template-modal .close-btn {
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      #template-modal .close-btn:hover {
+        opacity: 1;
+      }
+
+      .template-form {
+        background: var(--background);
+        padding: 16px;
+        border-radius: 8px;
+      }
+
+      .template-form label .required {
+        color: #f44336;
+        font-weight: bold;
+        margin-left: 4px;
+      }
+
+      .template-form label .optional {
+        color: #9e9e9e;
+        margin-left: 4px;
+        font-size: 0.9em;
+        font-style: italic;
+      }
+
+      .template-form input, .template-form textarea {
+        background: #fff;
+        border: 1px solid #e0e0e0;
+      }
+
+      .template-form input:focus, .template-form textarea:focus {
+        border-color: #3f51b5;
+        box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.1);
+      }
+
       .btn {
         padding: 10px 24px;
         border: none;
@@ -640,32 +697,19 @@
             </div>
           </div>
 
-          <!-- 回應類型選擇區塊 -->
           <div class="form-group">
-            <label for="responseType">回應類型</label>
-            <div class="d-flex align-items-center">
-              <select id="responseType" class="form-control" required>
+            <label>回應類型</label>
+            <div style="display:flex;align-items:center;margin-bottom:10px;">
+              <select id="response-type" style="margin:0;flex:1;">
                 <option value="text">文字</option>
                 <option value="image">圖片</option>
                 <option value="video">影片</option>
-                <option value="function">自定義功能</option>
+                <option value="function">Function</option>
               </select>
-              <div id="templateBtnContainer" style="display: none; margin-left: 10px;">
-                <button type="button" id="templateBtn" class="btn btn-sm btn-info">
-                  <i class="material-icons" style="font-size:18px">code</i> AI範本
-                </button>
-              </div>
+              <button id="template-btn" class="btn template-btn" style="display:none;margin-left:10px;background:#3f51b5;color:white;">
+                <span class="material-icons" style="font-size:16px;margin-right:4px;vertical-align:text-bottom;">code</span>範本
+              </button>
             </div>
-          </div>
-
-          <div class="form-group">
-            <label>回應類型</label>
-            <select id="response-type">
-              <option value="text">文字</option>
-              <option value="image">圖片</option>
-              <option value="video">影片</option>
-              <option value="function">Function</option>
-            </select>
             <textarea id="response-content" placeholder="回應內容" style="min-height: 120px; height: 120px;"></textarea>
             <input type="file" id="response-file" style="display:none" accept="image/*,video/*" />
             <div id="function-help" style="display:none; color:#388e3c; background:#e8f5e9; border-radius:6px; padding:12px; margin-top:8px; font-size:0.95em;">
@@ -709,78 +753,6 @@
             </div>
           </div>
 
-          <!-- 範本選擇彈窗 -->
-          <div class="modal fade" id="templateModal" tabindex="-1" role="dialog" aria-labelledby="templateModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg" role="document">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="templateModalLabel">選擇功能範本</h5>
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-                </div>
-                <div class="modal-body">
-                  <div class="list-group">
-                    <a href="#" class="list-group-item list-group-item-action" data-template="ai.js">
-                      <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">AI 聊天機器人</h5>
-                        <small>OpenRouter API</small>
-                      </div>
-                      <p class="mb-1">使用 OpenRouter API 實現 AI 聊天功能，支援對話歷史記錄保存。</p>
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- AI 範本配置彈窗 -->
-          <div class="modal fade" id="aiConfigModal" tabindex="-1" role="dialog" aria-labelledby="aiConfigModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg" role="document">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h5 class="modal-title" id="aiConfigModalLabel">AI 範本配置</h5>
-                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-                </div>
-                <div class="modal-body">
-                  <form id="aiConfigForm">
-                    <div class="form-group">
-                      <label for="openrouterApiKey">OPENROUTER_API_KEY <span class="text-danger">*</span></label>
-                      <input type="text" class="form-control" id="openrouterApiKey" required>
-                      <small class="form-text text-muted">請輸入您的 OpenRouter API 金鑰</small>
-                    </div>
-                    <div class="form-group">
-                      <label for="aiModel">MODEL <span class="text-danger">*</span></label>
-                      <input type="text" class="form-control" id="aiModel" required>
-                      <small class="form-text text-muted">例如：openai/gpt-4-turbo, anthropic/claude-3-opus-20240229</small>
-                    </div>
-                    <div class="form-group">
-                      <label for="apiUrl">API_URL <span class="text-danger">*</span></label>
-                      <input type="text" class="form-control" id="apiUrl" required>
-                      <small class="form-text text-muted">例如：https://openrouter.ai/api/v1/chat/completions</small>
-                    </div>
-                    <div class="form-group">
-                      <label for="defaultSystemPrompt">defaultSystemPrompt</label>
-                      <textarea class="form-control" id="defaultSystemPrompt" rows="3"></textarea>
-                      <small class="form-text text-muted">系統提示詞，可留空</small>
-                    </div>
-                    <div class="form-group">
-                      <label for="userSystemPrompts">userSystemPrompts</label>
-                      <textarea class="form-control" id="userSystemPrompts" rows="3"></textarea>
-                      <small class="form-text text-muted">格式：{"userId": "提示詞"} 可留空</small>
-                    </div>
-                  </form>
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
-                  <button type="button" class="btn btn-primary" id="applyAiConfig">應用配置</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <button class="btn btn-primary" onclick="saveCommand()">
             儲存指令
           </button>
@@ -813,6 +785,47 @@
         </div>
       </section>
     </main>
+
+    <!-- AI 範本模態窗口 -->
+    <div id="template-modal" class="modal" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);align-items:center;justify-content:center;">
+      <div class="modal-content" style="background:#fff;padding:24px 20px;border-radius:12px;min-width:460px;max-width:96vw;max-height:90vh;overflow:auto;box-shadow:0 4px 24px rgba(0,0,0,0.18);">
+        <h3 style="margin-bottom:16px;color:#3f51b5;display:flex;align-items:center;gap:8px;">
+          <span class="material-icons">code</span>
+          <span>AI 功能範本</span>
+          <div class="close-btn" style="margin-left:auto;cursor:pointer;font-size:20px;color:#666;">&times;</div>
+        </h3>
+        
+        <div id="template-content">
+          <div class="template-form">
+            <div class="form-group">
+              <label for="openrouter_api_key">OPENROUTER_API_KEY <span class="required">*</span></label>
+              <input type="password" id="openrouter_api_key" placeholder="輸入您的 OpenRouter API 密鑰" required>
+            </div>
+            <div class="form-group">
+              <label for="model">MODEL <span class="required">*</span></label>
+              <input type="text" id="model" placeholder="例如: openai/gpt-3.5-turbo" required>
+            </div>
+            <div class="form-group">
+              <label for="api_url">API_URL <span class="required">*</span></label>
+              <input type="text" id="api_url" placeholder="例如: https://openrouter.ai/api/v1/chat/completions" required>
+            </div>
+            <div class="form-group">
+              <label for="default_system_prompt">defaultSystemPrompt <span class="optional">(可選)</span></label>
+              <textarea id="default_system_prompt" placeholder="系統提示詞 (可留空)" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="user_system_prompts_format">userSystemPrompts <span class="optional">(可選)</span></label>
+              <textarea id="user_system_prompts_format" placeholder="提供使用者提示詞格式說明 (可留空)" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-top:20px;text-align:right;">
+          <button class="btn" id="modal-template-cancel" style="background:#f5f5f5;color:#333;margin-right:8px;">取消</button>
+          <button class="btn btn-primary" id="modal-template-confirm" style="background:#3f51b5;">確定</button>
+        </div>
+      </div>
+    </div>
 
     <script>
       // 全局變量
@@ -1067,110 +1080,27 @@
         const fileInput = document.getElementById("response-file");
         const textarea = document.getElementById("response-content");
         const functionHelp = document.getElementById("function-help");
+        const templateBtn = document.getElementById("template-btn");
+        
         if (e.target.value === "image" || e.target.value === "video") {
           fileInput.style.display = "block";
           if (codeMirrorEditor) destroyCodeMirror();
           textarea.style.display = "none";
           functionHelp.style.display = "none";
+          templateBtn.style.display = "none";
         } else if (e.target.value === "function") {
           fileInput.style.display = "none";
           textarea.style.display = "block";
           functionHelp.style.display = "block";
+          templateBtn.style.display = "block"; // 顯示範本按鈕
           setTimeout(setupCodeMirror, 0);
         } else {
           fileInput.style.display = "none";
           if (codeMirrorEditor) destroyCodeMirror();
           textarea.style.display = "block";
           functionHelp.style.display = "none";
+          templateBtn.style.display = "none";
         }
-      });
-
-      // 監聽回應類型變化，顯示或隱藏範本按鈕
-      document.getElementById("responseType").addEventListener("change", function() {
-        const templateBtnContainer = document.getElementById("templateBtnContainer");
-        if (this.value === "function") {
-          templateBtnContainer.style.display = "block";
-        } else {
-          templateBtnContainer.style.display = "none";
-        }
-      });
-
-      // 範本按鈕點擊事件
-      document.getElementById("templateBtn").addEventListener("click", function() {
-        $("#templateModal").modal("show");
-      });
-
-      // 範本選擇事件
-      document.querySelectorAll(".list-group-item[data-template]").forEach(item => {
-        item.addEventListener("click", function(e) {
-          e.preventDefault();
-          const template = this.getAttribute("data-template");
-          $("#templateModal").modal("hide");
-          
-          if (template === "ai.js") {
-            loadAiTemplate();
-          }
-        });
-      });
-
-      // 加載 AI 範本
-      function loadAiTemplate() {
-        fetch("https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/lib/ai.js")
-          .then(response => {
-            if (!response.ok) {
-              throw new Error("無法加載範本文件");
-            }
-            return response.text();
-          })
-          .then(code => {
-            const apiKeyMatch = code.match(/OPENROUTER_API_KEY\s*=\s*"(.*)"/);
-            const modelMatch = code.match(/MODEL\s*=\s*"(.*)"/);
-            const apiUrlMatch = code.match(/API_URL\s*=\s*"(.*)"/);
-            const defaultPromptMatch = code.match(/defaultSystemPrompt\s*=\s*"(.*)"/);
-            
-            document.getElementById("openrouterApiKey").value = apiKeyMatch ? apiKeyMatch[1] : "";
-            document.getElementById("aiModel").value = modelMatch ? modelMatch[1] : "";
-            document.getElementById("apiUrl").value = apiUrlMatch ? apiUrlMatch[1] : "";
-            document.getElementById("defaultSystemPrompt").value = defaultPromptMatch ? defaultPromptMatch[1] : "";
-            document.getElementById("userSystemPrompts").value = "{}";
-            
-            $("#aiConfigModal").modal("show");
-            
-            window.aiTemplateCode = code;
-          })
-          .catch(error => {
-            console.error("載入範本失敗:", error);
-            alert("無法加載範本文件，請檢查網絡連接");
-          });
-      }
-
-      // 應用 AI 配置
-      document.getElementById("applyAiConfig").addEventListener("click", function() {
-        const form = document.getElementById("aiConfigForm");
-        if (!form.checkValidity()) {
-          form.reportValidity();
-          return;
-        }
-        
-        const apiKey = document.getElementById("openrouterApiKey").value;
-        const model = document.getElementById("aiModel").value;
-        const apiUrl = document.getElementById("apiUrl").value;
-        const defaultPrompt = document.getElementById("defaultSystemPrompt").value;
-        const userPrompts = document.getElementById("userSystemPrompts").value;
-        
-        let updatedCode = window.aiTemplateCode;
-        updatedCode = updatedCode.replace(/OPENROUTER_API_KEY\s*=\s*".*"/, `OPENROUTER_API_KEY = "${apiKey}"`);
-        updatedCode = updatedCode.replace(/MODEL\s*=\s*".*"/, `MODEL = "${model}"`);
-        updatedCode = updatedCode.replace(/API_URL\s*=\s*".*"/, `API_URL = "${apiUrl}"`);
-        updatedCode = updatedCode.replace(/defaultSystemPrompt\s*=\s*".*"/, `defaultSystemPrompt = "${defaultPrompt}"`);
-        
-        if (editor) {
-          editor.setValue(updatedCode);
-        } else {
-          document.getElementById("responseContent").value = updatedCode;
-        }
-        
-        $("#aiConfigModal").modal("hide");
       });
 
       function updateToggleButton() {
@@ -1443,45 +1373,58 @@
       };
 
       function renderTargetModal(tab) {
+        // 初始顯示為群組
+        tab = tab || 'group';
+        
         const modalHeader = document.getElementById('modal-header');
         const modalList = document.getElementById('modal-list');
-        const totalCount = currentGroups.length + currentContacts.length;
-        let showTabs = totalCount > 10;
-        let showSearch = totalCount > 10;
-        let items = [];
-        if (showTabs) {
-          modalHeader.innerHTML = `
-            <button id="tab-group" class="modal-tab ${tab==='group'?'active':''}">群組</button>
-            <button id="tab-contact" class="modal-tab ${tab==='contact'?'active':''}">聯絡人</button>
-            <input id="target-search" type="text" placeholder="搜尋名稱..." style="flex:1;padding:6px 10px;border-radius:4px;border:1px solid #ccc;${showSearch?'':'display:none;'}" />
-          `;
-          items = tab === 'group' ? currentGroups : currentContacts;
-          if (showSearch) {
-            document.getElementById('target-search').oninput = function() {
-              renderTargetModal(tab);
-            };
-            const search = document.getElementById('target-search').value.trim().toLowerCase();
-            items = items.filter(item => item.name.toLowerCase().includes(search));
-          }
-          document.getElementById('tab-group').onclick = function() {
-            renderTargetModal('group');
-          };
-          document.getElementById('tab-contact').onclick = function() {
-            renderTargetModal('contact');
-          };
-        } else {
-          modalHeader.innerHTML = '';
-          items = [...currentGroups, ...currentContacts];
+        const modalSelectedTags = document.getElementById('modal-selected-tags');
+        
+        // 渲染標籤和搜尋欄
+        modalHeader.innerHTML = `
+          <button id="tab-group" class="modal-tab ${tab==='group'?'active':''}">群組</button>
+          <button id="tab-contact" class="modal-tab ${tab==='contact'?'active':''}">聯絡人</button>
+          <input id="target-search" type="text" placeholder="搜尋名稱..." style="flex:1;padding:6px 10px;border-radius:4px;border:1px solid #ccc;" />
+        `;
+        
+        // 添加標籤點擊事件
+        document.getElementById('tab-group').onclick = function() {
+          renderTargetModal('group');
+        };
+        document.getElementById('tab-contact').onclick = function() {
+          renderTargetModal('contact');
+        };
+        
+        // 添加搜尋功能
+        document.getElementById('target-search').oninput = function() {
+          renderTargetModal(tab);
+        };
+        
+        // 根據當前標籤選擇顯示項目列表
+        let items = tab === 'group' ? currentGroups : currentContacts;
+        
+        // 如果有搜尋文字則過濾
+        const searchInput = document.getElementById('target-search');
+        if (searchInput && searchInput.value) {
+          const search = searchInput.value.trim().toLowerCase();
+          items = items.filter(item => item.name.toLowerCase().includes(search));
         }
-        modalList.innerHTML = items.map(item => {
-          const type = currentGroups.some(g => g.id === item.id) ? 'group' : 'contact';
+        
+        // 生成項目列表 HTML
+        modalList.innerHTML = items.length > 0 ? items.map(item => {
+          const type = tab;
           const checked = selectedTargets.some(t => t.type === type && t.id === item.id);
-          return `<label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;">
-            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleTargetSelect('${type}','${item.id}','${item.name.replace(/'/g,'')}')" />
-            <span>${item.name}${type==='contact'?` (${item.number})`:''}</span>
+          return `<label style="display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;border-bottom:1px solid #e0e0e0;">
+            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleTargetSelect('${type}','${item.id}','${item.name ? item.name.replace(/'/g, '&#39;') : item.id}')" />
+            <span>${item.name || item.id}${type==='contact' && item.number ? ` (${item.number})` : ''}</span>
           </label>`;
-        }).join('');
-        document.getElementById('modal-selected-tags').innerHTML = selectedTargets.length ? selectedTargets.map(t => `<span class="tag" style="background:#e8f5e9;color:#388e3c;padding:2px 10px;border-radius:12px;font-size:0.95em;display:inline-flex;align-items:center;gap:4px;">${t.name}<span style="cursor:pointer;font-weight:bold;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`).join('') : '';
+        }).join('') : `<div style="padding:16px;color:#777;text-align:center;">沒有${tab === 'group' ? '群組' : '聯絡人'}</div>`;
+        
+        // 更新已選擇的標籤
+        modalSelectedTags.innerHTML = selectedTargets.length ? 
+          selectedTargets.map(t => 
+            `<span class="tag" style="background:#e8f5e9;color:#388e3c;padding:2px 12px;border-radius:12px;font-size:0.97em;display:inline-flex;align-items:center;gap:4px;margin-right:4px;margin-bottom:4px;">${t.name || t.id}<span style="cursor:pointer;font-weight:bold;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`
+          ).join('') : '';
       }
 
       window.toggleTargetSelect = function(type, id, name) {
@@ -1491,10 +1434,23 @@
         } else {
           selectedTargets.push({ type, id, name });
         }
-        renderTargetModal(type);
+        document.getElementById('modal-selected-tags').innerHTML = selectedTargets.length ? 
+          selectedTargets.map(t => 
+            `<span class="tag">${t.name}<span style="cursor:pointer;font-weight:bold;margin-left:4px;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`
+          ).join('') : '';
       };
 
-      window.removeTargetTag = removeTargetTag;
+      window.removeTargetTag = function(type, id) {
+        selectedTargets = selectedTargets.filter(t => !(t.type === type && t.id === id));
+        renderTargetTags();
+        // 如果模態窗口是開著的，也更新它的標籤
+        if (document.getElementById('target-modal').style.display === 'flex') {
+          document.getElementById('modal-selected-tags').innerHTML = selectedTargets.length ? 
+            selectedTargets.map(t => 
+              `<span class="tag">${t.name}<span style="cursor:pointer;font-weight:bold;margin-left:4px;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`
+            ).join('') : '';
+        }
+      };
 
       function editCommand(id) {
         const command = currentCommands.find(cmd => cmd.id === id);
@@ -1835,6 +1791,64 @@
             'execute-btn': 'Execute'
           }
         };
+
+        // 範本按鈕點擊事件
+        document.getElementById('template-btn').addEventListener('click', function() {
+          document.getElementById('template-modal').style.display = 'flex';
+        });
+
+        // 關閉模態窗口
+        document.querySelector('#template-modal .close-btn').addEventListener('click', function() {
+          document.getElementById('template-modal').style.display = 'none';
+        });
+
+        // 取消按鈕點擊事件
+        document.getElementById('modal-template-cancel').addEventListener('click', function() {
+          document.getElementById('template-modal').style.display = 'none';
+        });
+
+        // 確認按鈕點擊事件
+        document.getElementById('modal-template-confirm').addEventListener('click', function() {
+          // 獲取用戶填寫的必要參數
+          const apiKey = document.getElementById('openrouter_api_key').value.trim();
+          const model = document.getElementById('model').value.trim();
+          const apiUrl = document.getElementById('api_url').value.trim();
+          const defaultSystemPrompt = document.getElementById('default_system_prompt').value.trim();
+          const userSystemPromptsFormat = document.getElementById('user_system_prompts_format').value.trim();
+
+          // 檢查必填字段
+          if (!apiKey || !model || !apiUrl) {
+            alert('請填寫所有必填字段（標有 * 的欄位）');
+            return;
+          }
+
+          // 獲取 AI 範本代碼並進行替換
+          fetch('https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/lib/ai.js')
+            .then(response => response.text())
+            .then(code => {
+              // 替換關鍵變數
+              let templateCode = code
+                .replace(/OPENROUTER_API_KEY\s*=\s*"[^"]*"/, `OPENROUTER_API_KEY = "${apiKey}"`)
+                .replace(/MODEL\s*=\s*"[^"]*"/, `MODEL = "${model}"`)
+                .replace(/API_URL\s*=\s*"[^"]*"/, `API_URL = "${apiUrl}"`)
+                .replace(/const defaultSystemPrompt\s*=\s*"[^"]*"/, `const defaultSystemPrompt = "${defaultSystemPrompt}"`)
+                .replace(/const userSystemPrompts\s*=\s*\{\}/, `const userSystemPrompts = ${userSystemPromptsFormat ? '{/* ' + userSystemPromptsFormat + ' */}' : '{}'}`);
+
+              // 提取函數體部分並設置到 CodeMirror 編輯器
+              if (codeMirrorEditor) {
+                codeMirrorEditor.setValue(templateCode);
+              } else {
+                document.getElementById('response-content').value = templateCode;
+              }
+
+              // 關閉模態窗口
+              document.getElementById('template-modal').style.display = 'none';
+            })
+            .catch(error => {
+              console.error('獲取範本失敗:', error);
+              alert('獲取範本失敗，請檢查網絡連接');
+            });
+        });
 
         function updatePageLanguage() {
           const t = translations[currentLang];
