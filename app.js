@@ -10,7 +10,6 @@ const path = require("path");
 const existsSync = require("fs").existsSync;
 const rimraf = require("rimraf").sync; // 用於清除目錄
 const { exec } = require("child_process");
-const { console } = require("inspector");
 
 class WhatsAppBot {
   constructor() {
@@ -25,7 +24,6 @@ class WhatsAppBot {
     this.tempDir = process.env.TEMP_DIR || path.join(__dirname, "temp");
     this.retryCount = 0;
     this.maxRetries = 3;
-    this.isShuttingDown = false; // 新增關閉旗標
   }
 
   async reconnect() {
@@ -69,25 +67,64 @@ class WhatsAppBot {
       // 加載群組數據
       const groupsPath = path.join(this.dataDir, "groups.json");
       if (await this.fileExists(groupsPath)) {
-        const groupsData = await fs.readFile(groupsPath, "utf8");
-        this.groups = new Map(JSON.parse(groupsData));
+        try {
+          const groupsData = await fs.readFile(groupsPath, "utf8");
+          this.groups = new Map(JSON.parse(groupsData));
+        } catch (parseError) {
+          console.error("解析群組數據失敗，將使用空數據:", parseError.message);
+          console.log("建立備份檔案以保存原始數據");
+          // 備份損壞的檔案
+          await fs.copyFile(groupsPath, `${groupsPath}.bak.${Date.now()}`);
+          // 使用空的 Map
+          this.groups = new Map();
+        }
       }
 
       // 加載聯絡人數據
       const contactsPath = path.join(this.dataDir, "contacts.json");
       if (await this.fileExists(contactsPath)) {
-        const contactsData = await fs.readFile(contactsPath, "utf8");
-        this.contacts = new Map(JSON.parse(contactsData));
+        try {
+          const contactsData = await fs.readFile(contactsPath, "utf8");
+          this.contacts = new Map(JSON.parse(contactsData));
+        } catch (parseError) {
+          console.error("解析聯絡人數據失敗，將使用空數據:", parseError.message);
+          console.log("建立備份檔案以保存原始數據");
+          // 備份損壞的檔案
+          await fs.copyFile(contactsPath, `${contactsPath}.bak.${Date.now()}`);
+          // 使用空的 Map
+          this.contacts = new Map();
+        }
       }
 
       // 加載指令數據
       const commandsPath = path.join(this.dataDir, "commands.json");
       if (await this.fileExists(commandsPath)) {
-        const commandsData = await fs.readFile(commandsPath, "utf8");
-        this.activeCommands = new Map(JSON.parse(commandsData));
+        try {
+          const commandsData = await fs.readFile(commandsPath, "utf8");
+          this.activeCommands = new Map(JSON.parse(commandsData));
+        } catch (parseError) {
+          console.error("解析指令數據失敗，將使用空數據:", parseError.message);
+          console.log("建立備份檔案以保存原始數據");
+          // 備份損壞的檔案
+          await fs.copyFile(commandsPath, `${commandsPath}.bak.${Date.now()}`);
+          // 使用空的 Map
+          this.activeCommands = new Map();
+        }
       }
+
+      // 數據載入後立即保存一份有效的備份
+      await Promise.all([
+        this.saveData("groups"),
+        this.saveData("contacts"),
+        this.saveData("commands")
+      ]);
+
     } catch (error) {
       console.error("Error loading data:", error);
+      // 初始化空的資料結構，確保應用可以啟動
+      this.groups = new Map();
+      this.contacts = new Map();
+      this.activeCommands = new Map();
     }
   }
 
@@ -135,7 +172,6 @@ class WhatsAppBot {
 
     this.client = new Client({
       authStrategy: new LocalAuth({
-        clientId: "whatsapp-bot",
         dataPath: this.authDir,
       }),
       puppeteer: {
@@ -145,20 +181,9 @@ class WhatsAppBot {
           "--disable-setuid-sandbox",
           "--disable-dev-shm-usage",
           "--disable-accelerated-2d-canvas",
-          "--disable-gpu",
-          "--window-size=1280,720",
-          "--disable-extensions",
-          "--disable-component-extensions-with-background-pages",
-          "--disable-default-apps",
-          "--mute-audio",
-          "--no-default-browser-check",
           "--no-first-run",
-          "--disable-backgrounding-occluded-windows",
-          "--disable-renderer-backgrounding",
-          "--disable-background-timer-throttling",
-          "--disable-ipc-flooding-protection",
-          "--disable-site-isolation-trials",
-          "--disable-features=IsolateOrigins,site-per-process",
+          "--no-zygote",
+          "--disable-gpu",
         ],
         executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (() => {
           const platform = process.platform;
@@ -174,6 +199,7 @@ class WhatsAppBot {
             for (const path of macPaths) {
               if (existsSync(path)) return path;
             }
+
           } else if (platform === 'win32') { // Windows
             // 常見的 Chrome 路徑
             const winPaths = [
@@ -188,18 +214,14 @@ class WhatsAppBot {
               if (existsSync(path)) return path;
             }
           }
-          
           return null; // 找不到時回傳 null，讓 puppeteer 使用內建的
         })(),
-        ignoreHTTPSErrors: true,
-        handleSIGINT: false,
       },
       webVersionCache: {
-        type: "local"
+        type: "remote",
+        remotePath:
+          "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1020491273-alpha.html",
       },
-      webVersion: '2.2326.10',
-      takeoverTimeoutMs: 180000, // 增加接管超時時間
-      restartOnAuthFail: true,
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36', // 使用與您環境匹配的用戶代理
       fallbackUserAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
     });
@@ -211,119 +233,10 @@ class WhatsAppBot {
 
     console.log("正在初始化 WhatsApp 客戶端，嘗試恢復會話...");
     this.setupEventHandlers();
-    
-    // 特殊檢查：在初始化前先檢查一下會話狀態
-    this.client.pupBrowser = null; // 防止初始化前訪問未定義的 pupBrowser
-    const sessionDir = path.join(this.authDir, 'session-whatsapp-bot', 'Default');
-    const cookiesFile = path.join(sessionDir, 'Cookies');
-    const hasExistingSession = existsSync(cookiesFile);
-
-    console.log("會話狀態檢查:", hasExistingSession ? "發現已有會話，嘗試恢復" : "未發現會話，將顯示 QR 碼");
 
     return this.client.initialize().catch((error) => {
       console.error("初始化客戶端失敗:", error);
-      this.handleInitializationError(error);
     });
-  }
-
-  async handleInitializationError(error) {
-    const errorText = error.toString();
-    
-    // 處理 SingletonLock 或 Failed to launch browser 錯誤
-    if (errorText.includes("SingletonLock") || errorText.includes("Failed to launch the browser process")) {
-      console.log("檢測到 Chrome 啟動問題，嘗試徹底清理 Chrome 設定檔...");
-      
-      try {
-        // 徹底清理所有 Chrome 設定目錄
-        const sessionPath = path.join(this.authDir, 'session-whatsapp-bot');
-        
-        // 查看是否有進程在使用 Chrome
-        try {
-          if (process.platform === 'darwin' || process.platform === 'linux') {
-            // 使用 ps 查找可能持有 Chrome 檔案鎖的進程
-            exec("ps aux | grep -i chrome | grep -v grep", async (err, stdout) => {
-              if (stdout && stdout.length > 0) {
-                console.log("發現可能的 Chrome 進程:", stdout);
-                console.log("嘗試終止這些進程...");
-                exec("pkill -f chrome", () => {
-                  console.log("已嘗試終止 Chrome 相關進程");
-                });
-              }
-            });
-          } else if (process.platform === 'win32') {
-            exec("tasklist | findstr chrome", async (err, stdout) => {
-              if (stdout && stdout.length > 0) {
-                console.log("發現可能的 Chrome 進程:", stdout);
-                exec("taskkill /F /IM chrome.exe", () => {
-                  console.log("已嘗試終止 Chrome 相關進程");
-                });
-              }
-            });
-          }
-        } catch (e) {
-          console.log("查找進程時出錯:", e);
-        }
-        
-        // 等待進程終止
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // 1. 首先嘗試刪除鎖文件
-        const lockFile = path.join(sessionPath, 'SingletonLock');
-        if (existsSync(lockFile)) {
-          console.log("刪除鎖文件:", lockFile);
-          try { 
-            await fs.unlink(lockFile);
-          } catch (e) {
-            console.log("無法直接刪除鎖文件，將使用強制方式");
-            rimraf(lockFile);
-          }
-        }
-        
-        // 2. 如果還是無法解決，嘗試重命名整個 Chrome 設定目錄
-        if (existsSync(sessionPath)) {
-          const backupDir = `${sessionPath}_backup_${Date.now()}`;
-          console.log(`備份並重建 Chrome 設定目錄: ${sessionPath} -> ${backupDir}`);
-          
-          try {
-            // 重命名舊目錄
-            await fs.rename(sessionPath, backupDir);
-          } catch (e) {
-            console.log("無法重命名目錄，嘗試使用 rimraf 強制刪除");
-            rimraf(sessionPath);
-          }
-          
-          // 確保 Chrome 設定目錄存在
-          await fs.mkdir(sessionPath, { recursive: true });
-        }
-        
-        console.log("Chrome 設定檔清理完成，等待 5 秒後重新嘗試...");
-        // 等待一段時間再重試，讓系統有時間釋放所有資源
-        await new Promise(resolve => setTimeout(resolve, 5000));
-        console.log("重新嘗試初始化 WhatsApp 客戶端...");
-        
-        // 重製重試計數，因為我們進行了徹底清理
-        this.retryCount = 0;
-        return this.initialize();
-      } catch (clearError) {
-        console.error("清理 Chrome 設定檔時發生錯誤:", clearError);
-      }
-    }
-    
-    // 一般性重試邏輯
-    if (this.retryCount < this.maxRetries) {
-      this.retryCount++;
-      console.log(
-        `Retrying initialization (attempt ${this.retryCount}/${this.maxRetries}) in 8 seconds...`
-      );
-      await new Promise((resolve) => setTimeout(resolve, 8000));
-      console.log("Attempting reconnection now...");
-      await this.initialize();
-    } else {
-      console.error(
-        "Max retry attempts reached. Failed to initialize WhatsApp client."
-      );
-      throw error;
-    }
   }
 
   async ensureDirectories() {
@@ -421,29 +334,28 @@ class WhatsAppBot {
       console.log("Attempting to reconnect...");
       await new Promise((resolve) => setTimeout(resolve, 5000));
       await this.initialize();
-    } else if (reason === "user") {
-      console.log("User initiated disconnect, not attempting reconnection.");
-      // 用戶主動退出時正確關閉客戶端，但不清除會話數據
-      if (this.client) {
-        console.log("Properly closing WhatsApp session without destroying auth data...");
-      }
     }
   }
 
   async handleMessage(msg) {
-    if (this.isShuttingDown) return; // 關閉中則不執行
+    if (this.isShuttingDown) return;
     const messageContent = msg.body;
     const sender = msg.fromMe ? msg.to : msg.from;
-    console.log("Received message:", messageContent, "from:", sender);
     const chat = await msg.getChat();
 
+    // 收集所有符合觸發條件的指令
+    const matchedCommands = [];
+    
+    // 檢查每個指令
     for (const command of this.activeCommands.values()) {
-      let shouldTrigger = false;
       for (const trigger of command.triggers) {
+        let shouldTrigger = false;
         const content = trigger.toLowerCase
           ? messageContent.toLowerCase()
           : messageContent;
         const isReply = msg.hasQuotedMsg || (msg._data && msg._data.quotedMsg);
+        
+        // 正則表達式觸發條件
         if (trigger.isRegex) {
           try {
             const regex = new RegExp(
@@ -452,44 +364,57 @@ class WhatsAppBot {
             );
             if (regex.test(content)) {
               if (trigger.quotedMsg) {
-                if (isReply) shouldTrigger = true;
+                shouldTrigger = isReply;
               } else {
                 shouldTrigger = true;
               }
             }
           } catch (e) {
-            // 無效正則不觸發
+            console.log("正則表達式錯誤:", e);
           }
-        } else if (trigger.keyword) {
+        } 
+        // 關鍵字觸發條件
+        else if (trigger.keyword) {
           const match = trigger.startsWith
             ? content.startsWith(trigger.keyword)
             : content.includes(trigger.keyword);
           if (match) {
             if (trigger.quotedMsg) {
-              if (isReply) shouldTrigger = true;
+              shouldTrigger = isReply;
             } else {
               shouldTrigger = true;
             }
           }
-        } else if (trigger.quotedMsg && !trigger.keyword && !trigger.isRegex) {
-          if (isReply) shouldTrigger = true;
+        } 
+        // 純回覆觸發條件
+        else if (trigger.quotedMsg && !trigger.keyword && !trigger.isRegex) {
+          shouldTrigger = isReply;
         }
-        if (shouldTrigger) break;
-      }
-
-      if (shouldTrigger) {
-        const isTargetMatch = command.targets.some((target) => {
-          if (chat.isGroup) {
-            return target.type === "group" && target.id === chat.id._serialized;
-          } else {
-            return target.type === "contact" && target.id === sender;
+        
+        // 如果這個觸發條件符合，將指令加入匹配列表並跳出循環
+        if (shouldTrigger) {
+          // 檢查目標對象是否匹配
+          const isTargetMatch = command.targets.some((target) => {
+            if (chat.isGroup) {
+              return target.type === "group" && target.id === chat.id._serialized;
+            } else {
+              return target.type === "contact" && target.id === sender;
+            }
+          });
+          
+          // 如果目標也匹配，則加入到匹配指令列表
+          if (isTargetMatch) {
+            matchedCommands.push(command);
+            break; // 已經找到一個匹配的觸發條件，不用再檢查其他觸發條件
           }
-        });
-
-        if (isTargetMatch) {
-          await this.sendResponse(command, msg);
         }
       }
+    }
+    
+    // 執行第一個匹配的指令
+    if (matchedCommands.length > 0) {
+      await this.sendResponse(matchedCommands[0], msg);
+      console.log(`執行指令: ${matchedCommands[0].name || '無名指令'}`);
     }
   }
 
@@ -547,48 +472,14 @@ class WhatsAppBot {
         case "video": {
           // 處理影片
           try {
-            // 從 base64 內容建立媒體對象
-            const base64Data = command.response.content.replace(/^data:video\/mp4;base64,/, "");
-            const media = new MessageMedia("video/mp4", base64Data, "video.mp4");
-            
-            // 嘗試直接發送
-            try {
-              await this.client.sendMessage(sender, media, {
-                quotedMessageId: msg.id._serialized
-              });
-              console.log("影片發送成功");
-            } catch (error) {
-              console.error("直接發送影片失敗:", error.message);
-              
-              // 如果直接發送失敗，嘗試使用臨時檔案方法
-              const tempFile = path.join(this.tempDir, `temp_video_${Date.now()}.mp4`);
-              console.log("嘗試使用臨時檔案發送影片:", tempFile);
-              
-              // 確保臨時目錄存在
-              await fs.mkdir(this.tempDir, { recursive: true });
-              
-              // 將 base64 數據寫入臨時檔案
-              await fs.writeFile(tempFile, Buffer.from(base64Data, 'base64'));
-              
-              // 從檔案載入並發送
-              const fileMedia = MessageMedia.fromFilePath(tempFile);
-              await this.client.sendMessage(sender, fileMedia, {
-                quotedMessageId: msg.id._serialized
-              });
-              
-              // 清理臨時檔案
-              setTimeout(async () => {
-                try { 
-                  await fs.unlink(tempFile); 
-                  console.log("已刪除臨時影片檔案:", tempFile);
-                } catch (e) { 
-                  console.error("刪除臨時檔案失敗:", e); 
-                }
-              }, 5000); // 延遲 5 秒後刪除，避免檔案仍在使用中
-            }
+            const videoPath = path.join(this.dataDir, command.response.content);
+            const media = MessageMedia.fromFilePath(videoPath);
+            await this.client.sendMessage(sender, media, {
+              quotedMessageId: msg.id._serialized
+            });
+            console.log("影片發送成功");
           } catch (error) {
             console.error("影片發送流程錯誤:", error);
-            console.log("影片內容長度:", command.response.content ? command.response.content.length : "無內容");
             await this.client.sendMessage(sender, "影片發送失敗，請再試一次或通知管理員檢查影片檔案大小。", {
               quotedMessageId: msg.id._serialized
             });
@@ -689,7 +580,6 @@ class WhatsAppBot {
       try {
         console.log("正常關閉 WhatsApp 客戶端，保留認證資料...");
         // 等待瀏覽器優雅關閉
-        await this.client.pupBrowser.close().catch(e => console.log("關閉瀏覽器時出錯，但可以忽略:", e.message));
         await this.client.destroy();
       } catch (e) {
         console.log("關閉客戶端時出錯，但可以忽略:", e.message);
@@ -744,6 +634,7 @@ app.get("/", (req, res) => {
 let logHistory = [];
 const maxLogEntries = 1000;
 
+// 添加一個單獨的函數用於向前端發送日誌
 function addLogEntry(level, message) {
   const timestamp = new Date().toISOString();
   const entry = {
@@ -923,6 +814,7 @@ app.post("/api/commands", async (req, res) => {
   try {
     const commandData = req.body;
     commandData.id = Date.now().toString();
+    
     // 如果是 function 指令，寫入 data/functions/{id}.js
     if (commandData.response && commandData.response.type === "function") {
       const funcDir = path.join(__dirname, "data", "functions");
@@ -930,17 +822,33 @@ app.post("/api/commands", async (req, res) => {
         await fs.mkdir(funcDir, { recursive: true });
       }
       const funcPath = path.join(funcDir, `${commandData.id}.js`);
-      // 包裝成 module.exports = async function(msg) { ... }
-      const code = `module.exports = async function(msg) {\n${commandData.response.content}\n}`;
+      // 包裝成 module.exports = async function(msg, client) { ... }
+      const code = `module.exports = async function(msg, client) {\n${commandData.response.content}\n}`;
       await fs.writeFile(funcPath, code, "utf8");
-      // 只存原始內容在 commands.json
-      commandData.response.content = commandData.response.content;
+      // 存檔案路徑代替原始內容到 commands.json
+      const originalContent = commandData.response.content;
+      commandData.response.content = `functions/${commandData.id}.js`;
+      commandData.response._contentBackup = originalContent.substring(0, 100) + "..."; // 保存前100個字元作為備份
+    }
+    // 如果是 video 指令，寫入 data/video/{id}.mp4
+    else if (commandData.response && commandData.response.type === "video") {
+      const videoDir = path.join(__dirname, "data", "video");
+      if (!existsSync(videoDir)) {
+        await fs.mkdir(videoDir, { recursive: true });
+      }
+      const videoPath = path.join(videoDir, `${commandData.id}.mp4`);
+      // 將 base64 內容寫入檔案
+      const base64Data = commandData.response.content.replace(/^data:video\/mp4;base64,/, "");
+      await fs.writeFile(videoPath, Buffer.from(base64Data, 'base64'));
+      // 存檔案路徑代替原始內容到 commands.json
+      commandData.response.content = `video/${commandData.id}.mp4`;
     }
     bot.activeCommands.set(commandData.id, commandData);
     await bot.saveData("commands");
     res.json({ success: true, command: commandData });
   } catch (error) {
-    res.status(500).json({ message: "添加指令失敗" });
+    console.error("添加指令失敗:", error);
+    res.status(500).json({ message: "添加指令失敗: " + error.message });
   }
 });
 
@@ -949,6 +857,7 @@ app.put("/api/commands/:id", async (req, res) => {
     const id = req.params.id;
     const commandData = req.body;
     commandData.id = id;
+    
     // 如果是 function 指令，寫入 data/functions/{id}.js
     if (commandData.response && commandData.response.type === "function") {
       const funcDir = path.join(__dirname, "data", "functions");
@@ -956,15 +865,35 @@ app.put("/api/commands/:id", async (req, res) => {
         await fs.mkdir(funcDir, { recursive: true });
       }
       const funcPath = path.join(funcDir, `${id}.js`);
-      const code = `module.exports = async function(msg) {\n${commandData.response.content}\n}`;
+      const code = `module.exports = async function(msg, client) {\n${commandData.response.content}\n}`;
       await fs.writeFile(funcPath, code, "utf8");
-      commandData.response.content = commandData.response.content;
+      // 存檔案路徑代替原始內容
+      const originalContent = commandData.response.content;
+      commandData.response.content = `functions/${id}.js`;
+      commandData.response._contentBackup = originalContent.substring(0, 100) + "..."; // 保存前100個字元作為備份
+    }
+    // 如果是 video 指令，寫入 data/video/{id}.mp4
+    else if (commandData.response && commandData.response.type === "video") {
+      const videoDir = path.join(__dirname, "data", "video");
+      if (!existsSync(videoDir)) {
+        await fs.mkdir(videoDir, { recursive: true });
+      }
+      const videoPath = path.join(videoDir, `${id}.mp4`);
+      // 檢查內容是否已經是檔案路徑
+      if (!commandData.response.content.startsWith('video/')) {
+        // 將 base64 內容寫入檔案
+        const base64Data = commandData.response.content.replace(/^data:video\/mp4;base64,/, "");
+        await fs.writeFile(videoPath, Buffer.from(base64Data, 'base64'));
+        // 存檔案路徑代替原始內容到 commands.json
+        commandData.response.content = `video/${id}.mp4`;
+      }
     }
     bot.activeCommands.set(id, commandData);
     await bot.saveData("commands");
     res.json({ success: true, command: commandData });
   } catch (error) {
-    res.status(500).json({ message: "更新指令失敗" });
+    console.error("更新指令失敗:", error);
+    res.status(500).json({ message: "更新指令失敗: " + error.message });
   }
 });
 
@@ -1094,45 +1023,6 @@ const startServer = async () => {
   const PORT = process.env.PORT || 3333;
   server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-  });
-  
-  // 處理系統信號，確保優雅關閉
-  const handleGracefulShutdown = async (signal) => {
-    console.log(`收到 ${signal} 信號，準備優雅關閉...`);
-    try {
-      // 正確優雅關閉 WhatsApp 客戶端，確保 session 寫入硬碟
-      if (bot && bot.client) {
-        console.log('正在優雅關閉 WhatsApp 客戶端...');
-        try {
-          await bot.client.destroy(); // 這會正確 flush session
-        } catch (e) {
-          console.log('client.destroy() 發生錯誤:', e.message);
-        }
-      }
-      // 保存各類數據
-      if (bot.groups.size > 0) await bot.saveData("groups");
-      if (bot.contacts.size > 0) await bot.saveData("contacts");
-      if (bot.activeCommands.size > 0) await bot.saveData("commands");
-      console.log('所有數據保存完成，程序將退出');
-      setTimeout(() => {
-        process.exit(0);
-      }, 1000);
-    } catch (err) {
-      console.error('關閉過程中發生錯誤:', err);
-      process.exit(1);
-    }
-  };
-  
-  process.on('SIGINT', () => handleGracefulShutdown('SIGINT'));
-  process.on('SIGTERM', () => handleGracefulShutdown('SIGTERM'));
-  process.on('SIGHUP', () => handleGracefulShutdown('SIGHUP'));
-  process.on('uncaughtException', async (err) => {
-    console.error('未捕獲的異常:', err);
-    await handleGracefulShutdown('uncaughtException');
-  });
-  process.on('unhandledRejection', async (reason, promise) => {
-    console.error('未處理的 Promise 拒絕:', reason);
-    await handleGracefulShutdown('unhandledRejection');
   });
 };
 
