@@ -10,6 +10,7 @@ const path = require("path");
 const existsSync = require("fs").existsSync;
 const rimraf = require("rimraf").sync; // 用於清除目錄
 const { exec } = require("child_process");
+const { console } = require("inspector");
 
 class WhatsAppBot {
   constructor() {
@@ -24,6 +25,7 @@ class WhatsAppBot {
     this.tempDir = process.env.TEMP_DIR || path.join(__dirname, "temp");
     this.retryCount = 0;
     this.maxRetries = 3;
+    this.isShuttingDown = false; // 新增關閉旗標
   }
 
   async reconnect() {
@@ -342,6 +344,8 @@ class WhatsAppBot {
 
   setupEventHandlers() {
     if (!this.client) return;
+    // 先移除所有事件監聽，避免重複
+    this.client.removeAllListeners && this.client.removeAllListeners();
 
     this.client.on("qr", async (qr) => {
       try {
@@ -391,6 +395,7 @@ class WhatsAppBot {
   }
 
   async updateGroups() {
+    if (this.isShuttingDown) return; // 關閉中則不執行
     try {
       const chats = await this.client.getChats();
       const groupChats = chats.filter((chat) => chat.isGroup);
@@ -404,7 +409,9 @@ class WhatsAppBot {
       await this.saveData("groups");
       console.log("Groups updated successfully.");
     } catch (error) {
-      console.error("Error updating groups:", error);
+      if (!this.isShuttingDown) {
+        console.error("Error updating groups:", error);
+      }
     }
   }
 
@@ -424,8 +431,10 @@ class WhatsAppBot {
   }
 
   async handleMessage(msg) {
+    if (this.isShuttingDown) return; // 關閉中則不執行
     const messageContent = msg.body;
     const sender = msg.fromMe ? msg.to : msg.from;
+    console.log("Received message:", messageContent, "from:", sender);
     const chat = await msg.getChat();
 
     for (const command of this.activeCommands.values()) {
@@ -666,6 +675,7 @@ class WhatsAppBot {
   }
 
   async destroy() {
+    this.isShuttingDown = true; // 標記正在關閉
     if (this.client) {
       if (this.eventHandlers.has("disconnected")) {
         try {
@@ -689,6 +699,7 @@ class WhatsAppBot {
       this.isInitialized = false;
       console.log("客戶端已正確關閉，認證資料已保留");
     }
+    this.isShuttingDown = false; // 關閉結束
   }
 }
 
