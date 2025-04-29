@@ -260,6 +260,22 @@ class WhatsAppBot {
     // 先移除所有事件監聽，避免重複
     this.client.removeAllListeners && this.client.removeAllListeners();
 
+    // 新增: 從函數檔案中提取實際代碼內容的方法
+    this.extractFunctionCode = async (filePath) => {
+      try {
+        const content = await fs.readFile(filePath, 'utf8');
+        // 移除 module.exports = async function(msg, client) { 和最後的 }
+        const match = content.match(/module\.exports = async function\(msg, client\) {\n?([\s\S]*?)\n?}$/);
+        if (match && match[1]) {
+          return match[1].trim();
+        }
+        return content; // 如果無法匹配，返回原始內容
+      } catch (error) {
+        console.error("讀取函數檔案失敗:", error);
+        return "// 無法讀取函數內容";
+      }
+    };
+
     this.client.on("qr", async (qr) => {
       try {
         if (this.eventHandlers.has("qr")) {
@@ -781,6 +797,34 @@ app.get("/api/commands", async (req, res) => {
   }
 });
 
+app.get("/api/commands/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const command = bot.activeCommands.get(id);
+    
+    if (!command) {
+      return res.status(404).json({ error: "找不到指令" });
+    }
+    
+    // 處理函數類型的回應，從檔案獲取最新內容
+    if (command.response && command.response.type === "function") {
+      const funcPath = path.join(__dirname, "data", command.response.content);
+      if (existsSync(funcPath)) {
+        // 使用新增的 extractFunctionCode 方法獲取函數內容
+        const code = await bot.extractFunctionCode(funcPath);
+        const returnCommand = {...command};
+        returnCommand.response = {...command.response, content: code};
+        return res.json(returnCommand);
+      }
+    }
+    
+    res.json(command);
+  } catch (error) {
+    console.error("獲取指令詳情失敗:", error);
+    res.status(500).json({ message: "獲取指令詳情失敗: " + error.message });
+  }
+});
+
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "ok",
@@ -832,8 +876,14 @@ app.post("/api/commands", async (req, res) => {
         await fs.mkdir(funcDir, { recursive: true });
       }
       const funcPath = path.join(funcDir, `${commandData.id}.js`);
-      // 包裝成 module.exports = async function(msg, client) { ... }
-      const code = `module.exports = async function(msg, client) {\n${commandData.response.content}\n}`;
+      
+      // 檢查內容是否已經包含 module.exports
+      let code = commandData.response.content;
+      if (!code.includes("module.exports")) {
+        // 包裝成 module.exports = async function(msg, client) { ... }
+        code = `module.exports = async function(msg, client) {\n${code}\n}`;
+      }
+      
       await fs.writeFile(funcPath, code, "utf8");
       // 存檔案路徑代替原始內容到 commands.json
       const originalContent = commandData.response.content;
