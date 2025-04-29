@@ -343,6 +343,16 @@ class WhatsAppBot {
     const sender = msg.fromMe ? msg.to : msg.from;
     const chat = await msg.getChat();
 
+    // 特殊處理：忽略系統自身發送的包含前綴 `/help` 回應
+    if (msg.fromMe && (
+        msg.body.startsWith("*Command List*") || 
+        msg._data.isForwarded || 
+        msg._data.quotedMsg
+      )) {
+      console.log("忽略系統自身發送的幫助信息，避免循環觸發");
+      return;
+    }
+
     // 收集所有符合觸發條件的指令
     const matchedCommands = [];
     
