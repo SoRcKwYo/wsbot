@@ -172,26 +172,59 @@ class WhatsAppBot {
       console.log("清除鎖檔案時出錯 (可忽略):", e.message);
     }
 
-    // 嘗試找到 Chrome 瀏覽器的路徑（特別是在 Windows 平台）
+    // 嘗試找到 Chrome 瀏覽器的路徑
     console.log("系統平台:", process.platform);
     let executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || null;
     console.log("環境變數中的PUPPETEER_EXECUTABLE_PATH:", executablePath);
     
-    if (!executablePath && process.platform === 'win32') {
-      const possiblePaths = [
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
-      ];
-      
-      for (const browserPath of possiblePaths) {
-        if (existsSync(browserPath)) {
-          executablePath = browserPath;
-          console.log(`找到瀏覽器路徑: ${executablePath}`);
-          break;
-        } else {
-          console.log(`瀏覽器路徑不存在: ${browserPath}`);
+    if (!executablePath) {
+      if (process.platform === 'win32') {
+        // Windows 平台擴展搜索路徑
+        const possiblePaths = [
+          'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+          'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+          'C:\\Users\\' + process.env.USERNAME + '\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
+          'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+          'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+        ];
+        
+        for (const browserPath of possiblePaths) {
+          if (existsSync(browserPath)) {
+            executablePath = browserPath;
+            console.log(`找到瀏覽器路徑: ${executablePath}`);
+            break;
+          } else {
+            console.log(`瀏覽器路徑不存在: ${browserPath}`);
+          }
+        }
+      } else if (process.platform === 'darwin') {
+        // macOS 平台可能的路徑
+        const possiblePaths = [
+          '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+          '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
+        ];
+        
+        for (const browserPath of possiblePaths) {
+          if (existsSync(browserPath)) {
+            executablePath = browserPath;
+            console.log(`找到瀏覽器路徑: ${executablePath}`);
+            break;
+          }
+        }
+      } else if (process.platform === 'linux') {
+        // Linux 平台可能的路徑
+        const possiblePaths = [
+          '/usr/bin/google-chrome',
+          '/usr/bin/chromium-browser',
+          '/usr/bin/chromium'
+        ];
+        
+        for (const browserPath of possiblePaths) {
+          if (existsSync(browserPath)) {
+            executablePath = browserPath;
+            console.log(`找到瀏覽器路徑: ${executablePath}`);
+            break;
+          }
         }
       }
     }
@@ -199,28 +232,43 @@ class WhatsAppBot {
     console.log("初始化 WhatsApp 客戶端...");
     console.log("使用的瀏覽器路徑:", executablePath || "預設");
     
+    // 配置 Puppeteer 選項
+    const puppeteerOptions = {
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-gpu",
+        "--disable-dev-shm-usage", 
+        "--disable-accelerated-2d-canvas",
+        "--disable-extensions",
+        "--window-size=1280,720",
+        "--disable-extensions-except=[]",
+        "--disable-default-apps",
+        "--disable-translate"
+      ],
+      ignoreDefaultArgs: ["--enable-automation"],
+      executablePath: executablePath
+    };
+    
+    // Windows 平台特殊處理
+    if (process.platform === 'win32') {
+      puppeteerOptions.args.push("--disable-web-security");
+      puppeteerOptions.args.push("--allow-file-access-from-files");
+    }
+
     this.client = new Client({
       authStrategy: new LocalAuth({
         dataPath: this.authDir,
+        clientId: "whatsapp-bot"
       }),
-      puppeteer: {
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-gpu",
-          "--disable-dev-shm-usage", 
-          "--disable-accelerated-2d-canvas",
-          "--disable-extensions",
-          "--window-size=1280,720"
-        ],
-        executablePath: executablePath,
-      },
+      puppeteer: puppeteerOptions,
       webVersionCache: {
         type: "remote",
         remotePath:
           "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1020491273-alpha.html",
-      }
+      },
+      restartOnAuthFail: true
     });
 
     console.log("客戶端配置完成，準備連接...");
