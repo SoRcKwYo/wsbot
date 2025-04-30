@@ -907,17 +907,9 @@ io.on("error", (error) => {
 // Setup bot event handlers
 bot.on("qr", async (qrData) => {
   try {
-    // 確保目錄存在
-    const qrDir = path.join(__dirname, "temp");
-    await fs.mkdir(qrDir, { recursive: true });
-
-    // 生成唯一的文件名
-    const fileName = `qr_${Date.now()}.jpg`;
-    const filePath = path.join(qrDir, fileName);
-
-    // 生成 QR code 並保存為 JPG
-    await qr.toFile(filePath, qrData, {
-      type: "jpg",
+    // 直接生成 QR code base64，不保存臨時文件
+    const qrOptions = {
+      type: 'png',
       quality: 0.9,
       margin: 1,
       width: 600,
@@ -925,19 +917,15 @@ bot.on("qr", async (qrData) => {
         dark: "#000000",
         light: "#ffffff",
       },
-    });
+    };
 
-    // 讀取文件並轉換為 base64
-    const imageBuffer = await fs.readFile(filePath);
-    const base64Image = `data:image/jpeg;base64,${imageBuffer.toString(
-      "base64"
-    )}`;
-
+    // 直接生成 base64 編碼的 QR 碼
+    const qrImage = await qr.toDataURL(qrData, qrOptions);
+    
     // 發送到前端
-    io.emit("qr", base64Image);
-
-    // 刪除臨時文件
-    await fs.unlink(filePath);
+    io.emit("qr", qrImage);
+    
+    console.log("QR 碼已生成並發送到前端");
   } catch (error) {
     console.error("Error generating QR code:", error);
   }
