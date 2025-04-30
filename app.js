@@ -188,42 +188,7 @@ class WhatsAppBot {
           "--disable-gpu",
         ],
         executablePath:
-          process.env.PUPPETEER_EXECUTABLE_PATH ||
-          (() => {
-            const platform = process.platform;
-
-            if (platform === "darwin") {
-              // macOS
-              // 常見的 Chrome 路徑
-              const macPaths = [
-                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-                "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-                "/Applications/Chromium.app/Contents/MacOS/Chromium",
-              ];
-
-              for (const path of macPaths) {
-                if (existsSync(path)) return path;
-              }
-            } else if (platform === "win32") {
-              // Windows
-              // 常見的 Chrome 路徑
-              const winPaths = [
-                "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-                "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-                process.env.LOCALAPPDATA +
-                  "\\Google\\Chrome\\Application\\chrome.exe",
-                process.env.PROGRAMFILES +
-                  "\\Google\\Chrome\\Application\\chrome.exe",
-                process.env["PROGRAMFILES(X86)"] +
-                  "\\Google\\Chrome\\Application\\chrome.exe",
-              ];
-
-              for (const path of winPaths) {
-                if (existsSync(path)) return path;
-              }
-            }
-            return null; // 找不到時回傳 null，讓 puppeteer 使用內建的
-          })(),
+          process.env.PUPPETEER_EXECUTABLE_PATH || null,
       },
       webVersionCache: {
         type: "remote",
