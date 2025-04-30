@@ -42,6 +42,11 @@
         --text-secondary: rgba(255, 255, 255, 0.6);
       }
 
+      @keyframes 
+      qr-spin {
+        to { transform: rotate(360deg); }
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -624,7 +629,12 @@
         <h2>Bot 控制台</h2>
         <div class="status offline" id="bot-status">離線</div>
         <button class="btn btn-primary" id="toggle-bot">啟動 Bot</button>
-        <div class="qr-container" id="qrcode"></div>
+        <div class="qr-container" id="qrcode">
+          <div id="qr-loading" style="display: none; text-align: center; padding: 20px 0;">
+            <div class="spinner" style="width: 40px; height: 40px; margin: 0 auto; border: 4px solid rgba(76, 175, 80, 0.2); border-radius: 50%; border-top-color: #4caf50; animation: qr-spin 1s linear infinite;"></div>
+            <p style="margin-top: 10px; color: #4caf50; font-weight: 500;">正在獲取 WhatsApp 登入碼...</p>
+          </div>
+        </div>
       </section>
 
       <!-- 群組 Section -->
@@ -1193,11 +1203,22 @@
       // Bot Status
       socket.on("qr", (qr) => {
         const qrContainer = document.getElementById("qrcode");
-        qrContainer.innerHTML = "";
-        const qrImage = new Image();
-        qrImage.src = qr;
-        qrImage.classList.add("qr-image");
-        qrContainer.appendChild(qrImage);
+  const qrLoading = document.getElementById("qr-loading");
+  
+  // 隱藏 loading 動畫
+  qrLoading.style.display = "none";
+  
+  // 清空容器並添加 QR 碼圖片
+  qrContainer.innerHTML = "";
+  qrContainer.appendChild(qrLoading);
+  
+  const qrImage = new Image();
+  qrImage.src = qr;
+  qrImage.classList.add("qr-image");
+  qrImage.style.maxWidth = "280px";
+  qrImage.style.margin = "0 auto";
+  qrImage.style.display = "block";
+  qrContainer.appendChild(qrImage);
       });
 
       socket.on("ready", () => {
@@ -1301,12 +1322,41 @@
 
       // Toggle Bot
       document.getElementById("toggle-bot").addEventListener("click", () => {
-        if (isConnected) {
-          socket.emit("disconnect-bot");
-        } else {
-          socket.emit("connect-bot");
-        }
-      });
+  if (isConnected) {
+    socket.emit("disconnect-bot");
+  } else {
+    socket.emit("connect-bot");
+    
+    // 顯示 loading 動畫
+    const qrContainer = document.getElementById("qrcode");
+    qrContainer.innerHTML = ""; // 清空現有內容
+    const qrLoading = document.createElement("div");
+    qrLoading.id = "qr-loading";
+    qrLoading.style.display = "block";
+    qrLoading.style.textAlign = "center";
+    qrLoading.style.padding = "20px 0";
+    
+    const spinner = document.createElement("div");
+    spinner.className = "spinner";
+    spinner.style.width = "40px";
+    spinner.style.height = "40px";
+    spinner.style.margin = "0 auto";
+    spinner.style.border = "4px solid rgba(76, 175, 80, 0.2)";
+    spinner.style.borderRadius = "50%";
+    spinner.style.borderTopColor = "#4caf50";
+    spinner.style.animation = "qr-spin 1s linear infinite";
+    
+    const text = document.createElement("p");
+    text.style.marginTop = "10px";
+    text.style.color = "#4caf50";
+    text.style.fontWeight = "500";
+    text.textContent = "正在獲取 WhatsApp 登入碼...";
+    
+    qrLoading.appendChild(spinner);
+    qrLoading.appendChild(text);
+    qrContainer.appendChild(qrLoading);
+  }
+});
 
       // Show/hide file input based on response type
       document.getElementById("response-type").addEventListener("change", (e) => {

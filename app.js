@@ -181,14 +181,8 @@ class WhatsAppBot {
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
           "--disable-gpu",
-        ],
-        executablePath:
-          process.env.PUPPETEER_EXECUTABLE_PATH || null,
+        ]
       },
       webVersionCache: {
         type: "remote",
@@ -757,8 +751,6 @@ const bot = new WhatsAppBot();
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json({ limit: "100mb" }));
-app.use(bodyParser.urlencoded({ limit: "100mb", extended: true }));
 // 修改靜態文件服務
 app.use(express.static(path.join(__dirname, "public")));
 app.use(
