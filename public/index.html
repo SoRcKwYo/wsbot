@@ -687,12 +687,176 @@
                 </span>
               </label>
               <label class="switch-label">
-                <span>正則</span>
+                <span>圖片</span>
                 <span class="switch">
-                  <input type="checkbox" name="isRegex" />
+                  <input type="checkbox" name="hasMedia" />
                   <span class="slider"></span>
                 </span>
               </label>
+              <label class="switch-label">
+                <span>表情反應</span>
+                <span class="switch">
+                  <input type="checkbox" name="hasReaction" />
+                  <span class="slider"></span>
+                </span>
+              </label>
+              
+              <!-- 表情反應選擇器，默認隱藏，勾選表情反應後顯示 -->
+              <div id="reaction-selector" style="display:none; margin-top:10px; border-top:1px solid #e0e0e0; padding-top:10px; max-width: 500px;">
+                <div style="font-size:0.9em; margin-bottom:8px; color:#666;">選擇要觸發的表情符號：</div>
+                <!-- 表情符號分類標籤 -->
+                <div class="emoji-tabs" style="margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap;">
+                  <span class="emoji-tab active" data-category="frequent" style="cursor:pointer; padding:5px 12px; border-radius:15px; background:#e8f5e9; color:#388e3c; font-size:0.9em;">常用</span>
+                  <span class="emoji-tab" data-category="smileys" style="cursor:pointer; padding:5px 12px; border-radius:15px; background:#f5f5f5; color:#666; font-size:0.9em;">笑臉</span>
+                  <span class="emoji-tab" data-category="gestures" style="cursor:pointer; padding:5px 12px; border-radius:15px; background:#f5f5f5; color:#666; font-size:0.9em;">手勢</span>
+                  <span class="emoji-tab" data-category="love" style="cursor:pointer; padding:5px 12px; border-radius:15px; background:#f5f5f5; color:#666; font-size:0.9em;">愛心</span>
+                  <span class="emoji-tab" data-category="symbols" style="cursor:pointer; padding:5px 12px; border-radius:15px; background:#f5f5f5; color:#666; font-size:0.9em;">符號</span>
+                </div>
+                
+                <!-- 常用表情 -->
+                <div class="emoji-category" id="emoji-frequent" style="display:flex; flex-wrap:wrap; gap:8px;">
+                  <span class="emoji-item" data-emoji="👍" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👍</span>
+                  <span class="emoji-item" data-emoji="👎" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👎</span>
+                  <span class="emoji-item" data-emoji="❤️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">❤️</span>
+                  <span class="emoji-item" data-emoji="😂" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😂</span>
+                  <span class="emoji-item" data-emoji="😢" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😢</span>
+                  <span class="emoji-item" data-emoji="😮" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😮</span>
+                  <span class="emoji-item" data-emoji="🙏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🙏</span>
+                  <span class="emoji-item" data-emoji="👏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👏</span>
+                  <span class="emoji-item" data-emoji="🔥" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🔥</span>
+                  <span class="emoji-item" data-emoji="🎉" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🎉</span>
+                </div>
+                
+                <!-- 笑臉表情 -->
+                <div class="emoji-category" id="emoji-smileys" style="display:none; flex-wrap:wrap; gap:8px;">
+                  <span class="emoji-item" data-emoji="😀" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😀</span>
+                  <span class="emoji-item" data-emoji="😃" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😃</span>
+                  <span class="emoji-item" data-emoji="😄" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😄</span>
+                  <span class="emoji-item" data-emoji="😁" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😁</span>
+                  <span class="emoji-item" data-emoji="😆" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😆</span>
+                  <span class="emoji-item" data-emoji="😅" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😅</span>
+                  <span class="emoji-item" data-emoji="🤣" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤣</span>
+                  <span class="emoji-item" data-emoji="😂" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😂</span>
+                  <span class="emoji-item" data-emoji="🙂" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🙂</span>
+                  <span class="emoji-item" data-emoji="😊" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😊</span>
+                  <span class="emoji-item" data-emoji="😇" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😇</span>
+                  <span class="emoji-item" data-emoji="🥰" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🥰</span>
+                  <span class="emoji-item" data-emoji="😍" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😍</span>
+                  <span class="emoji-item" data-emoji="😘" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😘</span>
+                  <span class="emoji-item" data-emoji="😗" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😗</span>
+                  <span class="emoji-item" data-emoji="😋" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😋</span>
+                  <span class="emoji-item" data-emoji="😛" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😛</span>
+                  <span class="emoji-item" data-emoji="😜" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😜</span>
+                  <span class="emoji-item" data-emoji="🤪" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤪</span>
+                  <span class="emoji-item" data-emoji="😝" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😝</span>
+                  <span class="emoji-item" data-emoji="🤑" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤑</span>
+                  <span class="emoji-item" data-emoji="🤗" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤗</span>
+                  <span class="emoji-item" data-emoji="🤭" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤭</span>
+                  <span class="emoji-item" data-emoji="🤫" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤫</span>
+                  <span class="emoji-item" data-emoji="🤔" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤔</span>
+                  <span class="emoji-item" data-emoji="😐" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😐</span>
+                  <span class="emoji-item" data-emoji="😑" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😑</span>
+                  <span class="emoji-item" data-emoji="😶" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😶</span>
+                  <span class="emoji-item" data-emoji="😏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😏</span>
+                  <span class="emoji-item" data-emoji="😒" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😒</span>
+                  <span class="emoji-item" data-emoji="🙄" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🙄</span>
+                  <span class="emoji-item" data-emoji="😬" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😬</span>
+                </div>
+                
+                <!-- 手勢表情 -->
+                <div class="emoji-category" id="emoji-gestures" style="display:none; flex-wrap:wrap; gap:8px;">
+                  <span class="emoji-item" data-emoji="👍" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👍</span>
+                  <span class="emoji-item" data-emoji="👎" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👎</span>
+                  <span class="emoji-item" data-emoji="👌" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👌</span>
+                  <span class="emoji-item" data-emoji="✌️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">✌️</span>
+                  <span class="emoji-item" data-emoji="🤞" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤞</span>
+                  <span class="emoji-item" data-emoji="🤟" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤟</span>
+                  <span class="emoji-item" data-emoji="🤘" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤘</span>
+                  <span class="emoji-item" data-emoji="🤙" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤙</span>
+                  <span class="emoji-item" data-emoji="👈" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👈</span>
+                  <span class="emoji-item" data-emoji="👉" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👉</span>
+                  <span class="emoji-item" data-emoji="👆" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👆</span>
+                  <span class="emoji-item" data-emoji="👇" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👇</span>
+                  <span class="emoji-item" data-emoji="✋" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">✋</span>
+                  <span class="emoji-item" data-emoji="🤚" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤚</span>
+                  <span class="emoji-item" data-emoji="🖐" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🖐</span>
+                  <span class="emoji-item" data-emoji="🖖" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🖖</span>
+                  <span class="emoji-item" data-emoji="👋" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👋</span>
+                  <span class="emoji-item" data-emoji="🤏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤏</span>
+                  <span class="emoji-item" data-emoji="✍️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">✍️</span>
+                  <span class="emoji-item" data-emoji="👏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👏</span>
+                  <span class="emoji-item" data-emoji="🙌" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🙌</span>
+                  <span class="emoji-item" data-emoji="🤝" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤝</span>
+                  <span class="emoji-item" data-emoji="🙏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🙏</span>
+                </div>
+                
+                <!-- 愛心表情 -->
+                <div class="emoji-category" id="emoji-love" style="display:none; flex-wrap:wrap; gap:8px;">
+                  <span class="emoji-item" data-emoji="❤️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">❤️</span>
+                  <span class="emoji-item" data-emoji="🧡" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🧡</span>
+                  <span class="emoji-item" data-emoji="💛" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💛</span>
+                  <span class="emoji-item" data-emoji="💚" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💚</span>
+                  <span class="emoji-item" data-emoji="💙" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💙</span>
+                  <span class="emoji-item" data-emoji="💜" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💜</span>
+                  <span class="emoji-item" data-emoji="🖤" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🖤</span>
+                  <span class="emoji-item" data-emoji="🤎" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤎</span>
+                  <span class="emoji-item" data-emoji="🤍" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤍</span>
+                  <span class="emoji-item" data-emoji="💔" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💔</span>
+                  <span class="emoji-item" data-emoji="💕" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💕</span>
+                  <span class="emoji-item" data-emoji="💞" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💞</span>
+                  <span class="emoji-item" data-emoji="💓" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💓</span>
+                  <span class="emoji-item" data-emoji="💗" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💗</span>
+                  <span class="emoji-item" data-emoji="💖" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💖</span>
+                  <span class="emoji-item" data-emoji="💘" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💘</span>
+                  <span class="emoji-item" data-emoji="💝" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💝</span>
+                </div>
+                
+                <!-- 符號表情 -->
+                <div class="emoji-category" id="emoji-symbols" style="display:none; flex-wrap:wrap; gap:8px;">
+                  <span class="emoji-item" data-emoji="🔥" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🔥</span>
+                  <span class="emoji-item" data-emoji="✨" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">✨</span>
+                  <span class="emoji-item" data-emoji="🎉" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🎉</span>
+                  <span class="emoji-item" data-emoji="🎊" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🎊</span>
+                  <span class="emoji-item" data-emoji="💯" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💯</span>
+                  <span class="emoji-item" data-emoji="⭐" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">⭐</span>
+                  <span class="emoji-item" data-emoji="🌟" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🌟</span>
+                  <span class="emoji-item" data-emoji="💫" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💫</span>
+                  <span class="emoji-item" data-emoji="💥" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💥</span>
+                  <span class="emoji-item" data-emoji="💢" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💢</span>
+                  <span class="emoji-item" data-emoji="💦" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💦</span>
+                  <span class="emoji-item" data-emoji="💨" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💨</span>
+                  <span class="emoji-item" data-emoji="🕳️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🕳️</span>
+                  <span class="emoji-item" data-emoji="❓" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">❓</span>
+                  <span class="emoji-item" data-emoji="❗" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">❗</span>
+                  <span class="emoji-item" data-emoji="‼️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">‼️</span>
+                  <span class="emoji-item" data-emoji="⁉️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">⁉️</span>
+                </div>
+                
+                <div id="selected-emoji" style="margin-top:10px; font-size:0.9em;">
+                  <span style="color:#666;">已選擇：</span>
+                  <span id="selected-emoji-value" style="font-weight:bold; font-size:1.3em;">無</span>
+                </div>
+              </div>
+              
+              <label class="switch-label">
+                <span>特定時段</span>
+                <span class="switch">
+                  <input type="checkbox" name="timeRange" />
+                  <span class="slider"></span>
+                </span>
+              </label>
+              
+              <!-- 時間範圍選擇器，默認隱藏，勾選特定時段後顯示 -->
+              <div id="time-range-selector" style="display:none; margin-top:10px; border-top:1px solid #e0e0e0; padding-top:10px;">
+                <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
+                  <label style="min-width:60px; margin:0;">開始時間:</label>
+                  <input type="time" name="startTime" style="flex:1; max-width:150px;" value="00:00">
+                </div>
+                <div style="display:flex; gap:10px; align-items:center;">
+                  <label style="min-width:60px; margin:0;">結束時間:</label>
+                  <input type="time" name="endTime" style="flex:1; max-width:150px;" value="23:59">
+                </div>
+              </div>
               <button class="btn btn-primary" onclick="addTrigger()">新增觸發條件</button>
             </div>
           </div>
@@ -820,7 +984,7 @@
           </div>
         </div>
         
-        <div style="margin-top:20px;text-align:right;">
+        <div style="margin-top:20px;text-align:right;"></div>
           <button class="btn" id="modal-template-cancel" style="background:#f5f5f5;color:#333;margin-right:8px;">取消</button>
           <button class="btn btn-primary" id="modal-template-confirm" style="background:#3f51b5;">確定</button>
         </div>
@@ -839,6 +1003,75 @@
       let isConnected = false;
       let codeMirrorEditor = null;
       let selectedTargets = [];
+
+      // 添加時間範圍選擇器的顯示/隱藏功能
+      document.addEventListener('DOMContentLoaded', () => {
+        const timeRangeCheckbox = document.querySelector('input[name="timeRange"]');
+        const timeRangeSelector = document.getElementById('time-range-selector');
+        
+        if (timeRangeCheckbox && timeRangeSelector) {
+          timeRangeCheckbox.addEventListener('change', function() {
+            timeRangeSelector.style.display = this.checked ? 'block' : 'none';
+          });
+        }
+
+        const reactionCheckbox = document.querySelector('input[name="hasReaction"]');
+        const reactionSelector = document.getElementById('reaction-selector');
+        
+        if (reactionCheckbox && reactionSelector) {
+          reactionCheckbox.addEventListener('change', function() {
+            reactionSelector.style.display = this.checked ? 'block' : 'none';
+          });
+        }
+
+        // 表情符號選擇功能
+        const emojiItems = document.querySelectorAll('.emoji-item');
+        const selectedEmojiValue = document.getElementById('selected-emoji-value');
+        
+        if (emojiItems && selectedEmojiValue) {
+          emojiItems.forEach(item => {
+            item.addEventListener('click', function() {
+              // 移除之前選中的表情高亮
+              document.querySelectorAll('.emoji-item.selected').forEach(el => {
+                el.classList.remove('selected');
+                el.style.background = '';
+              });
+              
+              // 高亮當前選中的表情
+              this.classList.add('selected');
+              this.style.background = '#e8f5e9';
+              
+              // 更新已選擇的表情顯示
+              selectedEmojiValue.textContent = this.dataset.emoji;
+            });
+          });
+        }
+        
+        // 表情分類切換功能
+        const emojiTabs = document.querySelectorAll('.emoji-tab');
+        if (emojiTabs) {
+          emojiTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+              // 切換分類標籤樣式
+              document.querySelectorAll('.emoji-tab').forEach(t => {
+                t.classList.remove('active');
+                t.style.background = '#f5f5f5';
+                t.style.color = '#666';
+              });
+              this.classList.add('active');
+              this.style.background = '#e8f5e9';
+              this.style.color = '#388e3c';
+              
+              // 切換對應的表情分類顯示
+              const category = this.dataset.category;
+              document.querySelectorAll('.emoji-category').forEach(c => {
+                c.style.display = 'none';
+              });
+              document.getElementById(`emoji-${category}`).style.display = 'flex';
+            });
+          });
+        }
+      });
 
       function setupCodeMirror() {
         if (codeMirrorEditor) return;
@@ -1297,29 +1530,68 @@
         const quotedMsg = document.querySelector(
           '#trigger-conditions input[name="quotedMsg"]'
         );
-        const isRegex = document.querySelector(
-          '#trigger-conditions input[name="isRegex"]'
+        const hasMedia = document.querySelector(
+          '#trigger-conditions input[name="hasMedia"]'
         );
+        const hasReaction = document.querySelector(
+          '#trigger-conditions input[name="hasReaction"]'
+        );
+        const timeRange = document.querySelector(
+          '#trigger-conditions input[name="timeRange"]'
+        );
+        const startTime = document.querySelector(
+          '#trigger-conditions input[name="startTime"]'
+        );
+        const endTime = document.querySelector(
+          '#trigger-conditions input[name="endTime"]'
+        );
+        const selectedEmojiValue = document.getElementById('selected-emoji-value');
 
         const keyword = triggerInput.value.trim();
-        if (!keyword && !quotedMsg.checked) {
-          alert("請輸入觸發關鍵詞或勾選引用訊息");
+        
+        // 檢查是否有任何觸發條件
+        if (!keyword && !quotedMsg.checked && !hasMedia.checked && !hasReaction.checked && !timeRange.checked) {
+          alert("請輸入觸發關鍵詞或勾選引用訊息/圖片/表情反應/特定時段");
           return;
         }
 
-        currentTriggers.push({
+        // 檢查表情反應是否選擇表情符號
+        if (hasReaction.checked && (!selectedEmojiValue || selectedEmojiValue.textContent === "無")) {
+          alert("表情反應觸發條件必須選擇一個表情符號");
+          return;
+        }
+
+        const newTrigger = {
           keyword,
           toLowerCase: toLowerCase.checked,
           startsWith: startsWith.checked,
           quotedMsg: quotedMsg.checked,
-          isRegex: isRegex.checked
-        });
+          hasMedia: hasMedia.checked,
+          hasReaction: hasReaction.checked,
+          timeRange: timeRange.checked,
+          startTime: timeRange.checked ? startTime.value : null,
+          endTime: timeRange.checked ? endTime.value : null
+        };
+        
+        // 如果有表情反應則添加表情符號
+        if (hasReaction.checked) {
+          newTrigger.reaction = selectedEmojiValue.textContent;
+        }
+
+        currentTriggers.push(newTrigger);
 
         triggerInput.value = "";
         toLowerCase.checked = false;
         startsWith.checked = false;
         quotedMsg.checked = false;
-        isRegex.checked = false;
+        hasMedia.checked = false;
+        hasReaction.checked = false;
+        timeRange.checked = false;
+        startTime.value = "00:00";
+        endTime.value = "23:59";
+        selectedEmojiValue.textContent = "無";
+        document.getElementById("time-range-selector").style.display = "none";
+        document.getElementById("reaction-selector").style.display = "none";
 
         renderTriggers();
       }
@@ -1336,6 +1608,9 @@
             <span>${trigger.toLowerCase ? "忽略大小寫" : ""}</span>
             <span>${trigger.startsWith ? "開頭匹配" : ""}</span>
             <span>${trigger.quotedMsg ? "引用訊息" : ""}</span>
+            <span>${trigger.hasMedia ? "圖片" : ""}</span>
+            <span>${trigger.hasReaction ? `表情反應 (${trigger.reaction})` : ""}</span>
+            <span>${trigger.timeRange ? `特定時段 (${trigger.startTime} - ${trigger.endTime})` : ""}</span>
             <button class="btn btn-danger" onclick="removeTrigger(${index})">刪除</button>
         </div>
     `
@@ -1513,10 +1788,40 @@
         }
         const fileInput = document.getElementById("response-file");
 
+        // 確認至少有一個觸發條件
         if (currentTriggers.length === 0) {
           alert("請至少添加一個觸發條件");
           return;
         }
+
+        // 檢查每個觸發條件是否有效
+        let hasValidTrigger = false;
+        for (let trigger of currentTriggers) {
+          // 如果是表情反應，必須選擇一個表情符號
+          if (trigger.hasReaction) {
+            if (!trigger.reaction || trigger.reaction === "無") {
+              alert("有表情反應的觸發條件必須選擇一個表情符號");
+              return;
+            }
+            hasValidTrigger = true;
+          } 
+          // 如果是其他類型的觸發條件
+          else if (
+            trigger.keyword || 
+            trigger.quotedMsg || 
+            trigger.hasMedia || 
+            trigger.timeRange
+          ) {
+            hasValidTrigger = true;
+          }
+        }
+
+        // 確保至少有一個有效的觸發條件
+        if (!hasValidTrigger) {
+          alert("請確保至少有一個有效的觸發條件");
+          return;
+        }
+        
         if ((responseType === "text" || responseType === "code" || responseType === "function") && !responseContent) {
           alert("請輸入回應內容");
           return;
@@ -1578,6 +1883,9 @@
             document.getElementById("response-type").value = "text";
             document.getElementById("response-type").dispatchEvent(new Event("change"));
             await initializeData();
+          } else {
+            const errorData = await response.json();
+            alert(errorData.message || (editingCommandId ? "更新指令失敗" : "保存指令失敗"));
           }
         } catch (error) {
           console.error("Error saving command:", error);
