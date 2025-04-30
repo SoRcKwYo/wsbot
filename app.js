@@ -172,6 +172,33 @@ class WhatsAppBot {
       console.log("清除鎖檔案時出錯 (可忽略):", e.message);
     }
 
+    // 嘗試找到 Chrome 瀏覽器的路徑（特別是在 Windows 平台）
+    console.log("系統平台:", process.platform);
+    let executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || null;
+    console.log("環境變數中的PUPPETEER_EXECUTABLE_PATH:", executablePath);
+    
+    if (!executablePath && process.platform === 'win32') {
+      const possiblePaths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+      ];
+      
+      for (const browserPath of possiblePaths) {
+        if (existsSync(browserPath)) {
+          executablePath = browserPath;
+          console.log(`找到瀏覽器路徑: ${executablePath}`);
+          break;
+        } else {
+          console.log(`瀏覽器路徑不存在: ${browserPath}`);
+        }
+      }
+    }
+
+    console.log("初始化 WhatsApp 客戶端...");
+    console.log("使用的瀏覽器路徑:", executablePath || "預設");
+    
     this.client = new Client({
       authStrategy: new LocalAuth({
         dataPath: this.authDir,
@@ -182,7 +209,12 @@ class WhatsAppBot {
           "--no-sandbox",
           "--disable-setuid-sandbox",
           "--disable-gpu",
-        ]
+          "--disable-dev-shm-usage", 
+          "--disable-accelerated-2d-canvas",
+          "--disable-extensions",
+          "--window-size=1280,720"
+        ],
+        executablePath: executablePath,
       },
       webVersionCache: {
         type: "remote",
@@ -190,6 +222,8 @@ class WhatsAppBot {
           "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1020491273-alpha.html",
       }
     });
+
+    console.log("客戶端配置完成，準備連接...");
 
     const functionDir = path.join(__dirname, "data", "functions");
     if (!existsSync(functionDir)) {
