@@ -6,6 +6,7 @@ const http = require("http");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const fs = require("fs").promises;
+const fsSync = require("fs"); // 添加同步版 fs
 const path = require("path");
 const existsSync = require("fs").existsSync;
 const rimraf = require("rimraf").sync; // 用於清除目錄
@@ -22,8 +23,18 @@ class WhatsAppBot {
     this.dataDir = process.env.DATA_DIR || path.join(__dirname, "data");
     this.authDir = process.env.AUTH_DIR || path.join(__dirname, "auth");
     this.tempDir = process.env.TEMP_DIR || path.join(__dirname, "temp");
+    this.authDir = process.env.AUTH_DIR || path.join(__dirname, "auth");
+    this.sessionDir = path.join(this.authDir, "session-whatsapp-bot");
+    this.isShuttingDown = false;
+    this.browser = null;
     this.retryCount = 0;
     this.maxRetries = 3;
+    // 增加定期清理
+    this.cleanupInterval = setInterval(() => {
+      this.cleanupTempFiles().catch((error) =>
+        console.error("自動清理臨時檔案失敗:", error)
+      );
+    }, 3600000); // 每小時清理
   }
 
   async reconnect() {
@@ -67,66 +78,25 @@ class WhatsAppBot {
       // 加載群組數據
       const groupsPath = path.join(this.dataDir, "groups.json");
       if (await this.fileExists(groupsPath)) {
-        try {
-          const groupsData = await fs.readFile(groupsPath, "utf8");
-          this.groups = new Map(JSON.parse(groupsData));
-        } catch (parseError) {
-          console.error("解析群組數據失敗，將使用空數據:", parseError.message);
-          console.log("建立備份檔案以保存原始數據");
-          // 備份損壞的檔案
-          await fs.copyFile(groupsPath, `${groupsPath}.bak.${Date.now()}`);
-          // 使用空的 Map
-          this.groups = new Map();
-        }
+        const groupsData = await fs.readFile(groupsPath, "utf8");
+        this.groups = new Map(JSON.parse(groupsData));
       }
 
       // 加載聯絡人數據
       const contactsPath = path.join(this.dataDir, "contacts.json");
       if (await this.fileExists(contactsPath)) {
-        try {
-          const contactsData = await fs.readFile(contactsPath, "utf8");
-          this.contacts = new Map(JSON.parse(contactsData));
-        } catch (parseError) {
-          console.error(
-            "解析聯絡人數據失敗，將使用空數據:",
-            parseError.message
-          );
-          console.log("建立備份檔案以保存原始數據");
-          // 備份損壞的檔案
-          await fs.copyFile(contactsPath, `${contactsPath}.bak.${Date.now()}`);
-          // 使用空的 Map
-          this.contacts = new Map();
-        }
+        const contactsData = await fs.readFile(contactsPath, "utf8");
+        this.contacts = new Map(JSON.parse(contactsData));
       }
 
       // 加載指令數據
       const commandsPath = path.join(this.dataDir, "commands.json");
       if (await this.fileExists(commandsPath)) {
-        try {
-          const commandsData = await fs.readFile(commandsPath, "utf8");
-          this.activeCommands = new Map(JSON.parse(commandsData));
-        } catch (parseError) {
-          console.error("解析指令數據失敗，將使用空數據:", parseError.message);
-          console.log("建立備份檔案以保存原始數據");
-          // 備份損壞的檔案
-          await fs.copyFile(commandsPath, `${commandsPath}.bak.${Date.now()}`);
-          // 使用空的 Map
-          this.activeCommands = new Map();
-        }
+        const commandsData = await fs.readFile(commandsPath, "utf8");
+        this.activeCommands = new Map(JSON.parse(commandsData));
       }
-
-      // 數據載入後立即保存一份有效的備份
-      await Promise.all([
-        this.saveData("groups"),
-        this.saveData("contacts"),
-        this.saveData("commands"),
-      ]);
     } catch (error) {
       console.error("Error loading data:", error);
-      // 初始化空的資料結構，確保應用可以啟動
-      this.groups = new Map();
-      this.contacts = new Map();
-      this.activeCommands = new Map();
     }
   }
 
@@ -159,102 +129,111 @@ class WhatsAppBot {
     }
   }
 
-  initialize() {
-    this.client = new Client({
-      authStrategy: new LocalAuth({
-        clientId: "whatsapp-bot",
-        dataPath: this.authDir,
-      }),
-      puppeteer: {
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--disable-gpu",
-          "--window-size=1280,720",
-          "--disable-extensions",
-          "--disable-component-extensions-with-background-pages",
-          "--disable-default-apps",
-          "--mute-audio",
-          "--no-default-browser-check",
-          "--no-first-run",
-          "--disable-backgrounding-occluded-windows",
-          "--disable-renderer-backgrounding",
-          "--disable-background-timer-throttling",
-          "--disable-ipc-flooding-protection",
-          "--disable-site-isolation-trials"
-        ],
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (() => {
-          const platform = process.platform;
-          
-          if (platform === 'darwin') { // macOS
-            // 常見的 Chrome 路徑
-            const macPaths = [
-              '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-              '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',
-              '/Applications/Chromium.app/Contents/MacOS/Chromium'
-            ];
-            
-            for (const path of macPaths) {
-              if (existsSync(path)) return path;
-            }
-          } else if (platform === 'win32') { // Windows
-            // 常見的 Chrome 路徑
-            const winPaths = [
-              'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-              'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-              process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe',
-              process.env.PROGRAMFILES + '\\Google\\Chrome\\Application\\chrome.exe',
-              process.env['PROGRAMFILES(X86)'] + '\\Google\\Chrome\\Application\\chrome.exe'
-            ];
-            
-            for (const path of winPaths) {
-              if (existsSync(path)) return path;
-            }
-          }
-          
-          return null; // 找不到時回傳 null，讓 puppeteer 使用內建的
-        })(),
-        ignoreHTTPSErrors: true,
-        timeout: 120000,
-        handleSIGINT: false,
-        protocolTimeout: 60000
-      },
-      webVersionCache: {
-        type: "local"
-      },
-      webVersion: '2.2326.10',
-      qrMaxRetries: 5,
-      authTimeoutMs: 60000,
-      takeoverTimeoutMs: 60000,
-      restartOnAuthFail: true
-    });
+  async initialize() {
+    try {
+      await this.cleanup();
+      await this.ensureDirectories();
 
-    console.log("客戶端配置完成，準備連接...");
+      this.client = new Client({
+        authStrategy: new LocalAuth({
+          clientId: "whatsapp-bot",
+          dataPath: this.sessionDir,
+        }),
+        puppeteer: {
+          headless: true,
+          args: [
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-software-rasterizer",
+            "--disable-extensions",
+            "--disable-default-apps",
+            "--disable-popup-blocking",
+            "--disable-notifications",
+            "--window-size=1280,720",
+          ],
+          executablePath: process.platform === 'darwin' 
+            ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+            : null,
+          ignoreHTTPSErrors: true,
+          defaultViewport: null,
+          timeout: 120000
+        }
+      });
 
-    const functionDir = path.join(__dirname, "data", "functions");
-    if (!existsSync(functionDir)) {
-      fs.mkdir(functionDir, { recursive: true });
+      const functionDir = path.join(__dirname, "data", "functions");
+      if (!existsSync(functionDir)) {
+        fs.mkdir(functionDir, { recursive: true });
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      this.setupEventHandlers();
+      console.log("開始初始化 WhatsApp 客戶端...");
+
+      const initPromise = this.client.initialize();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('初始化超時')), 60000);
+      });
+
+      await Promise.race([initPromise, timeoutPromise]);
+
+      this.isInitialized = true;
+      this.retryCount = 0;
+      console.log("WhatsApp 客戶端初始化成功");
+      return true;
+    } catch (error) {
+      return this.handleInitializationError(error);
+    }
+  }
+
+  async cleanup() {
+    try {
+      if (this.client) {
+        try {
+          await this.client.destroy();
+          this.client = null;
+        } catch (e) {
+          console.warn("關閉現有客戶端警告:", e);
+        }
+      }
+
+      // 清理鎖定檔案
+      const lockFile = path.join(this.sessionDir, "SingletonLock");
+      if (existsSync(lockFile)) {
+        try {
+          await fs.unlink(lockFile);
+          console.log("已清理鎖定檔案");
+        } catch (error) {
+          console.warn("清理鎖定檔案警告:", error);
+        }
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    } catch (error) {
+      console.error("清理過程出錯:", error);
+    }
+  }
+
+  async handleInitializationError(error) {
+    console.error("初始化失敗:", error);
+
+    // 確保完整清理
+    await this.cleanup();
+
+    if (this.retryCount < this.maxRetries) {
+      this.retryCount++;
+      console.log(`嘗試重新初始化 (${this.retryCount}/${this.maxRetries})`);
+
+      // 使用指數退避策略
+      const delay = Math.min(1000 * Math.pow(2, this.retryCount), 10000);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      return this.initialize();
     }
 
-    console.log("正在初始化 WhatsApp 客戶端，嘗試恢復會話...");
-    this.setupEventHandlers();
-
-    return this.client.initialize().catch((error) => {
-      console.error("初始化客戶端失敗:", error);
-      
-      // 提供更詳細的錯誤處理和建議
-      if (error.message && error.message.includes("Failed to launch the browser process")) {
-        console.error("無法啟動瀏覽器進程。建議嘗試以下解決方案:");
-        console.error("1. 確認已安裝 Google Chrome 或 Microsoft Edge");
-        console.error("2. 設置環境變數 PUPPETEER_EXECUTABLE_PATH 指向瀏覽器可執行檔案");
-        console.error("3. 確保有足夠的系統權限運行瀏覽器進程");
-        console.error("4. 檢查防毒軟體是否阻止瀏覽器啟動");
-      }
-      throw error; // 繼續拋出錯誤以便上層處理
-    });
+    throw new Error("超過最大重試次數，初始化失敗");
   }
 
   async ensureDirectories() {
@@ -279,6 +258,36 @@ class WhatsAppBot {
     // 先移除所有事件監聽，避免重複
     this.client.removeAllListeners && this.client.removeAllListeners();
 
+    this.client.on("qr", async (qrData) => {
+      try {
+        console.log("收到 QR Code 數據");
+        if (qrData) {
+          // 生成 base64 QR code
+          const qrImageData = await qr.toDataURL(qrData, { margin: 2, scale: 10 });
+          currentQrCode = qrImageData;
+          
+          // 先發送載入狀態為 false
+          io.emit("qr-loading", false);
+          
+          // 確保 QR 碼發送到前端，並增加重試機制
+          const emitQR = (attempts = 0) => {
+            io.emit("qr", qrImageData);
+            console.log(`QR Code 已發送到前端 (嘗試 ${attempts + 1})`);
+            
+            // 如果尚未成功連接，5秒後重發 QR 碼
+            if (attempts < 3 && !bot.client?.info) {
+              setTimeout(() => emitQR(attempts + 1), 10000);
+            }
+          };
+          
+          emitQR();
+        }
+      } catch (error) {
+        console.error("QR Code 處理失敗:", error);
+        io.emit("qr-loading", false);
+      }
+    });
+
     // 新增: 從函數檔案中提取實際代碼內容的方法
     this.extractFunctionCode = async (filePath) => {
       try {
@@ -296,6 +305,33 @@ class WhatsAppBot {
         return "// 無法讀取函數內容";
       }
     };
+
+    this.client.on("ready", async () => {
+      try {
+        this.isInitialized = true;
+        this.retryCount = 0;
+        if (this.eventHandlers.has("ready")) {
+          await this.eventHandlers.get("ready")();
+        }
+        console.log("Client is ready to receive messages.");
+        await this.updateGroups();
+      } catch (error) {
+        console.error("Error in ready event:", error);
+      }
+    });
+
+    this.client.on("disconnected", async (reason) => {
+      try {
+        console.log("Client disconnected:", reason);
+        this.isInitialized = false;
+        if (this.eventHandlers.has("disconnected")) {
+          await this.eventHandlers.get("disconnected")();
+        }
+        await this.handleDisconnect(reason);
+      } catch (error) {
+        console.error("Error handling disconnect:", error);
+      }
+    });
 
     // 統一註冊各種消息相關的事件處理
     this.client.on("message", (msg) => this.handleMessage(msg));
@@ -332,12 +368,16 @@ class WhatsAppBot {
 
   // 處理表情反應（將調用 processMessageOrReaction）
   async handleReaction(reaction) {
-    if (this.isShuttingDown) return;
-
+    if (this.isShuttingDown || !reaction) return;
     try {
+      // 添加必要欄位檢查
+      if (!reaction.msgId || !reaction.reaction) {
+        console.log("表情反應缺少必要資訊，無法處理");
+        return;
+      }
       console.log("收到表情反應原始資料:", JSON.stringify(reaction, null, 2));
 
-/*       // 忽略自己發送的表情反應
+      /*       // 忽略自己發送的表情反應
       if (reaction.senderId === this.client.info.wid._serialized) {
         console.log("忽略自己發送的表情反應");
         return;
@@ -640,7 +680,9 @@ class WhatsAppBot {
       switch (command.response.type) {
         case "text":
           // 直接回覆文字訊息，表情反應不使用 quotedMessageId
-          await this.client.sendMessage(sender, command.response.content, 
+          await this.client.sendMessage(
+            sender,
+            command.response.content,
             isReaction ? {} : { quotedMessageId: msg.id._serialized }
           );
           break;
@@ -655,7 +697,9 @@ class WhatsAppBot {
               ),
               "image.jpg"
             );
-            await this.client.sendMessage(sender, media,
+            await this.client.sendMessage(
+              sender,
+              media,
               isReaction ? {} : { quotedMessageId: msg.id._serialized }
             );
             console.log("圖片發送成功");
@@ -674,7 +718,9 @@ class WhatsAppBot {
           try {
             const videoPath = path.join(this.dataDir, command.response.content);
             const media = MessageMedia.fromFilePath(videoPath);
-            await this.client.sendMessage(sender, media,
+            await this.client.sendMessage(
+              sender,
+              media,
               isReaction ? {} : { quotedMessageId: msg.id._serialized }
             );
             console.log("影片發送成功");
@@ -694,7 +740,9 @@ class WhatsAppBot {
             const result = await this.runDynamicFunction(command.id, msg);
             // 如果函數已經處理了回覆，就不需要再執行
             if (result && typeof result === "string") {
-              await this.client.sendMessage(sender, result,
+              await this.client.sendMessage(
+                sender,
+                result,
                 isReaction ? {} : { quotedMessageId: msg.id._serialized }
               );
             }
@@ -763,6 +811,11 @@ class WhatsAppBot {
         }
       }
 
+      // 清理定時器
+      if (this.cleanupInterval) {
+        clearInterval(this.cleanupInterval);
+      }
+      await this.cleanupTempFiles().catch(console.error);
       // 使用更優雅的方式關閉客戶端，避免刪除認證數據
       try {
         console.log("正常關閉 WhatsApp 客戶端，保留認證資料...");
@@ -804,6 +857,8 @@ const bot = new WhatsAppBot();
 
 // Middleware
 app.use(cors());
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 // 修改靜態文件服務
 app.use(express.static(path.join(__dirname, "public")));
 app.use(
@@ -816,6 +871,7 @@ app.get("/", (req, res) => {
 });
 
 // Console 功能
+let currentQrCode = null;
 let logHistory = [];
 const maxLogEntries = 1000;
 
@@ -878,48 +934,31 @@ io.on("error", (error) => {
 // Setup bot event handlers
 bot.on("qr", async (qrData) => {
   try {
-    console.log("收到 QR 碼數據，準備生成 QR 碼圖像");
-    
-    // 檢查 qrData 是否有效
-    if (!qrData) {
-      console.error("錯誤：收到的 QR 碼數據為空");
-      io.emit("qr-error", "QR 碼數據為空");
-      return;
+    console.log("收到 QR Code 數據");
+    if (qrData) {
+      // 生成 base64 QR code
+      const qrImageData = await qr.toDataURL(qrData, { margin: 2, scale: 10 });
+      currentQrCode = qrImageData;
+      
+      // 先發送載入狀態為 false
+      io.emit("qr-loading", false);
+      
+      // 確保 QR 碼發送到前端，並增加重試機制
+      const emitQR = (attempts = 0) => {
+        io.emit("qr", qrImageData);
+        console.log(`QR Code 已發送到前端 (嘗試 ${attempts + 1})`);
+        
+        // 如果尚未成功連接，5秒後重發 QR 碼
+        if (attempts < 3 && !bot.client?.info) {
+          setTimeout(() => emitQR(attempts + 1), 5000);
+        }
+      };
+      
+      emitQR();
     }
-    
-    console.log("QR 碼數據長度:", qrData.length);
-    console.log("QR 碼數據前20字符:", qrData.substring(0, 20));
-
-    // 直接生成 QR code base64，不保存臨時文件
-    const qrOptions = {
-      type: 'png',
-      quality: 0.9,
-      margin: 1,
-      width: 600,
-      color: {
-        dark: "#000000",
-        light: "#ffffff",
-      },
-    };
-
-    console.log("開始生成 QR 碼圖像...");
-    // 直接生成 base64 編碼的 QR 碼
-    const qrImage = await qr.toDataURL(qrData, qrOptions);
-    console.log("QR 碼圖像生成成功，長度:", qrImage.length);
-    
-    // 發送到前端
-    console.log("發送 QR 碼到前端...");
-    io.emit("qr", qrImage);
-    
-    console.log("QR 碼已生成並發送到前端");
-    
-    // 檢查連接的客戶端數量
-    const clientCount = io.engine.clientsCount || 0;
-    console.log(`當前連接的客戶端數量: ${clientCount}`);
   } catch (error) {
-    console.error("生成 QR 碼時出錯:", error);
-    // 發送錯誤到前端
-    io.emit("qr-error", `生成 QR 碼失敗: ${error.message}`);
+    console.error("QR Code 處理失敗:", error);
+    io.emit("qr-loading", false);
   }
 });
 
@@ -941,6 +980,14 @@ bot.on("disconnected", () => {
 
 bot.on("groupUpdate", (groups) => {
   io.emit("groupUpdate", groups);
+});
+
+app.get("/api/qr", (req, res) => {
+  if (currentQrCode) {
+    res.json({ qrcode: currentQrCode });
+  } else {
+    res.status(404).json({ error: "QR code not available" });
+  }
 });
 
 // API Routes
@@ -1166,21 +1213,29 @@ app.delete("/api/commands/:id", async (req, res) => {
 // Terminal API：僅允許 npm install 指令
 app.post("/api/terminal", async (req, res) => {
   try {
-    const { command } = req.body;
-    // 僅允許 npm install/i 指令，且不能有 &&、;、| 等危險符號
+    let { command } = req.body;
+    // 更嚴格的命令格式檢查
     if (
-      !/^npm\s+(i|install)\s+[a-zA-Z0-9@\-_/]+(\s+[a-zA-Z0-9@\-_/]+)*$/.test(
-        command.trim()
-      )
+      !/^npm\s+(i|install)\s+[@\w\-\/]+(\s+[@\w\-\/]+)*$/.test(command.trim())
     ) {
       return res.json({
         error: "只允許執行 npm install 指令，且不能包含特殊符號。",
       });
     }
-    command = "sudo " + command; // 加上 sudo
+    // 避免 command 被重新賦值
+    const safeCommand = "sudo " + command.trim();
+
     exec(
-      command,
-      { cwd: process.cwd(), timeout: 120000 },
+      safeCommand,
+      {
+        cwd: process.cwd(),
+        timeout: 120000,
+        // 增加環境變數限制
+        env: {
+          ...process.env,
+          PATH: process.env.PATH,
+        },
+      },
       (err, stdout, stderr) => {
         if (err) {
           return res.json({ error: stderr || err.message });
@@ -1213,42 +1268,125 @@ io.on("connection", (socket) => {
 
   socket.on("error", (error) => {
     console.error("Socket error:", error);
+    socket.emit("error", "連接出錯，請重試");
   });
 
-  socket.on("connect-bot", () => {
-    if (!bot.isInitialized) {
-      bot.initialize().catch((error) => {
-        console.error("Bot initialization error:", error);
-        socket.emit("error", "Bot initialization failed");
-      });
-    }
+  socket.on("connect_error", (error) => {
+    console.error("Connection error:", error);
+    io.emit("qr-loading", false);
   });
 
-  // Commented out to decouple bot lifecycle from socket.io connections
-  socket.on("disconnect-bot", async () => {
+  socket.on("connect-bot", async () => {
+    console.log("收到連接請求");
+
     try {
-      await bot.destroy();
+      io.emit("qr-loading", true);
+
+      if (!bot.isInitialized) {
+        console.log("開始初始化 Bot...");
+        // 清理現有狀態
+        if (bot.client) {
+          try {
+            await bot.destroy();
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          } catch (error) {
+            console.warn("清理現有客戶端警告:", error);
+          }
+        }
+
+        // 添加專門的 QR code 監聽器
+        let qrReceived = false;
+        const qrListener = (qr) => {
+          qrReceived = true;
+          console.log("QR code 已生成並發送");
+        };
+        bot.on("qr", qrListener);
+
+        await bot.initialize();
+
+        // 等待 QR code 生成或已連接
+        let attempts = 0;
+        while (!qrReceived && !bot.client?.info && attempts < 30) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          attempts++;
+        }
+
+        if (bot.client?.info) {
+          console.log("Bot 已連接且初始化成功");
+          io.emit("ready", "WhatsApp is ready!");
+        } else if (qrReceived) {
+          console.log("QR code 已準備好掃描");
+        } else {
+          throw new Error("QR code 生成超時");
+        }
+      } else {
+        console.log("Bot 已經初始化");
+        socket.emit("ready");
+      }
     } catch (error) {
-      console.error("Error disconnecting bot:", error);
+      console.error("Bot 初始化失敗:", error);
+      socket.emit("error", `初始化失敗: ${error.message}`);
+      io.emit("qr-loading", false);
+
+      // 確保清理
+      try {
+        await bot.cleanup();
+      } catch (cleanupError) {
+        console.error("清理失敗:", cleanupError);
+      }
     }
   });
 
   socket.on("disconnect", (reason) => {
-    console.log("Client disconnected:", socket.id, reason);
+    console.log(`Client disconnected: ${socket.id}, reason: ${reason}`);
   });
 
+  // 發送初始數據
+  socket.emit("updateData", {
+    groups: Array.from(bot.groups.values()),
+    contacts: Array.from(bot.contacts.values()),
+    commands: Array.from(bot.activeCommands.values()),
+    botStatus: {
+      initialized: bot.isInitialized,
+      timestamp: new Date().toISOString(),
+    },
+  });
+});
+
+// 全局未捕獲異常處理
+process.on("uncaughtException", (error) => {
+  console.error("未捕獲的異常:", error);
+  // 不立即結束進程，而是嘗試恢復
+  if (bot && typeof bot.reconnect === "function") {
+    bot.reconnect().catch(console.error);
+  }
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("未處理的 Promise 拒絕:", reason);
+});
+
+// 優化關閉處理
+process.on("SIGINT", async () => {
+  console.log("收到關閉信號，正在優雅退出...");
   try {
-    socket.emit("updateData", {
-      groups: Array.from(bot.groups.values()),
-      contacts: Array.from(bot.contacts.values()),
-      commands: Array.from(bot.activeCommands.values()),
-      botStatus: {
-        initialized: bot.isInitialized,
-        timestamp: new Date().toISOString(),
-      },
+    if (bot) {
+      bot.isShuttingDown = true;
+      await bot.destroy();
+    }
+    server.close(() => {
+      console.log("伺服器已關閉");
+      process.exit(0);
     });
+
+    // 設置超時強制退出
+    setTimeout(() => {
+      console.log("強制退出");
+      process.exit(1);
+    }, 5000);
   } catch (error) {
-    console.error("Error sending initial data:", error);
+    console.error("關閉時發生錯誤:", error);
+    process.exit(1);
   }
 });
 
