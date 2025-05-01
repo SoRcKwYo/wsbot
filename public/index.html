@@ -624,16 +624,18 @@
     </div>
 
     <main class="main-content">
-      <!-- 首頁 Section -->
+      <!-- 首頁 Section，修改 QR 碼容器結構 -->
       <section id="home" class="section active">
         <h2>Bot 控制台</h2>
         <div class="status offline" id="bot-status">離線</div>
         <button class="btn btn-primary" id="toggle-bot">啟動 Bot</button>
-        <div class="qr-container" id="qrcode">
+        <div id="qrcode" class="qr-container" style="margin-top: 20px; text-align: center;">
+          <!-- QR 碼將在這裡顯示 -->
           <div id="qr-loading" style="display: none; text-align: center; padding: 20px 0;">
             <div class="spinner" style="width: 40px; height: 40px; margin: 0 auto; border: 4px solid rgba(76, 175, 80, 0.2); border-radius: 50%; border-top-color: #4caf50; animation: qr-spin 1s linear infinite;"></div>
-            <p style="margin-top: 10px; color: #4caf50; font-weight: 500;">正在獲取 WhatsApp 登入碼...</p>
+            <p id="status" style="margin-top: 10px; color: #4caf50; font-weight: 500;">正在獲取 WhatsApp 登入碼...</p>
           </div>
+          <img id="qr-image" style="display: none; margin: 0 auto; max-width: 300px;" />
         </div>
       </section>
 
