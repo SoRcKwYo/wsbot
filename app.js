@@ -236,34 +236,45 @@ class WhatsAppBot {
     console.log("初始化 WhatsApp 客戶端...");
     console.log("使用的瀏覽器路徑:", executablePath || "預設");
     
-    // 配置 Puppeteer 選項，針對 Windows 特別優化
+    // 針對 Target closed 錯誤優化的 Puppeteer 配置
     const puppeteerOptions = {
-      headless: process.env.HEADLESS !== 'false',
+      headless: true,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-gpu",
-        "--disable-dev-shm-usage", 
+        "--disable-dev-shm-usage",
         "--disable-accelerated-2d-canvas",
-        "--disable-extensions",
         "--window-size=1280,720",
-        "--disable-features=IsolateOrigins,site-per-process",
-        "--no-zygote",
-        "--single-process",
-        "--disable-infobars",
-        "--disable-blink-features=AutomationControlled"
+        "--disable-web-security",
+        "--disable-features=site-per-process"
       ],
-      ignoreDefaultArgs: ["--enable-automation"],
+      ignoreDefaultArgs: [
+        "--enable-automation"
+      ],
       executablePath: executablePath
     };
     
     // Windows 平台特殊處理
     if (process.platform === 'win32') {
-      // 設定 pipe 而非 WebSocket
-      puppeteerOptions.args.push("--remote-debugging-pipe");
-      // 移除可能導致問題的選項
-      const removeArgs = ["--disable-extensions", "--single-process"];
-      puppeteerOptions.args = puppeteerOptions.args.filter(arg => !removeArgs.includes(arg));
+      // 增加啟動超時時間
+      puppeteerOptions.timeout = 120000;
+      // 使用較穩定的連接方式
+      puppeteerOptions.args.push("--disable-background-timer-throttling");
+      puppeteerOptions.args.push("--disable-backgrounding-occluded-windows");
+      puppeteerOptions.args.push("--disable-renderer-backgrounding");
+      
+      // 移除一些可能導致 Windows 問題的參數
+      puppeteerOptions.args = puppeteerOptions.args.filter(arg => 
+        arg !== "--disable-extensions" && 
+        arg !== "--single-process"
+      );
+      
+      // 使用非無頭模式可能更穩定
+      if (process.env.DEBUG) {
+        puppeteerOptions.headless = false;
+        puppeteerOptions.slowMo = 100; // 減慢操作速度，幫助除錯
+      }
     }
 
     this.client = new Client({
@@ -272,12 +283,17 @@ class WhatsAppBot {
         clientId: "whatsapp-bot"
       }),
       puppeteer: puppeteerOptions,
+      // 關閉緩存使用更直接的方式
       webVersionCache: {
-        type: "remote",
-        remotePath: "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1022405646-alpha.html",
+        type: "none"
       },
       restartOnAuthFail: true,
       qrMaxRetries: 5,
+      // 添加連接選項和重試邏輯
+      connectOptions: {
+        maxRetries: 3,
+        timeoutMs: 60000
+      }
     });
 
     console.log("客戶端配置完成，準備連接...");
