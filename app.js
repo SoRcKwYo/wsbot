@@ -160,140 +160,76 @@ class WhatsAppBot {
   }
 
   initialize() {
-    // 清除潛在的鎖檔案先
-    try {
-      const sessionPath = path.join(this.authDir, "session-whatsapp-bot");
-      const lockFile = path.join(sessionPath, "SingletonLock");
-      if (existsSync(lockFile)) {
-        rimraf(lockFile);
-        console.log("預先清除鎖檔案 SingletonLock");
-      }
-    } catch (e) {
-      console.log("清除鎖檔案時出錯 (可忽略):", e.message);
-    }
-
-    console.log("系統平台:", process.platform);
-    let executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || null;
-    console.log("環境變數中的PUPPETEER_EXECUTABLE_PATH:", executablePath);
-    
-    // Windows 特有的瀏覽器路徑檢測
-    if (!executablePath && process.platform === 'win32') {
-      console.log("Windows 平台: 尋找 Chrome/Edge 瀏覽器...");
-      
-      // 擴展 Windows 搜索路徑，優先檢測常見的 Chrome/Edge 位置
-      const possiblePaths = [
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
-      ];
-      
-      // 添加使用者特定路徑 (AppData)
-      if (process.env.USERPROFILE) {
-        possiblePaths.push(
-          path.join(process.env.USERPROFILE, 'AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'),
-          path.join(process.env.USERPROFILE, 'AppData\\Local\\Microsoft\\Edge\\Application\\msedge.exe')
-        );
-      }
-      
-      // 通用版 Chrome 可能的路徑
-      const programData = process.env.ProgramData || 'C:\\ProgramData';
-      possiblePaths.push(
-        path.join(programData, 'Google\\Chrome\\Application\\chrome.exe'),
-        'C:\\Users\\Default\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'
-      );
-      
-      for (const browserPath of possiblePaths) {
-        if (existsSync(browserPath)) {
-          executablePath = browserPath;
-          console.log(`找到瀏覽器路徑: ${executablePath}`);
-          break;
-        } else {
-          console.log(`瀏覽器路徑不存在: ${browserPath}`);
-        }
-      }
-      
-      if (!executablePath) {
-        console.log("找不到已安裝的瀏覽器，將使用 Puppeteer 內置的瀏覽器");
-      }
-    } else if (!executablePath) {
-      // 非 Windows 平台的檢測邏輯
-      const possiblePaths = [
-        '/usr/bin/google-chrome',
-        '/usr/bin/chromium-browser',
-        '/usr/bin/chromium'
-      ];
-      
-      for (const browserPath of possiblePaths) {
-        if (existsSync(browserPath)) {
-          executablePath = browserPath;
-          console.log(`找到瀏覽器路徑: ${executablePath}`);
-          break;
-        }
-      }
-    }
-
-    console.log("初始化 WhatsApp 客戶端...");
-    console.log("使用的瀏覽器路徑:", executablePath || "預設");
-    
-    // 針對 Target closed 錯誤優化的 Puppeteer 配置
-    const puppeteerOptions = {
-      headless: true,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-gpu",
-        "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--window-size=1280,720",
-        "--disable-web-security",
-        "--disable-features=site-per-process"
-      ],
-      ignoreDefaultArgs: [
-        "--enable-automation"
-      ],
-      executablePath: executablePath
-    };
-    
-    // Windows 平台特殊處理
-    if (process.platform === 'win32') {
-      // 增加啟動超時時間
-      puppeteerOptions.timeout = 120000;
-      // 使用較穩定的連接方式
-      puppeteerOptions.args.push("--disable-background-timer-throttling");
-      puppeteerOptions.args.push("--disable-backgrounding-occluded-windows");
-      puppeteerOptions.args.push("--disable-renderer-backgrounding");
-      
-      // 移除一些可能導致 Windows 問題的參數
-      puppeteerOptions.args = puppeteerOptions.args.filter(arg => 
-        arg !== "--disable-extensions" && 
-        arg !== "--single-process"
-      );
-      
-      // 使用非無頭模式可能更穩定
-      if (process.env.DEBUG) {
-        puppeteerOptions.headless = false;
-        puppeteerOptions.slowMo = 100; // 減慢操作速度，幫助除錯
-      }
-    }
-
     this.client = new Client({
       authStrategy: new LocalAuth({
+        clientId: "whatsapp-bot",
         dataPath: this.authDir,
-        clientId: "whatsapp-bot"
       }),
-      puppeteer: puppeteerOptions,
-      // 關閉緩存使用更直接的方式
-      webVersionCache: {
-        type: "none"
+      puppeteer: {
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--disable-gpu",
+          "--window-size=1280,720",
+          "--disable-extensions",
+          "--disable-component-extensions-with-background-pages",
+          "--disable-default-apps",
+          "--mute-audio",
+          "--no-default-browser-check",
+          "--no-first-run",
+          "--disable-backgrounding-occluded-windows",
+          "--disable-renderer-backgrounding",
+          "--disable-background-timer-throttling",
+          "--disable-ipc-flooding-protection",
+          "--disable-site-isolation-trials"
+        ],
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (() => {
+          const platform = process.platform;
+          
+          if (platform === 'darwin') { // macOS
+            // 常見的 Chrome 路徑
+            const macPaths = [
+              '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+              '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',
+              '/Applications/Chromium.app/Contents/MacOS/Chromium'
+            ];
+            
+            for (const path of macPaths) {
+              if (existsSync(path)) return path;
+            }
+          } else if (platform === 'win32') { // Windows
+            // 常見的 Chrome 路徑
+            const winPaths = [
+              'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+              'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+              process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe',
+              process.env.PROGRAMFILES + '\\Google\\Chrome\\Application\\chrome.exe',
+              process.env['PROGRAMFILES(X86)'] + '\\Google\\Chrome\\Application\\chrome.exe'
+            ];
+            
+            for (const path of winPaths) {
+              if (existsSync(path)) return path;
+            }
+          }
+          
+          return null; // 找不到時回傳 null，讓 puppeteer 使用內建的
+        })(),
+        ignoreHTTPSErrors: true,
+        timeout: 120000,
+        handleSIGINT: false,
+        protocolTimeout: 60000
       },
-      restartOnAuthFail: true,
+      webVersionCache: {
+        type: "local"
+      },
+      webVersion: '2.2326.10',
       qrMaxRetries: 5,
-      // 添加連接選項和重試邏輯
-      connectOptions: {
-        maxRetries: 3,
-        timeoutMs: 60000
-      }
+      authTimeoutMs: 60000,
+      takeoverTimeoutMs: 60000,
+      restartOnAuthFail: true
     });
 
     console.log("客戶端配置完成，準備連接...");
