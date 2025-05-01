@@ -238,7 +238,7 @@ class WhatsAppBot {
     
     // 配置 Puppeteer 選項，針對 Windows 特別優化
     const puppeteerOptions = {
-      headless: true,
+      headless: process.env.HEADLESS !== 'false',
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
@@ -247,17 +247,11 @@ class WhatsAppBot {
         "--disable-accelerated-2d-canvas",
         "--disable-extensions",
         "--window-size=1280,720",
-        "--disable-extensions-except=[]",
-        "--disable-default-apps",
-        "--disable-translate",
-        "--disable-domain-reliability",
-        "--disable-component-extensions-with-background-pages",
-        "--disable-features=TranslateUI",
-        "--disable-background-networking",
-        "--disable-background-timer-throttling",
-        "--disable-backgrounding-occluded-windows",
-        "--disable-breakpad",
-        "--disable-renderer-backgrounding"
+        "--disable-features=IsolateOrigins,site-per-process",
+        "--no-zygote",
+        "--single-process",
+        "--disable-infobars",
+        "--disable-blink-features=AutomationControlled"
       ],
       ignoreDefaultArgs: ["--enable-automation"],
       executablePath: executablePath
@@ -265,14 +259,11 @@ class WhatsAppBot {
     
     // Windows 平台特殊處理
     if (process.platform === 'win32') {
-      puppeteerOptions.args.push("--disable-web-security");
-      puppeteerOptions.args.push("--allow-file-access-from-files");
-      
-      // 如果沒有找到瀏覽器，嘗試使用 Chrome 的相對路徑 (Windows 環境下)
-      if (!executablePath) {
-        // 只指定 chrome.exe，讓系統通過 PATH 尋找
-        console.log("使用系統默認 Chrome 路徑");
-      }
+      // 設定 pipe 而非 WebSocket
+      puppeteerOptions.args.push("--remote-debugging-pipe");
+      // 移除可能導致問題的選項
+      const removeArgs = ["--disable-extensions", "--single-process"];
+      puppeteerOptions.args = puppeteerOptions.args.filter(arg => !removeArgs.includes(arg));
     }
 
     this.client = new Client({
@@ -281,9 +272,9 @@ class WhatsAppBot {
         clientId: "whatsapp-bot"
       }),
       puppeteer: puppeteerOptions,
-      // 使用本地緩存而不是遠端緩存，提高啟動穩定性
       webVersionCache: {
-        type: "local",
+        type: "remote",
+        remotePath: "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1022405646-alpha.html",
       },
       restartOnAuthFail: true,
       qrMaxRetries: 5,
