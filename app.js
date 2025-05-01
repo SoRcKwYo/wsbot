@@ -172,59 +172,63 @@ class WhatsAppBot {
       console.log("清除鎖檔案時出錯 (可忽略):", e.message);
     }
 
-    // 嘗試找到 Chrome 瀏覽器的路徑
     console.log("系統平台:", process.platform);
     let executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || null;
     console.log("環境變數中的PUPPETEER_EXECUTABLE_PATH:", executablePath);
     
-    if (!executablePath) {
-      if (process.platform === 'win32') {
-        // Windows 平台擴展搜索路徑
-        const possiblePaths = [
-          'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-          'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-          'C:\\Users\\' + process.env.USERNAME + '\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe',
-          'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-          'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
-        ];
-        
-        for (const browserPath of possiblePaths) {
-          if (existsSync(browserPath)) {
-            executablePath = browserPath;
-            console.log(`找到瀏覽器路徑: ${executablePath}`);
-            break;
-          } else {
-            console.log(`瀏覽器路徑不存在: ${browserPath}`);
-          }
+    // Windows 特有的瀏覽器路徑檢測
+    if (!executablePath && process.platform === 'win32') {
+      console.log("Windows 平台: 尋找 Chrome/Edge 瀏覽器...");
+      
+      // 擴展 Windows 搜索路徑，優先檢測常見的 Chrome/Edge 位置
+      const possiblePaths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
+      ];
+      
+      // 添加使用者特定路徑 (AppData)
+      if (process.env.USERPROFILE) {
+        possiblePaths.push(
+          path.join(process.env.USERPROFILE, 'AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'),
+          path.join(process.env.USERPROFILE, 'AppData\\Local\\Microsoft\\Edge\\Application\\msedge.exe')
+        );
+      }
+      
+      // 通用版 Chrome 可能的路徑
+      const programData = process.env.ProgramData || 'C:\\ProgramData';
+      possiblePaths.push(
+        path.join(programData, 'Google\\Chrome\\Application\\chrome.exe'),
+        'C:\\Users\\Default\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe'
+      );
+      
+      for (const browserPath of possiblePaths) {
+        if (existsSync(browserPath)) {
+          executablePath = browserPath;
+          console.log(`找到瀏覽器路徑: ${executablePath}`);
+          break;
+        } else {
+          console.log(`瀏覽器路徑不存在: ${browserPath}`);
         }
-      } else if (process.platform === 'darwin') {
-        // macOS 平台可能的路徑
-        const possiblePaths = [
-          '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-          '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'
-        ];
-        
-        for (const browserPath of possiblePaths) {
-          if (existsSync(browserPath)) {
-            executablePath = browserPath;
-            console.log(`找到瀏覽器路徑: ${executablePath}`);
-            break;
-          }
-        }
-      } else if (process.platform === 'linux') {
-        // Linux 平台可能的路徑
-        const possiblePaths = [
-          '/usr/bin/google-chrome',
-          '/usr/bin/chromium-browser',
-          '/usr/bin/chromium'
-        ];
-        
-        for (const browserPath of possiblePaths) {
-          if (existsSync(browserPath)) {
-            executablePath = browserPath;
-            console.log(`找到瀏覽器路徑: ${executablePath}`);
-            break;
-          }
+      }
+      
+      if (!executablePath) {
+        console.log("找不到已安裝的瀏覽器，將使用 Puppeteer 內置的瀏覽器");
+      }
+    } else if (!executablePath) {
+      // 非 Windows 平台的檢測邏輯
+      const possiblePaths = [
+        '/usr/bin/google-chrome',
+        '/usr/bin/chromium-browser',
+        '/usr/bin/chromium'
+      ];
+      
+      for (const browserPath of possiblePaths) {
+        if (existsSync(browserPath)) {
+          executablePath = browserPath;
+          console.log(`找到瀏覽器路徑: ${executablePath}`);
+          break;
         }
       }
     }
@@ -232,7 +236,7 @@ class WhatsAppBot {
     console.log("初始化 WhatsApp 客戶端...");
     console.log("使用的瀏覽器路徑:", executablePath || "預設");
     
-    // 配置 Puppeteer 選項
+    // 配置 Puppeteer 選項，針對 Windows 特別優化
     const puppeteerOptions = {
       headless: true,
       args: [
@@ -245,7 +249,15 @@ class WhatsAppBot {
         "--window-size=1280,720",
         "--disable-extensions-except=[]",
         "--disable-default-apps",
-        "--disable-translate"
+        "--disable-translate",
+        "--disable-domain-reliability",
+        "--disable-component-extensions-with-background-pages",
+        "--disable-features=TranslateUI",
+        "--disable-background-networking",
+        "--disable-background-timer-throttling",
+        "--disable-backgrounding-occluded-windows",
+        "--disable-breakpad",
+        "--disable-renderer-backgrounding"
       ],
       ignoreDefaultArgs: ["--enable-automation"],
       executablePath: executablePath
@@ -255,6 +267,12 @@ class WhatsAppBot {
     if (process.platform === 'win32') {
       puppeteerOptions.args.push("--disable-web-security");
       puppeteerOptions.args.push("--allow-file-access-from-files");
+      
+      // 如果沒有找到瀏覽器，嘗試使用 Chrome 的相對路徑 (Windows 環境下)
+      if (!executablePath) {
+        // 只指定 chrome.exe，讓系統通過 PATH 尋找
+        console.log("使用系統默認 Chrome 路徑");
+      }
     }
 
     this.client = new Client({
@@ -263,12 +281,12 @@ class WhatsAppBot {
         clientId: "whatsapp-bot"
       }),
       puppeteer: puppeteerOptions,
+      // 使用本地緩存而不是遠端緩存，提高啟動穩定性
       webVersionCache: {
-        type: "remote",
-        remotePath:
-          "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1020491273-alpha.html",
+        type: "local",
       },
-      restartOnAuthFail: true
+      restartOnAuthFail: true,
+      qrMaxRetries: 5,
     });
 
     console.log("客戶端配置完成，準備連接...");
@@ -283,6 +301,16 @@ class WhatsAppBot {
 
     return this.client.initialize().catch((error) => {
       console.error("初始化客戶端失敗:", error);
+      
+      // 提供更詳細的錯誤處理和建議
+      if (error.message && error.message.includes("Failed to launch the browser process")) {
+        console.error("無法啟動瀏覽器進程。建議嘗試以下解決方案:");
+        console.error("1. 確認已安裝 Google Chrome 或 Microsoft Edge");
+        console.error("2. 設置環境變數 PUPPETEER_EXECUTABLE_PATH 指向瀏覽器可執行檔案");
+        console.error("3. 確保有足夠的系統權限運行瀏覽器進程");
+        console.error("4. 檢查防毒軟體是否阻止瀏覽器啟動");
+      }
+      throw error; // 繼續拋出錯誤以便上層處理
     });
   }
 
