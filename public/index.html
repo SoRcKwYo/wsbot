@@ -1201,24 +1201,23 @@
       }
 
       // Bot Status
-      socket.on("qr", (qr) => {
-        const qrContainer = document.getElementById("qrcode");
-  const qrLoading = document.getElementById("qr-loading");
-  
-  // 隱藏 loading 動畫
-  qrLoading.style.display = "none";
-  
-  // 清空容器並添加 QR 碼圖片
-  qrContainer.innerHTML = "";
-  qrContainer.appendChild(qrLoading);
-  
-  const qrImage = new Image();
-  qrImage.src = qr;
-  qrImage.classList.add("qr-image");
-  qrImage.style.maxWidth = "280px";
-  qrImage.style.margin = "0 auto";
-  qrImage.style.display = "block";
-  qrContainer.appendChild(qrImage);
+      socket.on("qr", (qrData) => {
+        console.log("收到 QR 碼數據，長度:", qrData ? qrData.length : "無數據");
+        const qrContainer = document.getElementById("qr-container");
+        const statusContainer = document.getElementById("status");
+        
+        if (!qrData || qrData.length === 0) {
+          console.error("收到空的 QR 碼數據");
+          statusContainer.textContent = "QR 碼獲取失敗，請重新整理頁面";
+          return;
+        }
+        
+        // 顯示 QR 碼
+        document.getElementById("qr-image").src = qrData;
+        qrContainer.classList.remove("d-none");
+        statusContainer.textContent = "請掃描 QR 碼登入 WhatsApp";
+        
+        console.log("QR 碼已設置到頁面");
       });
 
       socket.on("ready", () => {

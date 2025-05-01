@@ -907,6 +907,18 @@ io.on("error", (error) => {
 // Setup bot event handlers
 bot.on("qr", async (qrData) => {
   try {
+    console.log("收到 QR 碼數據，準備生成 QR 碼圖像");
+    
+    // 檢查 qrData 是否有效
+    if (!qrData) {
+      console.error("錯誤：收到的 QR 碼數據為空");
+      io.emit("qr-error", "QR 碼數據為空");
+      return;
+    }
+    
+    console.log("QR 碼數據長度:", qrData.length);
+    console.log("QR 碼數據前20字符:", qrData.substring(0, 20));
+
     // 直接生成 QR code base64，不保存臨時文件
     const qrOptions = {
       type: 'png',
@@ -919,15 +931,24 @@ bot.on("qr", async (qrData) => {
       },
     };
 
+    console.log("開始生成 QR 碼圖像...");
     // 直接生成 base64 編碼的 QR 碼
     const qrImage = await qr.toDataURL(qrData, qrOptions);
+    console.log("QR 碼圖像生成成功，長度:", qrImage.length);
     
     // 發送到前端
+    console.log("發送 QR 碼到前端...");
     io.emit("qr", qrImage);
     
     console.log("QR 碼已生成並發送到前端");
+    
+    // 檢查連接的客戶端數量
+    const clientCount = io.engine.clientsCount || 0;
+    console.log(`當前連接的客戶端數量: ${clientCount}`);
   } catch (error) {
-    console.error("Error generating QR code:", error);
+    console.error("生成 QR 碼時出錯:", error);
+    // 發送錯誤到前端
+    io.emit("qr-error", `生成 QR 碼失敗: ${error.message}`);
   }
 });
 
