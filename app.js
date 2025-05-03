@@ -153,13 +153,14 @@ class WhatsAppBot {
             "--disable-notifications",
             "--window-size=1280,720",
           ],
-          executablePath: process.platform === 'darwin' 
-            ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-            : null,
+          executablePath:
+            process.platform === "darwin"
+              ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+              : null,
           ignoreHTTPSErrors: true,
           defaultViewport: null,
-          timeout: 120000
-        }
+          timeout: 120000,
+        },
       });
 
       const functionDir = path.join(__dirname, "data", "functions");
@@ -167,14 +168,14 @@ class WhatsAppBot {
         fs.mkdir(functionDir, { recursive: true });
       }
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       this.setupEventHandlers();
       console.log("開始初始化 WhatsApp 客戶端...");
 
       const initPromise = this.client.initialize();
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('初始化超時')), 60000);
+        setTimeout(() => reject(new Error("初始化超時")), 60000);
       });
 
       await Promise.race([initPromise, timeoutPromise]);
@@ -210,7 +211,7 @@ class WhatsAppBot {
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
     } catch (error) {
       console.error("清理過程出錯:", error);
     }
@@ -263,23 +264,26 @@ class WhatsAppBot {
         console.log("收到 QR Code 數據");
         if (qrData) {
           // 生成 base64 QR code
-          const qrImageData = await qr.toDataURL(qrData, { margin: 2, scale: 10 });
+          const qrImageData = await qr.toDataURL(qrData, {
+            margin: 2,
+            scale: 10,
+          });
           currentQrCode = qrImageData;
-          
+
           // 先發送載入狀態為 false
           io.emit("qr-loading", false);
-          
+
           // 確保 QR 碼發送到前端，並增加重試機制
           const emitQR = (attempts = 0) => {
             io.emit("qr", qrImageData);
             console.log(`QR Code 已發送到前端 (嘗試 ${attempts + 1})`);
-            
+
             // 如果尚未成功連接，5秒後重發 QR 碼
             if (attempts < 3 && !bot.client?.info) {
               setTimeout(() => emitQR(attempts + 1), 10000);
             }
           };
-          
+
           emitQR();
         }
       } catch (error) {
@@ -500,6 +504,9 @@ class WhatsAppBot {
       const sourceId = chat.id._serialized;
       const isGroup = chat.isGroup;
       const messageContent = isReaction ? "" : data.body || "";
+      const hasQuotedMsg =
+        !isReaction &&
+        (data.hasQuotedMsg || (data._data && data._data.quotedMsg));
 
       // 收集匹配的指令
       const matchedCommands = [];
@@ -532,10 +539,8 @@ class WhatsAppBot {
             const content = trigger.toLowerCase
               ? messageContent.toLowerCase()
               : messageContent;
-            const isReply =
-              data.hasQuotedMsg || (data._data && data._data.quotedMsg);
-            const hasMedia =
-              data.hasMedia || (data._data && data._data.hasMedia);
+              const isReply = hasQuotedMsg;
+              const hasMedia = data.hasMedia || (data._data && data._data.hasMedia);
 
             // 時間範圍檢查
             let isInTimeRange = true;
@@ -574,17 +579,25 @@ class WhatsAppBot {
                   trigger.toLowerCase ? "i" : undefined
                 );
                 if (regex.test(content)) {
-                  if (trigger.quotedMsg && isReply) shouldTrigger = true;
-                  else if (trigger.hasMedia && hasMedia) shouldTrigger = true;
-                  else if (trigger.timeRange && isInTimeRange)
-                    shouldTrigger = true;
-                  else if (
-                    !trigger.quotedMsg &&
-                    !trigger.hasMedia &&
-                    !trigger.timeRange
-                  )
-                    shouldTrigger = true;
+                  // 增強引用消息處理
+                if (trigger.quotedMsg && isReply) {
+                  // 如果需要檢查引用消息的內容，可以在這裡獲取
+                  if (trigger.quotedMsgContains) {
+                    const quotedMsg = await data.getQuotedMessage();
+                    const quotedMsgText = quotedMsg.body;
+                    
+                    // 檢查引用消息是否包含指定內容
+                    if (!quotedMsgText.includes(trigger.quotedMsgContains)) {
+                      continue; // 不匹配，跳過
+                    }
+                  }
+                  shouldTrigger = true;
                 }
+                else if (trigger.hasMedia && hasMedia) shouldTrigger = true;
+                else if (trigger.timeRange && isInTimeRange) shouldTrigger = true;
+                else if (!trigger.quotedMsg && !trigger.hasMedia && !trigger.timeRange) 
+                  shouldTrigger = true;
+              }
               } catch (e) {
                 console.log("正則表達式錯誤:", e);
               }
@@ -592,24 +605,44 @@ class WhatsAppBot {
             // 關鍵字觸發條件
             else if (trigger.keyword) {
               const match = trigger.startsWith
-                ? content.startsWith(trigger.keyword)
-                : content.includes(trigger.keyword);
-              if (match) {
-                if (trigger.quotedMsg && isReply) shouldTrigger = true;
-                else if (trigger.hasMedia && hasMedia) shouldTrigger = true;
-                else if (trigger.timeRange && isInTimeRange)
-                  shouldTrigger = true;
-                else if (
-                  !trigger.quotedMsg &&
-                  !trigger.hasMedia &&
-                  !trigger.timeRange
-                )
-                  shouldTrigger = true;
+              ? content.startsWith(trigger.keyword)
+              : content.includes(trigger.keyword);
+            if (match) {
+              // 增強引用消息處理
+              if (trigger.quotedMsg && isReply) {
+                // 類似上面的引用消息內容檢查
+                if (trigger.quotedMsgContains) {
+                  const quotedMsg = await data.getQuotedMessage();
+                  const quotedMsgText = quotedMsg.body;
+                  
+                  // 檢查引用消息是否包含指定內容
+                  if (!quotedMsgText.includes(trigger.quotedMsgContains)) {
+                    continue; // 不匹配，跳過
+                  }
+                }
+                shouldTrigger = true;
               }
+              else if (trigger.hasMedia && hasMedia) shouldTrigger = true;
+              else if (trigger.timeRange && isInTimeRange) shouldTrigger = true;
+              else if (!trigger.quotedMsg && !trigger.hasMedia && !trigger.timeRange) 
+                shouldTrigger = true;
             }
+          }
             // 特殊觸發條件（無關鍵詞）
             else {
-              if (trigger.quotedMsg && isReply) shouldTrigger = true;
+              if (trigger.quotedMsg && isReply) {
+                // 類似上面的引用消息內容檢查
+                if (trigger.quotedMsgContains) {
+                  const quotedMsg = await data.getQuotedMessage();
+                  const quotedMsgText = quotedMsg.body;
+                  
+                  // 檢查引用消息是否包含指定內容
+                  if (!quotedMsgText.includes(trigger.quotedMsgContains)) {
+                    continue; // 不匹配，跳過
+                  }
+                }
+                shouldTrigger = true;
+              }
               else if (trigger.hasMedia && hasMedia) shouldTrigger = true;
               else if (trigger.timeRange && isInTimeRange) shouldTrigger = true;
             }
@@ -939,21 +972,21 @@ bot.on("qr", async (qrData) => {
       // 生成 base64 QR code
       const qrImageData = await qr.toDataURL(qrData, { margin: 2, scale: 10 });
       currentQrCode = qrImageData;
-      
+
       // 先發送載入狀態為 false
       io.emit("qr-loading", false);
-      
+
       // 確保 QR 碼發送到前端，並增加重試機制
       const emitQR = (attempts = 0) => {
         io.emit("qr", qrImageData);
         console.log(`QR Code 已發送到前端 (嘗試 ${attempts + 1})`);
-        
+
         // 如果尚未成功連接，5秒後重發 QR 碼
         if (attempts < 3 && !bot.client?.info) {
           setTimeout(() => emitQR(attempts + 1), 5000);
         }
       };
-      
+
       emitQR();
     }
   } catch (error) {
@@ -1307,7 +1340,7 @@ io.on("connection", (socket) => {
         // 等待 QR code 生成或已連接
         let attempts = 0;
         while (!qrReceived && !bot.client?.info && attempts < 30) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
           attempts++;
         }
 
