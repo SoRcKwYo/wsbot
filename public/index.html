@@ -4,13 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>WhatsApp Bot Control Panel</title>
-    <link data-default-icon="https://static.whatsapp.net/rsrc.php/v4/yP/r/rYZqPCBaG70.png" rel="shortcut icon" href="https://static.whatsapp.net/rsrc.php/v4/yP/r/rYZqPCBaG70.png">
-    <link rel="apple-touch-icon" sizes="192x192" href="https://static.whatsapp.net/rsrc.php/v4/yc/r/hUUuVTz6ZVi.png">
+    <link
+      data-default-icon="https://static.whatsapp.net/rsrc.php/v4/yP/r/rYZqPCBaG70.png"
+      rel="shortcut icon"
+      href="https://static.whatsapp.net/rsrc.php/v4/yP/r/rYZqPCBaG70.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="192x192"
+      href="https://static.whatsapp.net/rsrc.php/v4/yc/r/hUUuVTz6ZVi.png"
+    />
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material.min.css"
+    />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
     <style>
@@ -42,30 +62,39 @@
         --text-secondary: rgba(255, 255, 255, 0.6);
       }
 
-      @keyframes 
-      qr-spin {
-        to { transform: rotate(360deg); }
+      @keyframes qr-spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       @keyframes loading-dots {
-  0% { content: '.'; }
-  33% { content: '..'; }
-  66% { content: '...'; }
-  100% { content: ''; }
-}
+        0% {
+          content: ".";
+        }
+        33% {
+          content: "..";
+        }
+        66% {
+          content: "...";
+        }
+        100% {
+          content: "";
+        }
+      }
 
-.loading-text .loading-dots {
-  display: inline-block;
-  animation: loading-dots 1.5s infinite steps(1);
-  min-width: 24px;
-  text-align: left;
-}
+      .loading-text .loading-dots {
+        display: inline-block;
+        animation: loading-dots 1.5s infinite steps(1);
+        min-width: 24px;
+        text-align: left;
+      }
 
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
-        font-family: 'Roboto', sans-serif;
+        font-family: "Roboto", sans-serif;
       }
 
       body {
@@ -87,7 +116,7 @@
       .nav-logo {
         padding: 20px;
         text-align: center;
-        border-bottom: 1px solid rgba(0,0,0,0.12);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
         margin-bottom: var(--spacing);
       }
 
@@ -142,7 +171,9 @@
         font-size: 0.875rem;
       }
 
-      input, select, textarea {
+      input,
+      select,
+      textarea {
         width: 100%;
         padding: 12px 16px;
         border: 1px solid rgba(76, 175, 80, 0.23);
@@ -153,7 +184,9 @@
         margin: 8px 0;
       }
 
-      input:focus, select:focus, textarea:focus {
+      input:focus,
+      select:focus,
+      textarea:focus {
         outline: none;
         border-color: var(--primary);
         box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
@@ -168,7 +201,7 @@
         transition: all 0.2s ease;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
       }
-      
+
       .template-btn:hover {
         background: #303f9f;
         transform: translateY(-1px);
@@ -206,12 +239,14 @@
         font-style: italic;
       }
 
-      .template-form input, .template-form textarea {
+      .template-form input,
+      .template-form textarea {
         background: #fff;
         border: 1px solid #e0e0e0;
       }
 
-      .template-form input:focus, .template-form textarea:focus {
+      .template-form input:focus,
+      .template-form textarea:focus {
         border-color: #3f51b5;
         box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.1);
       }
@@ -227,7 +262,7 @@
         font-size: 0.875rem;
         letter-spacing: 0.5px;
         min-width: 64px;
-        box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
       }
 
       .btn-primary {
@@ -283,7 +318,7 @@
       #console-logs {
         background: #1b5e20;
         color: #ffffff;
-        font-family: 'Roboto Mono', monospace;
+        font-family: "Roboto Mono", monospace;
         font-size: 0.875rem;
         height: 400px;
         overflow-y: auto;
@@ -413,7 +448,7 @@
         color: #fff;
         font-weight: 600;
         letter-spacing: 0.5px;
-        box-shadow: 0 1px 4px rgba(76,175,80,0.10);
+        box-shadow: 0 1px 4px rgba(76, 175, 80, 0.1);
         transition: background 0.2s, box-shadow 0.2s, color 0.2s;
         cursor: pointer;
       }
@@ -421,7 +456,7 @@
       .nav-action-btn:hover {
         background: var(--primary);
         color: #fff;
-        box-shadow: 0 2px 8px rgba(76,175,80,0.18);
+        box-shadow: 0 2px 8px rgba(76, 175, 80, 0.18);
       }
 
       .update-btn {
@@ -455,7 +490,7 @@
         right: 0;
         bottom: 0;
         background-color: #ccc;
-        transition: .3s;
+        transition: 0.3s;
         border-radius: 24px;
       }
 
@@ -467,9 +502,9 @@
         left: 3px;
         bottom: 3px;
         background-color: white;
-        transition: .3s;
+        transition: 0.3s;
         border-radius: 50%;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
       }
 
       input:checked + .slider {
@@ -509,7 +544,7 @@
         max-width: 96vw;
         max-height: 90vh;
         overflow: auto;
-        box-shadow: 0 8px 32px rgba(76,175,80,0.18);
+        box-shadow: 0 8px 32px rgba(76, 175, 80, 0.18);
       }
       #target-modal .modal-tab {
         border: none;
@@ -527,7 +562,7 @@
       #target-modal .modal-tab.active {
         background: var(--primary);
         color: #fff;
-        box-shadow: 0 2px 8px rgba(76,175,80,0.10);
+        box-shadow: 0 2px 8px rgba(76, 175, 80, 0.1);
       }
       #target-modal #target-search {
         border-radius: 18px;
@@ -626,14 +661,80 @@
     </nav>
 
     <div class="nav-bottom-actions-floating">
-      <button id="theme-toggle" class="nav-action-btn" title="切換深淺色" style="display:flex;align-items:center;justify-content:center;padding:6px 0;width:44px;height:44px;min-width:44px;min-height:44px;background:#fff;border:1.5px solid var(--primary-light);border-radius:50%;box-shadow:0 1px 4px rgba(76,175,80,0.10);">
-        <img id="theme-icon" src="https://fonts.gstatic.com/s/i/materialicons/dark_mode/v1/24px.svg" alt="Theme" style="width:22px;height:22px;" />
+      <button
+        id="theme-toggle"
+        class="nav-action-btn"
+        title="切換深淺色"
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 6px 0;
+          width: 44px;
+          height: 44px;
+          min-width: 44px;
+          min-height: 44px;
+          background: #fff;
+          border: 1.5px solid var(--primary-light);
+          border-radius: 50%;
+          box-shadow: 0 1px 4px rgba(76, 175, 80, 0.1);
+        "
+      >
+        <img
+          id="theme-icon"
+          src="https://fonts.gstatic.com/s/i/materialicons/dark_mode/v1/24px.svg"
+          alt="Theme"
+          style="width: 22px; height: 22px"
+        />
       </button>
-      <button id="lang-toggle" class="nav-action-btn" title="切換語言" style="display:flex;align-items:center;justify-content:center;padding:6px 0;width:44px;height:44px;min-width:44px;min-height:44px;background:#fff;border:1.5px solid var(--primary-light);border-radius:50%;box-shadow:0 1px 4px rgba(76,175,80,0.10);margin:10px 0;">
-      <img id="lang-icon" src="https://fonts.gstatic.com/s/i/materialicons/translate/v1/24px.svg" alt="Lang" style="width:22px;height:22px;" />
+      <button
+        id="lang-toggle"
+        class="nav-action-btn"
+        title="切換語言"
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 6px 0;
+          width: 44px;
+          height: 44px;
+          min-width: 44px;
+          min-height: 44px;
+          background: #fff;
+          border: 1.5px solid var(--primary-light);
+          border-radius: 50%;
+          box-shadow: 0 1px 4px rgba(76, 175, 80, 0.1);
+          margin: 10px 0;
+        "
+      >
+        <img
+          id="lang-icon"
+          src="https://fonts.gstatic.com/s/i/materialicons/translate/v1/24px.svg"
+          alt="Lang"
+          style="width: 22px; height: 22px"
+        />
       </button>
-      <button id="update-html-btn" class="nav-action-btn update-btn" style="padding:6px 0;width:44px;height:44px;min-width:44px;min-height:44px;background:var(--primary-dark);border-radius:50%;display:flex;align-items:center;justify-content:center;">
-      <img src="https://fonts.gstatic.com/s/i/materialicons/refresh/v1/24px.svg" alt="Update" style="width:22px;height:22px;filter:invert(1);" />
+      <button
+        id="update-html-btn"
+        class="nav-action-btn update-btn"
+        style="
+          padding: 6px 0;
+          width: 44px;
+          height: 44px;
+          min-width: 44px;
+          min-height: 44px;
+          background: var(--primary-dark);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        "
+      >
+        <img
+          src="https://fonts.gstatic.com/s/i/materialicons/refresh/v1/24px.svg"
+          alt="Update"
+          style="width: 22px; height: 22px; filter: invert(1)"
+        />
       </button>
     </div>
 
@@ -643,12 +744,43 @@
         <h2>Bot 控制台</h2>
         <div class="status offline" id="bot-status">離線</div>
         <button class="btn btn-primary" id="toggle-bot">啟動 Bot</button>
-        <div id="qrcode" style="margin-top: 20px; text-align: center; min-height: 340px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-          <div id="qr-loading" style="display: none;">
-            <div class="spinner" style="width: 40px; height: 40px; margin: 0 auto; border: 4px solid rgba(76, 175, 80, 0.2); border-radius: 50%; border-top-color: #4caf50; animation: qr-spin 1s linear infinite;"></div>
-            <p class="loading-text" style="margin-top: 10px; color: #4caf50; font-weight: 500;">正在獲取 WhatsApp 登入碼<span class="loading-dots">...</span></p>
+        <div
+          id="qrcode"
+          style="
+            margin-top: 20px;
+            text-align: center;
+            min-height: 340px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+          "
+        >
+          <div id="qr-loading" style="display: none">
+            <div
+              class="spinner"
+              style="
+                width: 40px;
+                height: 40px;
+                margin: 0 auto;
+                border: 4px solid rgba(76, 175, 80, 0.2);
+                border-radius: 50%;
+                border-top-color: #4caf50;
+                animation: qr-spin 1s linear infinite;
+              "
+            ></div>
+            <p
+              class="loading-text"
+              style="margin-top: 10px; color: #4caf50; font-weight: 500"
+            >
+              正在獲取 WhatsApp 登入碼<span class="loading-dots">...</span>
+            </p>
           </div>
-          <img id="qr-image" style="display: none; max-width: 300px; width: 100%; height: auto;" alt="WhatsApp QR Code" />
+          <img
+            id="qr-image"
+            style="display: none; max-width: 300px; width: 100%; height: auto"
+            alt="WhatsApp QR Code"
+          />
         </div>
       </section>
 
@@ -668,11 +800,7 @@
       <section id="contacts" class="section">
         <h2>個人聯絡人管理</h2>
         <div class="form-group">
-          <input
-            type="text"
-            id="contact-prefix"
-            placeholder="國碼 (例: 852)"
-          />
+          <input type="text" id="contact-prefix" placeholder="國碼 (例: 852)" />
           <input type="text" id="contact-number" placeholder="電話號碼" />
           <input type="text" id="contact-name" placeholder="備註名稱" />
           <button class="btn btn-primary" onclick="addContact()">
@@ -725,144 +853,1240 @@
                   <span class="slider"></span>
                 </span>
               </label>
-              
+
               <!-- 表情反應選擇器，默認隱藏，勾選表情反應後顯示 -->
-              <div id="reaction-selector" style="display:none; margin-top:10px; border-top:1px solid #e0e0e0; padding-top:10px; max-width: 500px;">
-                <div style="font-size:0.9em; margin-bottom:8px; color:#666;">選擇要觸發的表情符號：</div>
+              <div
+                id="reaction-selector"
+                style="
+                  display: none;
+                  margin-top: 10px;
+                  border-top: 1px solid #e0e0e0;
+                  padding-top: 10px;
+                  max-width: 500px;
+                "
+              >
+                <div style="font-size: 0.9em; margin-bottom: 8px; color: #666">
+                  選擇要觸發的表情符號：
+                </div>
                 <!-- 表情符號分類標籤 -->
-                <div class="emoji-tabs" style="margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap;">
-                  <span class="emoji-tab active" data-category="frequent" style="cursor:pointer; padding:5px 12px; border-radius:15px; background:#e8f5e9; color:#388e3c; font-size:0.9em;">常用</span>
-                  <span class="emoji-tab" data-category="smileys" style="cursor:pointer; padding:5px 12px; border-radius:15px; background:#f5f5f5; color:#666; font-size:0.9em;">笑臉</span>
-                  <span class="emoji-tab" data-category="gestures" style="cursor:pointer; padding:5px 12px; border-radius:15px; background:#f5f5f5; color:#666; font-size:0.9em;">手勢</span>
-                  <span class="emoji-tab" data-category="love" style="cursor:pointer; padding:5px 12px; border-radius:15px; background:#f5f5f5; color:#666; font-size:0.9em;">愛心</span>
-                  <span class="emoji-tab" data-category="symbols" style="cursor:pointer; padding:5px 12px; border-radius:15px; background:#f5f5f5; color:#666; font-size:0.9em;">符號</span>
+                <div
+                  class="emoji-tabs"
+                  style="
+                    margin-bottom: 10px;
+                    display: flex;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                  "
+                >
+                  <span
+                    class="emoji-tab active"
+                    data-category="frequent"
+                    style="
+                      cursor: pointer;
+                      padding: 5px 12px;
+                      border-radius: 15px;
+                      background: #e8f5e9;
+                      color: #388e3c;
+                      font-size: 0.9em;
+                    "
+                    >常用</span
+                  >
+                  <span
+                    class="emoji-tab"
+                    data-category="smileys"
+                    style="
+                      cursor: pointer;
+                      padding: 5px 12px;
+                      border-radius: 15px;
+                      background: #f5f5f5;
+                      color: #666;
+                      font-size: 0.9em;
+                    "
+                    >笑臉</span
+                  >
+                  <span
+                    class="emoji-tab"
+                    data-category="gestures"
+                    style="
+                      cursor: pointer;
+                      padding: 5px 12px;
+                      border-radius: 15px;
+                      background: #f5f5f5;
+                      color: #666;
+                      font-size: 0.9em;
+                    "
+                    >手勢</span
+                  >
+                  <span
+                    class="emoji-tab"
+                    data-category="love"
+                    style="
+                      cursor: pointer;
+                      padding: 5px 12px;
+                      border-radius: 15px;
+                      background: #f5f5f5;
+                      color: #666;
+                      font-size: 0.9em;
+                    "
+                    >愛心</span
+                  >
+                  <span
+                    class="emoji-tab"
+                    data-category="symbols"
+                    style="
+                      cursor: pointer;
+                      padding: 5px 12px;
+                      border-radius: 15px;
+                      background: #f5f5f5;
+                      color: #666;
+                      font-size: 0.9em;
+                    "
+                    >符號</span
+                  >
                 </div>
-                
+
                 <!-- 常用表情 -->
-                <div class="emoji-category" id="emoji-frequent" style="display:flex; flex-wrap:wrap; gap:8px;">
-                  <span class="emoji-item" data-emoji="👍" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👍</span>
-                  <span class="emoji-item" data-emoji="👎" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👎</span>
-                  <span class="emoji-item" data-emoji="❤️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">❤️</span>
-                  <span class="emoji-item" data-emoji="😂" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😂</span>
-                  <span class="emoji-item" data-emoji="😢" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😢</span>
-                  <span class="emoji-item" data-emoji="😮" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😮</span>
-                  <span class="emoji-item" data-emoji="🙏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🙏</span>
-                  <span class="emoji-item" data-emoji="👏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👏</span>
-                  <span class="emoji-item" data-emoji="🔥" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🔥</span>
-                  <span class="emoji-item" data-emoji="🎉" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🎉</span>
+                <div
+                  class="emoji-category"
+                  id="emoji-frequent"
+                  style="display: flex; flex-wrap: wrap; gap: 8px"
+                >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👍"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👍</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👎"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👎</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="❤️"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >❤️</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😂"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😂</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😢"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😢</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😮"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😮</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🙏"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🙏</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👏"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👏</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🔥"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🔥</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🎉"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🎉</span
+                  >
                 </div>
-                
+
                 <!-- 笑臉表情 -->
-                <div class="emoji-category" id="emoji-smileys" style="display:none; flex-wrap:wrap; gap:8px;">
-                  <span class="emoji-item" data-emoji="😀" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😀</span>
-                  <span class="emoji-item" data-emoji="😃" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😃</span>
-                  <span class="emoji-item" data-emoji="😄" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😄</span>
-                  <span class="emoji-item" data-emoji="😁" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😁</span>
-                  <span class="emoji-item" data-emoji="😆" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😆</span>
-                  <span class="emoji-item" data-emoji="😅" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😅</span>
-                  <span class="emoji-item" data-emoji="🤣" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤣</span>
-                  <span class="emoji-item" data-emoji="😂" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😂</span>
-                  <span class="emoji-item" data-emoji="🙂" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🙂</span>
-                  <span class="emoji-item" data-emoji="😊" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😊</span>
-                  <span class="emoji-item" data-emoji="😇" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😇</span>
-                  <span class="emoji-item" data-emoji="🥰" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🥰</span>
-                  <span class="emoji-item" data-emoji="😍" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😍</span>
-                  <span class="emoji-item" data-emoji="😘" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😘</span>
-                  <span class="emoji-item" data-emoji="😗" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😗</span>
-                  <span class="emoji-item" data-emoji="😋" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😋</span>
-                  <span class="emoji-item" data-emoji="😛" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😛</span>
-                  <span class="emoji-item" data-emoji="😜" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😜</span>
-                  <span class="emoji-item" data-emoji="🤪" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤪</span>
-                  <span class="emoji-item" data-emoji="😝" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😝</span>
-                  <span class="emoji-item" data-emoji="🤑" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤑</span>
-                  <span class="emoji-item" data-emoji="🤗" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤗</span>
-                  <span class="emoji-item" data-emoji="🤭" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤭</span>
-                  <span class="emoji-item" data-emoji="🤫" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤫</span>
-                  <span class="emoji-item" data-emoji="🤔" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤔</span>
-                  <span class="emoji-item" data-emoji="😐" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😐</span>
-                  <span class="emoji-item" data-emoji="😑" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😑</span>
-                  <span class="emoji-item" data-emoji="😶" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😶</span>
-                  <span class="emoji-item" data-emoji="😏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😏</span>
-                  <span class="emoji-item" data-emoji="😒" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😒</span>
-                  <span class="emoji-item" data-emoji="🙄" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🙄</span>
-                  <span class="emoji-item" data-emoji="😬" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">😬</span>
+                <div
+                  class="emoji-category"
+                  id="emoji-smileys"
+                  style="display: none; flex-wrap: wrap; gap: 8px"
+                >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😀"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😀</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😃"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😃</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😄"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😄</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😁"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😁</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😆"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😆</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😅"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😅</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤣"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤣</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😂"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😂</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🙂"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🙂</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😊"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😊</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😇"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😇</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🥰"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🥰</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😍"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😍</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😘"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😘</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😗"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😗</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😋"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😋</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😛"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😛</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😜"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😜</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤪"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤪</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😝"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😝</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤑"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤑</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤗"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤗</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤭"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤭</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤫"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤫</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤔"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤔</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😐"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😐</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😑"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😑</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😶"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😶</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😏"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😏</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😒"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😒</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🙄"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🙄</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="😬"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >😬</span
+                  >
                 </div>
-                
+
                 <!-- 手勢表情 -->
-                <div class="emoji-category" id="emoji-gestures" style="display:none; flex-wrap:wrap; gap:8px;">
-                  <span class="emoji-item" data-emoji="👍" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👍</span>
-                  <span class="emoji-item" data-emoji="👎" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👎</span>
-                  <span class="emoji-item" data-emoji="👌" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👌</span>
-                  <span class="emoji-item" data-emoji="✌️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">✌️</span>
-                  <span class="emoji-item" data-emoji="🤞" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤞</span>
-                  <span class="emoji-item" data-emoji="🤟" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤟</span>
-                  <span class="emoji-item" data-emoji="🤘" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤘</span>
-                  <span class="emoji-item" data-emoji="🤙" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤙</span>
-                  <span class="emoji-item" data-emoji="👈" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👈</span>
-                  <span class="emoji-item" data-emoji="👉" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👉</span>
-                  <span class="emoji-item" data-emoji="👆" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👆</span>
-                  <span class="emoji-item" data-emoji="👇" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👇</span>
-                  <span class="emoji-item" data-emoji="✋" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">✋</span>
-                  <span class="emoji-item" data-emoji="🤚" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤚</span>
-                  <span class="emoji-item" data-emoji="🖐" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🖐</span>
-                  <span class="emoji-item" data-emoji="🖖" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🖖</span>
-                  <span class="emoji-item" data-emoji="👋" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👋</span>
-                  <span class="emoji-item" data-emoji="🤏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤏</span>
-                  <span class="emoji-item" data-emoji="✍️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">✍️</span>
-                  <span class="emoji-item" data-emoji="👏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">👏</span>
-                  <span class="emoji-item" data-emoji="🙌" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🙌</span>
-                  <span class="emoji-item" data-emoji="🤝" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤝</span>
-                  <span class="emoji-item" data-emoji="🙏" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🙏</span>
+                <div
+                  class="emoji-category"
+                  id="emoji-gestures"
+                  style="display: none; flex-wrap: wrap; gap: 8px"
+                >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👍"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👍</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👎"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👎</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👌"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👌</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="✌️"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >✌️</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤞"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤞</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤟"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤟</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤘"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤘</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤙"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤙</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👈"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👈</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👉"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👉</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👆"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👆</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👇"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👇</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="✋"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >✋</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤚"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤚</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🖐"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🖐</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🖖"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🖖</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👋"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👋</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤏"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤏</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="✍️"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >✍️</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="👏"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >👏</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🙌"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🙌</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤝"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤝</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🙏"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🙏</span
+                  >
                 </div>
-                
+
                 <!-- 愛心表情 -->
-                <div class="emoji-category" id="emoji-love" style="display:none; flex-wrap:wrap; gap:8px;">
-                  <span class="emoji-item" data-emoji="❤️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">❤️</span>
-                  <span class="emoji-item" data-emoji="🧡" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🧡</span>
-                  <span class="emoji-item" data-emoji="💛" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💛</span>
-                  <span class="emoji-item" data-emoji="💚" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💚</span>
-                  <span class="emoji-item" data-emoji="💙" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💙</span>
-                  <span class="emoji-item" data-emoji="💜" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💜</span>
-                  <span class="emoji-item" data-emoji="🖤" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🖤</span>
-                  <span class="emoji-item" data-emoji="🤎" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤎</span>
-                  <span class="emoji-item" data-emoji="🤍" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🤍</span>
-                  <span class="emoji-item" data-emoji="💔" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💔</span>
-                  <span class="emoji-item" data-emoji="💕" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💕</span>
-                  <span class="emoji-item" data-emoji="💞" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💞</span>
-                  <span class="emoji-item" data-emoji="💓" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💓</span>
-                  <span class="emoji-item" data-emoji="💗" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💗</span>
-                  <span class="emoji-item" data-emoji="💖" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💖</span>
-                  <span class="emoji-item" data-emoji="💘" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💘</span>
-                  <span class="emoji-item" data-emoji="💝" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💝</span>
+                <div
+                  class="emoji-category"
+                  id="emoji-love"
+                  style="display: none; flex-wrap: wrap; gap: 8px"
+                >
+                  <span
+                    class="emoji-item"
+                    data-emoji="❤️"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >❤️</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🧡"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🧡</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💛"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💛</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💚"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💚</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💙"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💙</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💜"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💜</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🖤"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🖤</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤎"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤎</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🤍"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🤍</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💔"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💔</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💕"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💕</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💞"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💞</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💓"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💓</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💗"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💗</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💖"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💖</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💘"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💘</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💝"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💝</span
+                  >
                 </div>
-                
+
                 <!-- 符號表情 -->
-                <div class="emoji-category" id="emoji-symbols" style="display:none; flex-wrap:wrap; gap:8px;">
-                  <span class="emoji-item" data-emoji="🔥" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🔥</span>
-                  <span class="emoji-item" data-emoji="✨" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">✨</span>
-                  <span class="emoji-item" data-emoji="🎉" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🎉</span>
-                  <span class="emoji-item" data-emoji="🎊" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🎊</span>
-                  <span class="emoji-item" data-emoji="💯" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💯</span>
-                  <span class="emoji-item" data-emoji="⭐" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">⭐</span>
-                  <span class="emoji-item" data-emoji="🌟" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🌟</span>
-                  <span class="emoji-item" data-emoji="💫" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💫</span>
-                  <span class="emoji-item" data-emoji="💥" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💥</span>
-                  <span class="emoji-item" data-emoji="💢" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💢</span>
-                  <span class="emoji-item" data-emoji="💦" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💦</span>
-                  <span class="emoji-item" data-emoji="💨" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">💨</span>
-                  <span class="emoji-item" data-emoji="🕳️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">🕳️</span>
-                  <span class="emoji-item" data-emoji="❓" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">❓</span>
-                  <span class="emoji-item" data-emoji="❗" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">❗</span>
-                  <span class="emoji-item" data-emoji="‼️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">‼️</span>
-                  <span class="emoji-item" data-emoji="⁉️" style="cursor:pointer; font-size:1.8em; padding:5px; border-radius:4px;">⁉️</span>
+                <div
+                  class="emoji-category"
+                  id="emoji-symbols"
+                  style="display: none; flex-wrap: wrap; gap: 8px"
+                >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🔥"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🔥</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="✨"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >✨</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🎉"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🎉</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🎊"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🎊</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💯"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💯</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="⭐"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >⭐</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🌟"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🌟</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💫"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💫</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💥"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💥</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💢"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💢</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💦"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💦</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="💨"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >💨</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="🕳️"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >🕳️</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="❓"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >❓</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="❗"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >❗</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="‼️"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >‼️</span
+                  >
+                  <span
+                    class="emoji-item"
+                    data-emoji="⁉️"
+                    style="
+                      cursor: pointer;
+                      font-size: 1.8em;
+                      padding: 5px;
+                      border-radius: 4px;
+                    "
+                    >⁉️</span
+                  >
                 </div>
-                
-                <div id="selected-emoji" style="margin-top:10px; font-size:0.9em;">
-                  <span style="color:#666;">已選擇：</span>
-                  <span id="selected-emoji-value" style="font-weight:bold; font-size:1.3em;">無</span>
+
+                <div
+                  id="selected-emoji"
+                  style="margin-top: 10px; font-size: 0.9em"
+                >
+                  <span style="color: #666">已選擇：</span>
+                  <span
+                    id="selected-emoji-value"
+                    style="font-weight: bold; font-size: 1.3em"
+                    >無</span
+                  >
                 </div>
               </div>
-              
+
               <label class="switch-label">
                 <span>特定時段</span>
                 <span class="switch">
@@ -870,72 +2094,216 @@
                   <span class="slider"></span>
                 </span>
               </label>
-              
+
               <!-- 時間範圍選擇器，默認隱藏，勾選特定時段後顯示 -->
-              <div id="time-range-selector" style="display:none; margin-top:10px; border-top:1px solid #e0e0e0; padding-top:10px;">
-                <div style="display:flex; gap:10px; align-items:center; margin-bottom:8px;">
-                  <label style="min-width:60px; margin:0;">開始時間:</label>
-                  <input type="time" name="startTime" style="flex:1; max-width:150px;" value="00:00">
+              <div
+                id="time-range-selector"
+                style="
+                  display: none;
+                  margin-top: 10px;
+                  border-top: 1px solid #e0e0e0;
+                  padding-top: 10px;
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                    margin-bottom: 8px;
+                  "
+                >
+                  <label style="min-width: 60px; margin: 0">開始時間:</label>
+                  <input
+                    type="time"
+                    name="startTime"
+                    style="flex: 1; max-width: 150px"
+                    value="00:00"
+                  />
                 </div>
-                <div style="display:flex; gap:10px; align-items:center;">
-                  <label style="min-width:60px; margin:0;">結束時間:</label>
-                  <input type="time" name="endTime" style="flex:1; max-width:150px;" value="23:59">
+                <div style="display: flex; gap: 10px; align-items: center">
+                  <label style="min-width: 60px; margin: 0">結束時間:</label>
+                  <input
+                    type="time"
+                    name="endTime"
+                    style="flex: 1; max-width: 150px"
+                    value="23:59"
+                  />
                 </div>
               </div>
-              <button class="btn btn-primary" onclick="addTrigger()">新增觸發條件</button>
+              <button class="btn btn-primary" onclick="addTrigger()">
+                新增觸發條件
+              </button>
             </div>
           </div>
 
           <div class="form-group">
             <label>回應類型</label>
-            <div style="display:flex;align-items:center;margin-bottom:10px;">
-              <select id="response-type" style="margin:0;flex:1;">
+            <div
+              style="display: flex; align-items: center; margin-bottom: 10px"
+            >
+              <select id="response-type" style="margin: 0; flex: 1">
                 <option value="text">文字</option>
                 <option value="image">圖片</option>
                 <option value="video">影片</option>
                 <option value="function">Function</option>
               </select>
-              <button id="template-btn" class="btn template-btn" style="display:none;margin-left:10px;background:#3f51b5;color:white;">
-                <span class="material-icons" style="font-size:16px;margin-right:4px;vertical-align:text-bottom;">code</span>範本
+              <button
+                id="template-btn"
+                class="btn template-btn"
+                style="
+                  display: none;
+                  margin-left: 10px;
+                  background: #3f51b5;
+                  color: white;
+                "
+              >
+                <span
+                  class="material-icons"
+                  style="
+                    font-size: 16px;
+                    margin-right: 4px;
+                    vertical-align: text-bottom;
+                  "
+                  >code</span
+                >範本
               </button>
             </div>
-            <textarea id="response-content" placeholder="回應內容" style="min-height: 120px; height: 120px;"></textarea>
-            <input type="file" id="response-file" style="display:none" accept="image/*,video/*" />
-            <div id="function-help" style="display:none; color:#388e3c; background:#e8f5e9; border-radius:6px; padding:12px; margin-top:8px; font-size:0.95em;">
-              <strong>【函式指令使用說明】</strong><br>
-              1. 直接填寫 <b>async function(msg)</b> 的主體內容，例如：<br>
-              <pre style="background:#f1f8e9; border-radius:4px; padding:8px; margin:6px 0;">const axios = require('axios');
+            <textarea
+              id="response-content"
+              placeholder="回應內容"
+              style="min-height: 120px; height: 120px"
+            ></textarea>
+            <input
+              type="file"
+              id="response-file"
+              style="display: none"
+              accept="image/*,video/*"
+            />
+            <div
+              id="function-help"
+              style="
+                display: none;
+                color: #388e3c;
+                background: #e8f5e9;
+                border-radius: 6px;
+                padding: 12px;
+                margin-top: 8px;
+                font-size: 0.95em;
+              "
+            >
+              <strong>【函式指令使用說明】</strong><br />
+              1. 直接填寫 <b>async function(msg)</b> 的主體內容，例如：<br />
+              <pre
+                style="
+                  background: #f1f8e9;
+                  border-radius: 4px;
+                  padding: 8px;
+                  margin: 6px 0;
+                "
+              >
+const axios = require('axios');
               const res = await axios.get('https://api.github.com');
-              return res.data;</pre>
-              2. <b>msg</b> 參數即為 WhatsApp message 物件，可用 <code>msg.reply()</code> 或直接 <code>return</code> 字串。<br>
-              3. 如需第三方套件，請先於主機 <code>npm install</code>，並用 <code>require</code> 載入。<br>
-              4. <b>不能</b>使用 import，只能 require。<br>
-              5. 你寫的內容會自動包裝成 <code>module.exports = async function(msg) { ... }</code> 並儲存於 <code>data/functions/指令ID.js</code>。<br><br>
-              
-              <strong>【AI提示詞範例】</strong><br>
-              在詢問 AI 時，可以這樣描述你要的功能:<br>
-              <pre style="background:#f1f8e9; border-radius:4px; padding:8px; margin:6px 0;">請幫我寫一個 WhatsApp bot function:
+              return res.data;</pre
+              >
+              2. <b>msg</b> 參數即為 WhatsApp message 物件，可用
+              <code>msg.reply()</code> 或直接 <code>return</code> 字串。<br />
+              3. 如需第三方套件，請先於主機 <code>npm install</code>，並用
+              <code>require</code> 載入。<br />
+              4. <b>不能</b>使用 import，只能 require。<br />
+              5. 你寫的內容會自動包裝成
+              <code>module.exports = async function(msg) { ... }</code> 並儲存於
+              <code>data/functions/指令ID.js</code>。<br /><br />
+
+              <strong>【AI提示詞範例】</strong><br />
+              在詢問 AI 時，可以這樣描述你要的功能:<br />
+              <pre
+                style="
+                  background: #f1f8e9;
+                  border-radius: 4px;
+                  padding: 8px;
+                  margin: 6px 0;
+                "
+              >
+請幫我寫一個 WhatsApp bot function:
               - 使用 node.js
               - 接收 msg 參數
               - 使用 async/await
               - 只用 require (不要用 import)
               - 功能: [描述你想要的功能]
-              - 回傳文字或用 msg.reply()回覆</pre>
-              </div>
+              - 回傳文字或用 msg.reply()回覆</pre
+              >
+            </div>
           </div>
 
           <div class="form-group">
             <label>觸發名單</label>
-            <div id="trigger-targets-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
-            <button type="button" class="btn btn-primary" id="open-target-modal" style="margin-bottom: 18px; background-color: #2196f3;">選擇觸發對象</button>
+            <div
+              id="trigger-targets-tags"
+              style="
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                margin-bottom: 8px;
+              "
+            ></div>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="open-target-modal"
+              style="margin-bottom: 18px; background-color: #2196f3"
+            >
+              選擇觸發對象
+            </button>
           </div>
           <!-- Modal 彈窗 -->
-          <div id="target-modal" class="modal" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);align-items:center;justify-content:center;">
-            <div class="modal-content" style="background:#fff;padding:24px 20px;border-radius:10px;min-width:340px;max-width:96vw;max-height:90vh;overflow:auto;box-shadow:0 4px 24px rgba(0,0,0,0.18);">
-              <div id="modal-header" style="display:flex;gap:12px;margin-bottom:16px;"></div>
-              <div id="modal-selected-tags" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
-              <div id="modal-list" style="max-height:320px;overflow:auto;"></div>
-              <div style="margin-top:18px;text-align:right;">
+          <div
+            id="target-modal"
+            class="modal"
+            style="
+              display: none;
+              position: fixed;
+              z-index: 2000;
+              left: 0;
+              top: 0;
+              width: 100vw;
+              height: 100vh;
+              background: rgba(0, 0, 0, 0.25);
+              align-items: center;
+              justify-content: center;
+            "
+          >
+            <div
+              class="modal-content"
+              style="
+                background: #fff;
+                padding: 24px 20px;
+                border-radius: 10px;
+                min-width: 340px;
+                max-width: 96vw;
+                max-height: 90vh;
+                overflow: auto;
+                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+              "
+            >
+              <div
+                id="modal-header"
+                style="display: flex; gap: 12px; margin-bottom: 16px"
+              ></div>
+              <div
+                id="modal-selected-tags"
+                style="
+                  display: flex;
+                  flex-wrap: wrap;
+                  gap: 6px;
+                  margin-bottom: 10px;
+                "
+              ></div>
+              <div
+                id="modal-list"
+                style="max-height: 320px; overflow: auto"
+              ></div>
+              <div style="margin-top: 18px; text-align: right">
                 <button class="btn btn-primary" id="modal-confirm">確定</button>
                 <button class="btn btn-danger" id="modal-cancel">取消</button>
               </div>
@@ -953,8 +2321,12 @@
       <section id="console" class="section">
         <h2>系統日誌</h2>
         <div class="console-controls">
-          <button class="btn btn-primary" onclick="clearConsole()">清除日誌</button>
-          <button class="btn btn-primary" onclick="exportLogs()">導出日誌</button>
+          <button class="btn btn-primary" onclick="clearConsole()">
+            清除日誌
+          </button>
+          <button class="btn btn-primary" onclick="exportLogs()">
+            導出日誌
+          </button>
           <select id="logLevel" onchange="filterLogs()">
             <option value="all">全部日誌</option>
             <option value="log">一般日誌</option>
@@ -964,56 +2336,174 @@
           </select>
         </div>
         <div id="console-logs"></div>
-        <div id="terminal-section" style="margin-top:24px;">
-          <h3 style="margin-bottom:8px;">管理員 Terminal（僅限 npm install 指令）</h3>
-          <form id="terminal-form" style="display:flex;gap:8px;align-items:center;">
-            <input id="terminal-input" type="text" placeholder="例如：npm i axios" style="flex:1;padding:8px;border-radius:4px;border:1px solid #ccc;" autocomplete="off" />
+        <div id="terminal-section" style="margin-top: 24px">
+          <h3 style="margin-bottom: 8px">
+            管理員 Terminal（僅限 npm install 指令）
+          </h3>
+          <form
+            id="terminal-form"
+            style="display: flex; gap: 8px; align-items: center"
+          >
+            <input
+              id="terminal-input"
+              type="text"
+              placeholder="例如：npm i axios"
+              style="
+                flex: 1;
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+              "
+              autocomplete="off"
+            />
             <button type="submit" class="btn btn-primary">執行</button>
           </form>
-          <pre id="terminal-output" style="background:#222;color:#b9f6ca;padding:12px;border-radius:6px;margin-top:8px;min-height:60px;max-height:200px;overflow:auto;font-size:0.95em;"></pre>
+          <pre
+            id="terminal-output"
+            style="
+              background: #222;
+              color: #b9f6ca;
+              padding: 12px;
+              border-radius: 6px;
+              margin-top: 8px;
+              min-height: 60px;
+              max-height: 200px;
+              overflow: auto;
+              font-size: 0.95em;
+            "
+          ></pre>
         </div>
       </section>
     </main>
 
     <!-- AI 範本模態窗口 -->
-    <div id="template-modal" class="modal" style="display:none;position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);align-items:center;justify-content:center;">
-      <div class="modal-content" style="background:#fff;padding:24px 20px;border-radius:12px;min-width:460px;max-width:96vw;max-height:90vh;overflow:auto;box-shadow:0 4px 24px rgba(0,0,0,0.18);">
-        <h3 style="margin-bottom:16px;color:#3f51b5;display:flex;align-items:center;gap:8px;">
+    <div
+      id="template-modal"
+      class="modal"
+      style="
+        display: none;
+        position: fixed;
+        z-index: 2000;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.25);
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        class="modal-content"
+        style="
+          background: #fff;
+          padding: 24px 20px;
+          border-radius: 12px;
+          min-width: 460px;
+          max-width: 96vw;
+          max-height: 90vh;
+          overflow: auto;
+          box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+        "
+      >
+        <h3
+          style="
+            margin-bottom: 16px;
+            color: #3f51b5;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          "
+        >
           <span class="material-icons">code</span>
           <span>AI 功能範本</span>
-          <div class="close-btn" style="margin-left:auto;cursor:pointer;font-size:20px;color:#666;">&times;</div>
+          <div
+            class="close-btn"
+            style="
+              margin-left: auto;
+              cursor: pointer;
+              font-size: 20px;
+              color: #666;
+            "
+          >
+            &times;
+          </div>
         </h3>
         <form>
-        <div id="template-content">
-          <div class="template-form">
-            <div class="form-group">
-              <label for="openrouter_api_key">OPENROUTER_API_KEY <span class="required">*</span></label>
-              <input type="password" id="openrouter_api_key" placeholder="輸入您的 OpenRouter API 密鑰" autocomplete="false" required>
-            </div>
-            <div class="form-group">
-              <label for="model">MODEL <span class="required">*</span></label>
-              <input type="text" id="model" placeholder="例如: openai/gpt-3.5-turbo" required>
-            </div>
-            <div class="form-group">
-              <label for="api_url">API_URL <span class="required">*</span></label>
-              <input type="text" id="api_url" placeholder="例如: https://openrouter.ai/api/v1/chat/completions" required>
-            </div>
-            <div class="form-group">
-              <label for="default_system_prompt">defaultSystemPrompt <span class="optional">(可選)</span></label>
-              <textarea id="default_system_prompt" placeholder="系統提示詞 (可留空)" rows="3"></textarea>
-            </div>
-            <div class="form-group">
-              <label for="user_system_prompts_format">userSystemPrompts <span class="optional">(可選)</span></label>
-              <textarea id="user_system_prompts_format" placeholder="提供使用者提示詞格式說明 (可留空)" rows="3"></textarea>
+          <div id="template-content">
+            <div class="template-form">
+              <div class="form-group">
+                <label for="openrouter_api_key"
+                  >OPENROUTER_API_KEY <span class="required">*</span></label
+                >
+                <input
+                  type="password"
+                  id="openrouter_api_key"
+                  placeholder="輸入您的 OpenRouter API 密鑰"
+                  autocomplete="false"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="model">MODEL <span class="required">*</span></label>
+                <input
+                  type="text"
+                  id="model"
+                  placeholder="例如: openai/gpt-3.5-turbo"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="api_url"
+                  >API_URL <span class="required">*</span></label
+                >
+                <input
+                  type="text"
+                  id="api_url"
+                  placeholder="例如: https://openrouter.ai/api/v1/chat/completions"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="default_system_prompt"
+                  >defaultSystemPrompt
+                  <span class="optional">(可選)</span></label
+                >
+                <textarea
+                  id="default_system_prompt"
+                  placeholder="系統提示詞 (可留空)"
+                  rows="3"
+                ></textarea>
+              </div>
+              <div class="form-group">
+                <label for="user_system_prompts_format"
+                  >userSystemPrompts <span class="optional">(可選)</span></label
+                >
+                <textarea
+                  id="user_system_prompts_format"
+                  placeholder="提供使用者提示詞格式說明 (可留空)"
+                  rows="3"
+                ></textarea>
+              </div>
             </div>
           </div>
-        </div>
-      </form>
-        
-        <div style="margin-top:20px;text-align:right;"></div>
-          <button class="btn" id="modal-template-cancel" style="background:#f5f5f5;color:#333;margin-right:8px;">取消</button>
-          <button class="btn btn-primary" id="modal-template-confirm" style="background:#3f51b5;">確定</button>
-        </div>
+        </form>
+
+        <div style="margin-top: 20px; text-align: right"></div>
+        <button
+          class="btn"
+          id="modal-template-cancel"
+          style="background: #f5f5f5; color: #333; margin-right: 8px"
+        >
+          取消
+        </button>
+        <button
+          class="btn btn-primary"
+          id="modal-template-confirm"
+          style="background: #3f51b5"
+        >
+          確定
+        </button>
       </div>
     </div>
 
@@ -1031,96 +2521,109 @@
       let selectedTargets = [];
 
       // 添加時間範圍選擇器的顯示/隱藏功能
-      document.addEventListener('DOMContentLoaded', () => {
-        const timeRangeCheckbox = document.querySelector('input[name="timeRange"]');
-        const timeRangeSelector = document.getElementById('time-range-selector');
-        
+      document.addEventListener("DOMContentLoaded", () => {
+        const timeRangeCheckbox = document.querySelector(
+          'input[name="timeRange"]'
+        );
+        const timeRangeSelector = document.getElementById(
+          "time-range-selector"
+        );
+
         if (timeRangeCheckbox && timeRangeSelector) {
-          timeRangeCheckbox.addEventListener('change', function() {
-            timeRangeSelector.style.display = this.checked ? 'block' : 'none';
+          timeRangeCheckbox.addEventListener("change", function () {
+            timeRangeSelector.style.display = this.checked ? "block" : "none";
           });
         }
 
-        const reactionCheckbox = document.querySelector('input[name="hasReaction"]');
-        const reactionSelector = document.getElementById('reaction-selector');
-        
+        const reactionCheckbox = document.querySelector(
+          'input[name="hasReaction"]'
+        );
+        const reactionSelector = document.getElementById("reaction-selector");
+
         if (reactionCheckbox && reactionSelector) {
-          reactionCheckbox.addEventListener('change', function() {
-            reactionSelector.style.display = this.checked ? 'block' : 'none';
+          reactionCheckbox.addEventListener("change", function () {
+            reactionSelector.style.display = this.checked ? "block" : "none";
           });
         }
 
         // 表情符號選擇功能
-        const emojiItems = document.querySelectorAll('.emoji-item');
-        const selectedEmojiValue = document.getElementById('selected-emoji-value');
-        
+        const emojiItems = document.querySelectorAll(".emoji-item");
+        const selectedEmojiValue = document.getElementById(
+          "selected-emoji-value"
+        );
+
         if (emojiItems && selectedEmojiValue) {
-          emojiItems.forEach(item => {
-            item.addEventListener('click', function() {
+          emojiItems.forEach((item) => {
+            item.addEventListener("click", function () {
               // 移除之前選中的表情高亮
-              document.querySelectorAll('.emoji-item.selected').forEach(el => {
-                el.classList.remove('selected');
-                el.style.background = '';
-              });
-              
+              document
+                .querySelectorAll(".emoji-item.selected")
+                .forEach((el) => {
+                  el.classList.remove("selected");
+                  el.style.background = "";
+                });
+
               // 高亮當前選中的表情
-              this.classList.add('selected');
-              this.style.background = '#e8f5e9';
-              
+              this.classList.add("selected");
+              this.style.background = "#e8f5e9";
+
               // 更新已選擇的表情顯示
               selectedEmojiValue.textContent = this.dataset.emoji;
             });
           });
         }
-        
+
         // 表情分類切換功能
-        const emojiTabs = document.querySelectorAll('.emoji-tab');
+        const emojiTabs = document.querySelectorAll(".emoji-tab");
         if (emojiTabs) {
-          emojiTabs.forEach(tab => {
-            tab.addEventListener('click', function() {
+          emojiTabs.forEach((tab) => {
+            tab.addEventListener("click", function () {
               // 切換分類標籤樣式
-              document.querySelectorAll('.emoji-tab').forEach(t => {
-                t.classList.remove('active');
-                t.style.background = '#f5f5f5';
-                t.style.color = '#666';
+              document.querySelectorAll(".emoji-tab").forEach((t) => {
+                t.classList.remove("active");
+                t.style.background = "#f5f5f5";
+                t.style.color = "#666";
               });
-              this.classList.add('active');
-              this.style.background = '#e8f5e9';
-              this.style.color = '#388e3c';
-              
+              this.classList.add("active");
+              this.style.background = "#e8f5e9";
+              this.style.color = "#388e3c";
+
               // 切換對應的表情分類顯示
               const category = this.dataset.category;
-              document.querySelectorAll('.emoji-category').forEach(c => {
-                c.style.display = 'none';
+              document.querySelectorAll(".emoji-category").forEach((c) => {
+                c.style.display = "none";
               });
-              document.getElementById(`emoji-${category}`).style.display = 'flex';
+              document.getElementById(`emoji-${category}`).style.display =
+                "flex";
             });
           });
         }
       });
-      
+
       function cleanupCommandsSection() {
-          if (codeMirrorEditor) {
-            codeMirrorEditor.toTextArea();
-            codeMirrorEditor = null;
-          }
-          currentTriggers = [];
-          selectedTargets = [];
-          editingCommandId = null;
-          
-          // 重置所有輸入
-          document.getElementById("response-type").value = "text";
-          document.getElementById("response-content").value = "";
-          document.getElementById("response-file").value = "";
-          
-          // 重置觸發條件
-          const checkboxes = document.querySelectorAll('#trigger-conditions input[type="checkbox"]');
-          checkboxes.forEach(cb => cb.checked = false);
-          
-          // 隱藏相關選擇器
-          document.getElementById("time-range-selector").style.display = "none";
-          document.getElementById("reaction-selector").style.display = "none";
+        if (codeMirrorEditor) {
+          codeMirrorEditor.toTextArea();
+          codeMirrorEditor = null;
         }
+        currentTriggers = [];
+        selectedTargets = [];
+        editingCommandId = null;
+
+        // 重置所有輸入
+        document.getElementById("response-type").value = "text";
+        document.getElementById("response-content").value = "";
+        document.getElementById("response-file").value = "";
+
+        // 重置觸發條件
+        const checkboxes = document.querySelectorAll(
+          '#trigger-conditions input[type="checkbox"]'
+        );
+        checkboxes.forEach((cb) => (cb.checked = false));
+
+        // 隱藏相關選擇器
+        document.getElementById("time-range-selector").style.display = "none";
+        document.getElementById("reaction-selector").style.display = "none";
+      }
 
       function setupCodeMirror() {
         if (codeMirrorEditor) return;
@@ -1136,7 +2639,7 @@
           viewportMargin: Infinity,
           matchBrackets: true,
           autoCloseBrackets: true,
-          styleActiveLine: true
+          styleActiveLine: true,
         });
         codeMirrorEditor.setSize("100%", "240px");
       }
@@ -1171,7 +2674,9 @@
             // 回應類型預設為 text
             document.getElementById("response-type").value = "text";
             // 觸發回應類型切換事件，確保 UI 狀態正確
-            document.getElementById("response-type").dispatchEvent(new Event("change"));
+            document
+              .getElementById("response-type")
+              .dispatchEvent(new Event("change"));
             // 清空回應內容
             if (codeMirrorEditor) codeMirrorEditor.setValue("");
             document.getElementById("response-content").value = "";
@@ -1181,7 +2686,9 @@
             renderTargetTags();
             // 重置編輯狀態與按鈕
             editingCommandId = null;
-            const saveBtn = document.querySelector("#commands .btn.btn-primary");
+            const saveBtn = document.querySelector(
+              "#commands .btn.btn-primary"
+            );
             if (saveBtn) saveBtn.textContent = "儲存指令";
           }
 
@@ -1191,7 +2698,9 @@
             document.getElementById("contact-number").value = "";
             document.getElementById("contact-name").value = "";
             editingContactId = null;
-            const saveBtn = document.querySelector("#contacts .btn.btn-primary");
+            const saveBtn = document.querySelector(
+              "#contacts .btn.btn-primary"
+            );
             if (saveBtn) saveBtn.textContent = "新增聯絡人";
           }
         });
@@ -1240,80 +2749,82 @@
       }
 
       // Bot Status
-socket.on("qr", function(qrData) {
-  console.log("收到 QR 碼數據");
-  const qrContainer = document.getElementById("qrcode");
-  const qrImage = document.querySelector("#qrcode #qr-image") || document.createElement("img");
-  const qrLoading = document.querySelector("#qrcode #qr-loading");
-  
-  if (!qrData) {
-    console.error("收到空的 QR 碼數據");
-    return;
-  }
+      socket.on("qr", function (qrData) {
+        console.log("收到 QR 碼數據");
+        const qrContainer = document.getElementById("qrcode");
+        const qrImage =
+          document.querySelector("#qrcode #qr-image") ||
+          document.createElement("img");
+        const qrLoading = document.querySelector("#qrcode #qr-loading");
 
-  // 如果 qrImage 不在 DOM 中，則添加它
-  if (!qrImage.parentElement) {
-    qrImage.id = "qr-image";
-    qrImage.style.display = "none";
-    qrImage.style.maxWidth = "300px";
-    qrImage.style.width = "100%";
-    qrImage.alt = "WhatsApp QR Code";
-    qrContainer.appendChild(qrImage);
-  }
+        if (!qrData) {
+          console.error("收到空的 QR 碼數據");
+          return;
+        }
 
-  // 保持載入狀態直到圖片完全載入
-  if (qrLoading) {
-    qrLoading.style.display = "block";
-  }
-  qrImage.style.display = "none";
-  
-  qrImage.onload = function() {
-    setTimeout(() => {
-      if (qrLoading) {
-        qrLoading.style.display = "none";
-      }
-      qrImage.style.display = "block";
-      console.log("QR 碼圖片載入完成");
-    }, 500); // 添加短暫延遲確保圖片完整顯示
-  };
-  
-  qrImage.onerror = function(error) {
-    console.error("QR 碼圖片載入失敗:", error);
-    if (qrLoading) {
-      qrLoading.style.display = "none";
-    }
-  };
-  
-  qrImage.src = qrData;
-});
+        // 如果 qrImage 不在 DOM 中，則添加它
+        if (!qrImage.parentElement) {
+          qrImage.id = "qr-image";
+          qrImage.style.display = "none";
+          qrImage.style.maxWidth = "300px";
+          qrImage.style.width = "100%";
+          qrImage.alt = "WhatsApp QR Code";
+          qrContainer.appendChild(qrImage);
+        }
 
-socket.on("ready", () => {
-  document.getElementById("qrcode").innerHTML = "";
-  document.getElementById("bot-status").textContent = "已連接";
-  document.getElementById("bot-status").className = "status online";
-  isConnected = true;
-  updateToggleButton();
-});
+        // 保持載入狀態直到圖片完全載入
+        if (qrLoading) {
+          qrLoading.style.display = "block";
+        }
+        qrImage.style.display = "none";
 
-socket.on("qr-loading", (loading) => {
-  const qrLoading = document.getElementById("qr-loading");
-  const qrImage = document.getElementById("qr-image");
-  
-  if (qrLoading) {
-    qrLoading.style.display = loading ? "block" : "none";
-    if (qrImage && !loading) {
-      qrImage.style.display = "block";
-    }
-  }
-});
+        qrImage.onload = function () {
+          setTimeout(() => {
+            if (qrLoading) {
+              qrLoading.style.display = "none";
+            }
+            qrImage.style.display = "block";
+            console.log("QR 碼圖片載入完成");
+          }, 500); // 添加短暫延遲確保圖片完整顯示
+        };
 
-socket.on("connect", () => {
-  console.log("Connected to server");
-});
+        qrImage.onerror = function (error) {
+          console.error("QR 碼圖片載入失敗:", error);
+          if (qrLoading) {
+            qrLoading.style.display = "none";
+          }
+        };
 
-socket.on("connect_error", (error) => {
-  console.error("連接錯誤:", error);
-});
+        qrImage.src = qrData;
+      });
+
+      socket.on("ready", () => {
+        document.getElementById("qrcode").innerHTML = "";
+        document.getElementById("bot-status").textContent = "已連接";
+        document.getElementById("bot-status").className = "status online";
+        isConnected = true;
+        updateToggleButton();
+      });
+
+      socket.on("qr-loading", (loading) => {
+        const qrLoading = document.getElementById("qr-loading");
+        const qrImage = document.getElementById("qr-image");
+
+        if (qrLoading) {
+          qrLoading.style.display = loading ? "block" : "none";
+          if (qrImage && !loading) {
+            qrImage.style.display = "block";
+          }
+        }
+      });
+
+      socket.on("connect", () => {
+        console.log("Connected to server");
+      });
+
+      socket.on("connect_error", (error) => {
+        console.error("連接錯誤:", error);
+      });
 
       socket.on("disconnected", () => {
         document.getElementById("bot-status").textContent = "離線";
@@ -1344,22 +2855,22 @@ socket.on("connect_error", (error) => {
 
       // Console 功能
       function clearConsole() {
-        fetch('/api/logs/clear', { method: 'POST' })
+        fetch("/api/logs/clear", { method: "POST" })
           .then(() => {
-            document.getElementById('console-logs').innerHTML = '';
+            document.getElementById("console-logs").innerHTML = "";
           })
-          .catch(error => console.error('清除日誌失敗:', error));
+          .catch((error) => console.error("清除日誌失敗:", error));
       }
 
       function exportLogs() {
-        fetch('/api/logs')
-          .then(response => response.json())
-          .then(logs => {
+        fetch("/api/logs")
+          .then((response) => response.json())
+          .then((logs) => {
             const blob = new Blob([JSON.stringify(logs, null, 2)], {
-              type: 'application/json'
+              type: "application/json",
             });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
+            const a = document.createElement("a");
             a.href = url;
             a.download = `whatsapp-bot-logs-${new Date().toISOString()}.json`;
             document.body.appendChild(a);
@@ -1367,34 +2878,42 @@ socket.on("connect_error", (error) => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
           })
-          .catch(error => console.error('導出日誌失敗:', error));
+          .catch((error) => console.error("導出日誌失敗:", error));
       }
 
       function filterLogs() {
-        const level = document.getElementById('logLevel').value;
+        const level = document.getElementById("logLevel").value;
         fetch(`/api/logs?level=${level}`)
-          .then(response => response.json())
-          .then(logs => {
-            const container = document.getElementById('console-logs');
-            container.innerHTML = logs.map(log => `
+          .then((response) => response.json())
+          .then((logs) => {
+            const container = document.getElementById("console-logs");
+            container.innerHTML = logs
+              .map(
+                (log) => `
               <div class="log-entry log-${log.level}">
-                <span class="log-time">[${new Date(log.timestamp).toLocaleString()}]</span>
+                <span class="log-time">[${new Date(
+                  log.timestamp
+                ).toLocaleString()}]</span>
                 <span class="log-level">[${log.level.toUpperCase()}]</span>
                 <span class="log-msg">${log.message}</span>
               </div>
-            `).join('');
+            `
+              )
+              .join("");
             container.scrollTop = container.scrollHeight;
           })
-          .catch(error => console.error('過濾日誌失敗:', error));
+          .catch((error) => console.error("過濾日誌失敗:", error));
       }
 
       // Socket.IO 事件處理
-      socket.on('console-log', (log) => {
-        const container = document.getElementById('console-logs');
-        const logEntry = document.createElement('div');
+      socket.on("console-log", (log) => {
+        const container = document.getElementById("console-logs");
+        const logEntry = document.createElement("div");
         logEntry.className = `log-entry log-${log.level}`;
         logEntry.innerHTML = `
-          <span class="log-time">[${new Date(log.timestamp).toLocaleString()}]</span>
+          <span class="log-time">[${new Date(
+            log.timestamp
+          ).toLocaleString()}]</span>
           <span class="log-level">[${log.level.toUpperCase()}]</span>
           <span class="log-msg">${log.message}</span>
         `;
@@ -1402,64 +2921,66 @@ socket.on("connect_error", (error) => {
         container.scrollTop = container.scrollHeight;
       });
 
-      socket.on('logs-cleared', () => {
-        document.getElementById('console-logs').innerHTML = '';
+      socket.on("logs-cleared", () => {
+        document.getElementById("console-logs").innerHTML = "";
       });
 
-// Toggle Bot
-document.getElementById("toggle-bot").addEventListener("click", () => {
-  if (isConnected) {
-    console.log("發送斷開連接請求");
-    socket.emit("disconnect-bot");
-  } else {
-    console.log("準備連接...");
-    
-    const qrContainer = document.getElementById("qrcode");
-    if (!qrContainer) {
-      console.error("找不到 QR 碼容器");
-      return;
-    }
-    
-    qrContainer.innerHTML = `
+      // Toggle Bot
+      document.getElementById("toggle-bot").addEventListener("click", () => {
+        if (isConnected) {
+          console.log("發送斷開連接請求");
+          socket.emit("disconnect-bot");
+        } else {
+          console.log("準備連接...");
+
+          const qrContainer = document.getElementById("qrcode");
+          if (!qrContainer) {
+            console.error("找不到 QR 碼容器");
+            return;
+          }
+
+          qrContainer.innerHTML = `
       <div id="qr-loading" style="display: block;">
         <div class="spinner"></div>
         <p>正在獲取 WhatsApp 登入碼...</p>
       </div>
       <img id="qr-image" style="display: none; max-width: 300px; width: 100%;" alt="WhatsApp QR Code" />
     `;
-    
-    console.log("發送連接請求");
-    socket.emit("connect-bot");
-  }
-});
 
-      // Show/hide file input based on response type
-      document.getElementById("response-type").addEventListener("change", (e) => {
-        const fileInput = document.getElementById("response-file");
-        const textarea = document.getElementById("response-content");
-        const functionHelp = document.getElementById("function-help");
-        const templateBtn = document.getElementById("template-btn");
-        
-        if (e.target.value === "image" || e.target.value === "video") {
-          fileInput.style.display = "block";
-          if (codeMirrorEditor) destroyCodeMirror();
-          textarea.style.display = "none";
-          functionHelp.style.display = "none";
-          templateBtn.style.display = "none";
-        } else if (e.target.value === "function") {
-          fileInput.style.display = "none";
-          textarea.style.display = "block";
-          functionHelp.style.display = "block";
-          templateBtn.style.display = "block"; // 顯示範本按鈕
-          setTimeout(setupCodeMirror, 0);
-        } else {
-          fileInput.style.display = "none";
-          if (codeMirrorEditor) destroyCodeMirror();
-          textarea.style.display = "block";
-          functionHelp.style.display = "none";
-          templateBtn.style.display = "none";
+          console.log("發送連接請求");
+          socket.emit("connect-bot");
         }
       });
+
+      // Show/hide file input based on response type
+      document
+        .getElementById("response-type")
+        .addEventListener("change", (e) => {
+          const fileInput = document.getElementById("response-file");
+          const textarea = document.getElementById("response-content");
+          const functionHelp = document.getElementById("function-help");
+          const templateBtn = document.getElementById("template-btn");
+
+          if (e.target.value === "image" || e.target.value === "video") {
+            fileInput.style.display = "block";
+            if (codeMirrorEditor) destroyCodeMirror();
+            textarea.style.display = "none";
+            functionHelp.style.display = "none";
+            templateBtn.style.display = "none";
+          } else if (e.target.value === "function") {
+            fileInput.style.display = "none";
+            textarea.style.display = "block";
+            functionHelp.style.display = "block";
+            templateBtn.style.display = "block"; // 顯示範本按鈕
+            setTimeout(setupCodeMirror, 0);
+          } else {
+            fileInput.style.display = "none";
+            if (codeMirrorEditor) destroyCodeMirror();
+            textarea.style.display = "block";
+            functionHelp.style.display = "none";
+            templateBtn.style.display = "none";
+          }
+        });
 
       function updateToggleButton() {
         const btn = document.getElementById("toggle-bot");
@@ -1583,7 +3104,9 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
             numberInput.value = "";
             nameInput.value = "";
             editingContactId = null;
-            const saveBtn = document.querySelector("#contacts .btn.btn-primary");
+            const saveBtn = document.querySelector(
+              "#contacts .btn.btn-primary"
+            );
             if (saveBtn) saveBtn.textContent = "新增聯絡人";
             await initializeData();
           }
@@ -1614,10 +3137,14 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
       }
 
       function editContact(id) {
-        const contact = currentContacts.find(c => c.id === id);
+        const contact = currentContacts.find((c) => c.id === id);
         if (!contact) return;
-        document.getElementById("contact-prefix").value = contact.number.slice(0, contact.number.length - (contact.number.length > 8 ? 8 : 0));
-        document.getElementById("contact-number").value = contact.number.slice(-8);
+        document.getElementById("contact-prefix").value = contact.number.slice(
+          0,
+          contact.number.length - (contact.number.length > 8 ? 8 : 0)
+        );
+        document.getElementById("contact-number").value =
+          contact.number.slice(-8);
         document.getElementById("contact-name").value = contact.name;
         editingContactId = id;
         const saveBtn = document.querySelector("#contacts .btn.btn-primary");
@@ -1670,18 +3197,29 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
         const endTime = document.querySelector(
           '#trigger-conditions input[name="endTime"]'
         );
-        const selectedEmojiValue = document.getElementById('selected-emoji-value');
+        const selectedEmojiValue = document.getElementById(
+          "selected-emoji-value"
+        );
 
         const keyword = triggerInput.value.trim();
-        
+
         // 檢查是否有任何觸發條件
-        if (!keyword && !quotedMsg.checked && !hasMedia.checked && !hasReaction.checked && !timeRange.checked) {
+        if (
+          !keyword &&
+          !quotedMsg.checked &&
+          !hasMedia.checked &&
+          !hasReaction.checked &&
+          !timeRange.checked
+        ) {
           alert("請輸入觸發關鍵詞或勾選引用訊息/圖片/表情反應/特定時段");
           return;
         }
 
         // 檢查表情反應是否選擇表情符號
-        if (hasReaction.checked && (!selectedEmojiValue || selectedEmojiValue.textContent === "無")) {
+        if (
+          hasReaction.checked &&
+          (!selectedEmojiValue || selectedEmojiValue.textContent === "無")
+        ) {
           alert("表情反應觸發條件必須選擇一個表情符號");
           return;
         }
@@ -1695,9 +3233,9 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
           hasReaction: hasReaction.checked,
           timeRange: timeRange.checked,
           startTime: timeRange.checked ? startTime.value : null,
-          endTime: timeRange.checked ? endTime.value : null
+          endTime: timeRange.checked ? endTime.value : null,
         };
-        
+
         // 如果有表情反應則添加表情符號
         if (hasReaction.checked) {
           newTrigger.reaction = selectedEmojiValue.textContent;
@@ -1729,13 +3267,23 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
           .map(
             (trigger, index) => `
         <div class="trigger-item">
-            <span>${trigger.keyword}${trigger.isRegex ? ' <span style="color:#388e3c;">[Regex]</span>' : ''}</span>
+            <span>${trigger.keyword}${
+              trigger.isRegex
+                ? ' <span style="color:#388e3c;">[Regex]</span>'
+                : ""
+            }</span>
             <span>${trigger.toLowerCase ? "忽略大小寫" : ""}</span>
             <span>${trigger.startsWith ? "開頭匹配" : ""}</span>
             <span>${trigger.quotedMsg ? "引用訊息" : ""}</span>
             <span>${trigger.hasMedia ? "圖片" : ""}</span>
-            <span>${trigger.hasReaction ? `表情反應 (${trigger.reaction})` : ""}</span>
-            <span>${trigger.timeRange ? `特定時段 (${trigger.startTime} - ${trigger.endTime})` : ""}</span>
+            <span>${
+              trigger.hasReaction ? `表情反應 (${trigger.reaction})` : ""
+            }</span>
+            <span>${
+              trigger.timeRange
+                ? `特定時段 (${trigger.startTime} - ${trigger.endTime})`
+                : ""
+            }</span>
             <button class="btn btn-danger" onclick="removeTrigger(${index})">刪除</button>
         </div>
     `
@@ -1749,114 +3297,166 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
       }
 
       function renderTargetTags() {
-        const tagBox = document.getElementById('trigger-targets-tags');
-        tagBox.innerHTML = selectedTargets.map(t => `<span class="tag" style="background:#e8f5e9;color:#388e3c;padding:2px 10px;border-radius:12px;font-size:0.95em;display:inline-flex;align-items:center;gap:4px;">${t.name}<span style="cursor:pointer;font-weight:bold;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`).join('');
+        const tagBox = document.getElementById("trigger-targets-tags");
+        tagBox.innerHTML = selectedTargets
+          .map(
+            (t) =>
+              `<span class="tag" style="background:#e8f5e9;color:#388e3c;padding:2px 10px;border-radius:12px;font-size:0.95em;display:inline-flex;align-items:center;gap:4px;">${t.name}<span style="cursor:pointer;font-weight:bold;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`
+          )
+          .join("");
       }
 
       function removeTargetTag(type, id) {
-        selectedTargets = selectedTargets.filter(t => !(t.type === type && t.id === id));
+        selectedTargets = selectedTargets.filter(
+          (t) => !(t.type === type && t.id === id)
+        );
         renderTargetTags();
       }
 
-      document.getElementById('open-target-modal').onclick = function() {
-        document.getElementById('target-modal').style.display = 'flex';
-        renderTargetModal('group');
+      document.getElementById("open-target-modal").onclick = function () {
+        document.getElementById("target-modal").style.display = "flex";
+        renderTargetModal("group");
       };
 
-      document.getElementById('modal-cancel').onclick = function() {
-        document.getElementById('target-modal').style.display = 'none';
+      document.getElementById("modal-cancel").onclick = function () {
+        document.getElementById("target-modal").style.display = "none";
       };
 
-      document.getElementById('modal-confirm').onclick = function() {
-        document.getElementById('target-modal').style.display = 'none';
+      document.getElementById("modal-confirm").onclick = function () {
+        document.getElementById("target-modal").style.display = "none";
         renderTargetTags();
       };
 
       function renderTargetModal(tab) {
         // 初始顯示為群組
-        tab = tab || 'group';
-        
-        const modalHeader = document.getElementById('modal-header');
-        const modalList = document.getElementById('modal-list');
-        const modalSelectedTags = document.getElementById('modal-selected-tags');
-        
+        tab = tab || "group";
+
+        const modalHeader = document.getElementById("modal-header");
+        const modalList = document.getElementById("modal-list");
+        const modalSelectedTags = document.getElementById(
+          "modal-selected-tags"
+        );
+
         // 渲染標籤和搜尋欄
         modalHeader.innerHTML = `
-          <button id="tab-group" class="modal-tab ${tab==='group'?'active':''}">群組</button>
-          <button id="tab-contact" class="modal-tab ${tab==='contact'?'active':''}">聯絡人</button>
+          <button id="tab-group" class="modal-tab ${
+            tab === "group" ? "active" : ""
+          }">群組</button>
+          <button id="tab-contact" class="modal-tab ${
+            tab === "contact" ? "active" : ""
+          }">聯絡人</button>
           <input id="target-search" type="text" placeholder="搜尋名稱..." style="flex:1;padding:6px 10px;border-radius:4px;border:1px solid #ccc;" />
         `;
-        
+
         // 添加標籤點擊事件
-        document.getElementById('tab-group').onclick = function() {
-          renderTargetModal('group');
+        document.getElementById("tab-group").onclick = function () {
+          renderTargetModal("group");
         };
-        document.getElementById('tab-contact').onclick = function() {
-          renderTargetModal('contact');
+        document.getElementById("tab-contact").onclick = function () {
+          renderTargetModal("contact");
         };
-        
+
         // 添加搜尋功能
-        document.getElementById('target-search').oninput = function() {
+        document.getElementById("target-search").oninput = function () {
           renderTargetModal(tab);
         };
-        
+
         // 根據當前標籤選擇顯示項目列表
-        let items = tab === 'group' ? currentGroups : currentContacts;
-        
+        let items = tab === "group" ? currentGroups : currentContacts;
+
         // 如果有搜尋文字則過濾
-        const searchInput = document.getElementById('target-search');
+        const searchInput = document.getElementById("target-search");
         if (searchInput && searchInput.value) {
           const search = searchInput.value.trim().toLowerCase();
-          items = items.filter(item => item.name.toLowerCase().includes(search));
+          items = items.filter((item) =>
+            item.name.toLowerCase().includes(search)
+          );
         }
-        
+
         // 生成項目列表 HTML
-        modalList.innerHTML = items.length > 0 ? items.map(item => {
-          const type = tab;
-          const checked = selectedTargets.some(t => t.type === type && t.id === item.id);
-          return `<label style="display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;border-bottom:1px solid #e0e0e0;">
-            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleTargetSelect('${type}','${item.id}','${item.name ? item.name.replace(/'/g, '&#39;') : item.id}')" />
-            <span>${item.name || item.id}${type==='contact' && item.number ? ` (${item.number})` : ''}</span>
+        modalList.innerHTML =
+          items.length > 0
+            ? items
+                .map((item) => {
+                  const type = tab;
+                  const checked = selectedTargets.some(
+                    (t) => t.type === type && t.id === item.id
+                  );
+                  return `<label style="display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;border-bottom:1px solid #e0e0e0;">
+            <input type="checkbox" ${
+              checked ? "checked" : ""
+            } onchange="toggleTargetSelect('${type}','${item.id}','${
+                    item.name ? item.name.replace(/'/g, "&#39;") : item.id
+                  }')" />
+            <span>${item.name || item.id}${
+                    type === "contact" && item.number ? ` (${item.number})` : ""
+                  }</span>
           </label>`;
-        }).join('') : `<div style="padding:16px;color:#777;text-align:center;">沒有${tab === 'group' ? '群組' : '聯絡人'}</div>`;
-        
+                })
+                .join("")
+            : `<div style="padding:16px;color:#777;text-align:center;">沒有${
+                tab === "group" ? "群組" : "聯絡人"
+              }</div>`;
+
         // 更新已選擇的標籤
-        modalSelectedTags.innerHTML = selectedTargets.length ? 
-          selectedTargets.map(t => 
-            `<span class="tag" style="background:#e8f5e9;color:#388e3c;padding:2px 12px;border-radius:12px;font-size:0.97em;display:inline-flex;align-items:center;gap:4px;margin-right:4px;margin-bottom:4px;">${t.name || t.id}<span style="cursor:pointer;font-weight:bold;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`
-          ).join('') : '';
+        modalSelectedTags.innerHTML = selectedTargets.length
+          ? selectedTargets
+              .map(
+                (t) =>
+                  `<span class="tag" style="background:#e8f5e9;color:#388e3c;padding:2px 12px;border-radius:12px;font-size:0.97em;display:inline-flex;align-items:center;gap:4px;margin-right:4px;margin-bottom:4px;">${
+                    t.name || t.id
+                  }<span style="cursor:pointer;font-weight:bold;" onclick="removeTargetTag('${
+                    t.type
+                  }','${t.id}')">×</span></span>`
+              )
+              .join("")
+          : "";
       }
 
-      window.toggleTargetSelect = function(type, id, name) {
-        const idx = selectedTargets.findIndex(t => t.type === type && t.id === id);
+      window.toggleTargetSelect = function (type, id, name) {
+        const idx = selectedTargets.findIndex(
+          (t) => t.type === type && t.id === id
+        );
         if (idx >= 0) {
           selectedTargets.splice(idx, 1);
         } else {
           selectedTargets.push({ type, id, name });
         }
-        document.getElementById('modal-selected-tags').innerHTML = selectedTargets.length ? 
-          selectedTargets.map(t => 
-            `<span class="tag">${t.name}<span style="cursor:pointer;font-weight:bold;margin-left:4px;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`
-          ).join('') : '';
+        document.getElementById("modal-selected-tags").innerHTML =
+          selectedTargets.length
+            ? selectedTargets
+                .map(
+                  (t) =>
+                    `<span class="tag">${t.name}<span style="cursor:pointer;font-weight:bold;margin-left:4px;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`
+                )
+                .join("")
+            : "";
       };
 
-      window.removeTargetTag = function(type, id) {
-        selectedTargets = selectedTargets.filter(t => !(t.type === type && t.id === id));
+      window.removeTargetTag = function (type, id) {
+        selectedTargets = selectedTargets.filter(
+          (t) => !(t.type === type && t.id === id)
+        );
         renderTargetTags();
         // 如果模態窗口是開著的，也更新它的標籤
-        if (document.getElementById('target-modal').style.display === 'flex') {
-          document.getElementById('modal-selected-tags').innerHTML = selectedTargets.length ? 
-            selectedTargets.map(t => 
-              `<span class="tag">${t.name}<span style="cursor:pointer;font-weight:bold;margin-left:4px;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`
-            ).join('') : '';
+        if (document.getElementById("target-modal").style.display === "flex") {
+          document.getElementById("modal-selected-tags").innerHTML =
+            selectedTargets.length
+              ? selectedTargets
+                  .map(
+                    (t) =>
+                      `<span class="tag">${t.name}<span style="cursor:pointer;font-weight:bold;margin-left:4px;" onclick="removeTargetTag('${t.type}','${t.id}')">×</span></span>`
+                  )
+                  .join("")
+              : "";
         }
       };
 
       function editCommand(id) {
-        const command = currentCommands.find(cmd => cmd.id === id);
+        const command = currentCommands.find((cmd) => cmd.id === id);
         if (!command) return;
         // 填入觸發條件
-        currentTriggers = command.triggers.map(t => ({ ...t }));
+        currentTriggers = command.triggers.map((t) => ({ ...t }));
         renderTriggers();
         // 填入回應類型
         document.getElementById("response-type").value = command.response.type;
@@ -1868,11 +3468,20 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
           if (command.response.type === "function" && codeMirrorEditor) {
             // 讀取 js 檔案內容（去除 module.exports 包裝）
             try {
-              const res = await fetch(`/data/functions/${command.id}.js?_=${Date.now()}`);
+              const res = await fetch(
+                `/data/functions/${command.id}.js?_=${Date.now()}`
+              );
               if (res.ok) {
                 let jsText = await res.text();
                 // 移除 module.exports = async function(msg) { ... }
-                jsText = jsText.replace(/^module\.exports\s*=\s*async function\s*\(msg\)\s*{([\s\S]*)}$/m, (m, body) => body.trim().replace(/\n}$/,'').replace(/^\s*|\s*$/g, ''));
+                jsText = jsText.replace(
+                  /^module\.exports\s*=\s*async function\s*\(msg\)\s*{([\s\S]*)}$/m,
+                  (m, body) =>
+                    body
+                      .trim()
+                      .replace(/\n}$/, "")
+                      .replace(/^\s*|\s*$/g, "")
+                );
                 codeMirrorEditor.setValue(jsText.trim());
               } else {
                 codeMirrorEditor.setValue(command.response.content || "");
@@ -1881,18 +3490,19 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
               codeMirrorEditor.setValue(command.response.content || "");
             }
           } else {
-            document.getElementById("response-content").value = command.response.content;
+            document.getElementById("response-content").value =
+              command.response.content;
           }
         }, 0);
         document.getElementById("response-file").value = "";
         // 填入觸發名單
-        selectedTargets = command.targets.map(t => {
-          let name = '';
-          if (t.type === 'group') {
-            const g = currentGroups.find(g => g.id === t.id);
+        selectedTargets = command.targets.map((t) => {
+          let name = "";
+          if (t.type === "group") {
+            const g = currentGroups.find((g) => g.id === t.id);
             name = g ? g.name : t.id;
-          } else if (t.type === 'contact') {
-            const c = currentContacts.find(c => c.id === t.id);
+          } else if (t.type === "contact") {
+            const c = currentContacts.find((c) => c.id === t.id);
             name = c ? c.name : t.id;
           }
           return { ...t, name };
@@ -1929,12 +3539,12 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
               return;
             }
             hasValidTrigger = true;
-          } 
+          }
           // 如果是其他類型的觸發條件
           else if (
-            trigger.keyword || 
-            trigger.quotedMsg || 
-            trigger.hasMedia || 
+            trigger.keyword ||
+            trigger.quotedMsg ||
+            trigger.hasMedia ||
             trigger.timeRange
           ) {
             hasValidTrigger = true;
@@ -1946,16 +3556,28 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
           alert("請確保至少有一個有效的觸發條件");
           return;
         }
-        
-        if ((responseType === "text" || responseType === "code" || responseType === "function") && !responseContent) {
+
+        if (
+          (responseType === "text" ||
+            responseType === "code" ||
+            responseType === "function") &&
+          !responseContent
+        ) {
           alert("請輸入回應內容");
           return;
         }
-        if ((responseType === "image" || responseType === "video") && fileInput.files.length === 0 && !editingCommandId) {
+        if (
+          (responseType === "image" || responseType === "video") &&
+          fileInput.files.length === 0 &&
+          !editingCommandId
+        ) {
           alert("請上傳媒體文件");
           return;
         }
-        if ((responseType === "image" || responseType === "video") && fileInput.files.length > 0) {
+        if (
+          (responseType === "image" || responseType === "video") &&
+          fileInput.files.length > 0
+        ) {
           const file = fileInput.files[0];
           if (responseType === "video" && file.size > 16 * 1024 * 1024) {
             alert("影片檔案超過 16MB，請先壓縮後再上傳。");
@@ -1963,7 +3585,10 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
           }
         }
         let content = responseContent;
-        if ((responseType === "image" || responseType === "video") && fileInput.files.length > 0) {
+        if (
+          (responseType === "image" || responseType === "video") &&
+          fileInput.files.length > 0
+        ) {
           // Read file as base64
           const file = fileInput.files[0];
           content = await new Promise((resolve, reject) => {
@@ -1983,7 +3608,9 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
           targets: selectedTargets,
         };
         try {
-          const url = editingCommandId ? `/api/commands/${editingCommandId}` : "/api/commands";
+          const url = editingCommandId
+            ? `/api/commands/${editingCommandId}`
+            : "/api/commands";
           const method = editingCommandId ? "PUT" : "POST";
           const response = await fetch(url, {
             method,
@@ -2002,15 +3629,22 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
             renderTargetTags();
             editingCommandId = null;
             // 恢復儲存按鈕文字
-            const saveBtn = document.querySelector("#commands .btn.btn-primary");
+            const saveBtn = document.querySelector(
+              "#commands .btn.btn-primary"
+            );
             if (saveBtn) saveBtn.textContent = "儲存指令";
             // 清空指令編輯區內容
             document.getElementById("response-type").value = "text";
-            document.getElementById("response-type").dispatchEvent(new Event("change"));
+            document
+              .getElementById("response-type")
+              .dispatchEvent(new Event("change"));
             await initializeData();
           } else {
             const errorData = await response.json();
-            alert(errorData.message || (editingCommandId ? "更新指令失敗" : "保存指令失敗"));
+            alert(
+              errorData.message ||
+                (editingCommandId ? "更新指令失敗" : "保存指令失敗")
+            );
           }
         } catch (error) {
           console.error("Error saving command:", error);
@@ -2026,7 +3660,9 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
         <div class="list-item">
             <div>
                 <strong>觸發條件：</strong>
-                    ${command.triggers.map((t) => t.quotedMsg ? "(reply)" : t.keyword).join(", ")}
+                    ${command.triggers
+                      .map((t) => (t.quotedMsg ? "(reply)" : t.keyword))
+                      .join(", ")}
                 <div class="text-gray-500">
                     <strong>回應類型：</strong>${command.response.type}
                 </div>
@@ -2035,8 +3671,12 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
                 </div>
             </div>
             <div style="display:flex;gap:8px;">
-              <button class="btn btn-primary" onclick="editCommand('${command.id}')">編輯</button>
-              <button class="btn btn-danger" onclick="deleteCommand('${command.id}')">刪除</button>
+              <button class="btn btn-primary" onclick="editCommand('${
+                command.id
+              }')">編輯</button>
+              <button class="btn btn-danger" onclick="deleteCommand('${
+                command.id
+              }')">刪除</button>
             </div>
         </div>
     `
@@ -2067,8 +3707,8 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
             renderTargetTags();
           }
           if (item.dataset.section !== "commands") {
-      cleanupCommandsSection();
-    }
+            cleanupCommandsSection();
+          }
         });
       });
 
@@ -2111,9 +3751,11 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
           const original = console[method];
           console[method] = function (...args) {
             original.apply(console, args);
-            const message = args.map((arg) =>
-              typeof arg === "object" ? JSON.stringify(arg) : String(arg)
-            ).join(" ");
+            const message = args
+              .map((arg) =>
+                typeof arg === "object" ? JSON.stringify(arg) : String(arg)
+              )
+              .join(" ");
             const logEntry = document.createElement("div");
             logEntry.textContent = `[${method.toUpperCase()}] ${message}`;
             consoleLogs.appendChild(logEntry);
@@ -2135,10 +3777,11 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
               const res = await fetch("/api/terminal", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ command: cmd })
+                body: JSON.stringify({ command: cmd }),
               });
               const data = await res.json();
-              terminalOutput.textContent = data.output || data.error || "(無輸出)";
+              terminalOutput.textContent =
+                data.output || data.error || "(無輸出)";
             } catch (err) {
               terminalOutput.textContent = "執行失敗：" + err.message;
             }
@@ -2146,232 +3789,306 @@ document.getElementById("toggle-bot").addEventListener("click", () => {
         }
 
         // 中英文切換（用 Material Icons translate 圖示）
-        let currentLang = 'zh';
+        let currentLang = "zh";
         const translations = {
           zh: {
-            'nav-title': 'WhatsApp Bot',
-            'nav-home': '首頁',
-            'nav-groups': '群組',
-            'nav-contacts': '個人',
-            'nav-commands': '指令',
-            'nav-console': '系統日誌',
-            'home-title': 'Bot 控制台',
-            'status-online': '已連接',
-            'status-offline': '離線',
-            'bot-start': '啟動 Bot',
-            'bot-stop': '關閉 Bot',
-            'groups-title': '群組管理',
-            'group-name-placeholder': '群組名稱',
-            'group-search-btn': '搜尋並添加群組',
-            'contacts-title': '個人聯絡人管理',
-            'contact-prefix-placeholder': '國碼 (例: 852)',
-            'contact-number-placeholder': '電話號碼',
-            'contact-name-placeholder': '備註名稱',
-            'contact-add-btn': '新增聯絡人',
-            'commands-title': '指令管理',
-            'trigger-label': '觸發條件',
-            'trigger-keyword-placeholder': '新增關鍵詞',
-            'ignore-case': '忽略大小寫',
-            'match-start': '開頭匹配',
-            'add-trigger-btn': '新增觸發條件',
-            'response-type-label': '回應類型',
-            'response-content-placeholder': '回應內容',
-            'save-command-btn': '儲存指令',
-            'update-command-btn': '更新指令',
-            'delete-btn': '刪除',
-            'edit-btn': '編輯',
-            'console-title': '系統日誌',
-            'clear-logs-btn': '清除日誌',
-            'export-logs-btn': '導出日誌',
-            'terminal-title': '管理員 Terminal（僅限 npm install 指令）',
-            'terminal-placeholder': '例如：npm i axios',
-            'execute-btn': '執行'
+            "nav-title": "WhatsApp Bot",
+            "nav-home": "首頁",
+            "nav-groups": "群組",
+            "nav-contacts": "個人",
+            "nav-commands": "指令",
+            "nav-console": "系統日誌",
+            "home-title": "Bot 控制台",
+            "status-online": "已連接",
+            "status-offline": "離線",
+            "bot-start": "啟動 Bot",
+            "bot-stop": "關閉 Bot",
+            "groups-title": "群組管理",
+            "group-name-placeholder": "群組名稱",
+            "group-search-btn": "搜尋並添加群組",
+            "contacts-title": "個人聯絡人管理",
+            "contact-prefix-placeholder": "國碼 (例: 852)",
+            "contact-number-placeholder": "電話號碼",
+            "contact-name-placeholder": "備註名稱",
+            "contact-add-btn": "新增聯絡人",
+            "commands-title": "指令管理",
+            "trigger-label": "觸發條件",
+            "trigger-keyword-placeholder": "新增關鍵詞",
+            "ignore-case": "忽略大小寫",
+            "match-start": "開頭匹配",
+            "add-trigger-btn": "新增觸發條件",
+            "response-type-label": "回應類型",
+            "response-content-placeholder": "回應內容",
+            "save-command-btn": "儲存指令",
+            "update-command-btn": "更新指令",
+            "delete-btn": "刪除",
+            "edit-btn": "編輯",
+            "console-title": "系統日誌",
+            "clear-logs-btn": "清除日誌",
+            "export-logs-btn": "導出日誌",
+            "terminal-title": "管理員 Terminal（僅限 npm install 指令）",
+            "terminal-placeholder": "例如：npm i axios",
+            "execute-btn": "執行",
           },
           en: {
-            'nav-title': 'WhatsApp Bot',
-            'nav-home': 'Home',
-            'nav-groups': 'Groups',
-            'nav-contacts': 'Contacts',
-            'nav-commands': 'Commands',
-            'nav-console': 'Console',
-            'home-title': 'Bot Control Panel',
-            'status-online': 'Connected',
-            'status-offline': 'Offline',
-            'bot-start': 'Start Bot',
-            'bot-stop': 'Stop Bot',
-            'groups-title': 'Groups Management',
-            'group-name-placeholder': 'Group Name',
-            'group-search-btn': 'Search & Add Group',
-            'contacts-title': 'Contacts Management',
-            'contact-prefix-placeholder': 'Country Code (e.g. 852)',
-            'contact-number-placeholder': 'Phone Number',
-            'contact-name-placeholder': 'Display Name',
-            'contact-add-btn': 'Add Contact',
-            'commands-title': 'Commands Management',
-            'trigger-label': 'Trigger Conditions',
-            'trigger-keyword-placeholder': 'Add Keyword',
-            'ignore-case': 'Ignore Case',
-            'match-start': 'Match Start',
-            'add-trigger-btn': 'Add Trigger',
-            'response-type-label': 'Response Type',
-            'response-content-placeholder': 'Response Content',
-            'save-command-btn': 'Save Command',
-            'update-command-btn': 'Update Command',
-            'delete-btn': 'Delete',
-            'edit-btn': 'Edit',
-            'console-title': 'System Logs',
-            'clear-logs-btn': 'Clear Logs',
-            'export-logs-btn': 'Export Logs',
-            'terminal-title': 'Admin Terminal (npm install only)',
-            'terminal-placeholder': 'e.g. npm i axios',
-            'execute-btn': 'Execute'
-          }
+            "nav-title": "WhatsApp Bot",
+            "nav-home": "Home",
+            "nav-groups": "Groups",
+            "nav-contacts": "Contacts",
+            "nav-commands": "Commands",
+            "nav-console": "Console",
+            "home-title": "Bot Control Panel",
+            "status-online": "Connected",
+            "status-offline": "Offline",
+            "bot-start": "Start Bot",
+            "bot-stop": "Stop Bot",
+            "groups-title": "Groups Management",
+            "group-name-placeholder": "Group Name",
+            "group-search-btn": "Search & Add Group",
+            "contacts-title": "Contacts Management",
+            "contact-prefix-placeholder": "Country Code (e.g. 852)",
+            "contact-number-placeholder": "Phone Number",
+            "contact-name-placeholder": "Display Name",
+            "contact-add-btn": "Add Contact",
+            "commands-title": "Commands Management",
+            "trigger-label": "Trigger Conditions",
+            "trigger-keyword-placeholder": "Add Keyword",
+            "ignore-case": "Ignore Case",
+            "match-start": "Match Start",
+            "add-trigger-btn": "Add Trigger",
+            "response-type-label": "Response Type",
+            "response-content-placeholder": "Response Content",
+            "save-command-btn": "Save Command",
+            "update-command-btn": "Update Command",
+            "delete-btn": "Delete",
+            "edit-btn": "Edit",
+            "console-title": "System Logs",
+            "clear-logs-btn": "Clear Logs",
+            "export-logs-btn": "Export Logs",
+            "terminal-title": "Admin Terminal (npm install only)",
+            "terminal-placeholder": "e.g. npm i axios",
+            "execute-btn": "Execute",
+          },
         };
 
         // 範本按鈕點擊事件
-        document.getElementById('template-btn').addEventListener('click', function() {
-          document.getElementById('template-modal').style.display = 'flex';
-        });
+        document
+          .getElementById("template-btn")
+          .addEventListener("click", function () {
+            document.getElementById("template-modal").style.display = "flex";
+          });
 
         // 關閉模態窗口
-        document.querySelector('#template-modal .close-btn').addEventListener('click', function() {
-          document.getElementById('template-modal').style.display = 'none';
-        });
+        document
+          .querySelector("#template-modal .close-btn")
+          .addEventListener("click", function () {
+            document.getElementById("template-modal").style.display = "none";
+          });
 
         // 取消按鈕點擊事件
-        document.getElementById('modal-template-cancel').addEventListener('click', function() {
-          document.getElementById('template-modal').style.display = 'none';
-        });
+        document
+          .getElementById("modal-template-cancel")
+          .addEventListener("click", function () {
+            document.getElementById("template-modal").style.display = "none";
+          });
 
         // 確認按鈕點擊事件
-        document.getElementById('modal-template-confirm').addEventListener('click', function() {
-          // 獲取用戶填寫的必要參數
-          const apiKey = document.getElementById('openrouter_api_key').value.trim();
-          const model = document.getElementById('model').value.trim();
-          const apiUrl = document.getElementById('api_url').value.trim();
-          const defaultSystemPrompt = document.getElementById('default_system_prompt').value.trim();
-          const userSystemPromptsFormat = document.getElementById('user_system_prompts_format').value.trim();
+        document
+          .getElementById("modal-template-confirm")
+          .addEventListener("click", function () {
+            // 獲取用戶填寫的必要參數
+            const apiKey = document
+              .getElementById("openrouter_api_key")
+              .value.trim();
+            const model = document.getElementById("model").value.trim();
+            const apiUrl = document.getElementById("api_url").value.trim();
+            const defaultSystemPrompt = document
+              .getElementById("default_system_prompt")
+              .value.trim();
+            const userSystemPromptsFormat = document
+              .getElementById("user_system_prompts_format")
+              .value.trim();
 
-          // 檢查必填字段
-          if (!apiKey || !model || !apiUrl) {
-            alert('請填寫所有必填字段（標有 * 的欄位）');
-            return;
-          }
+            // 檢查必填字段
+            if (!apiKey || !model || !apiUrl) {
+              alert("請填寫所有必填字段（標有 * 的欄位）");
+              return;
+            }
 
-          // 獲取 AI 範本代碼並進行替換
-          fetch('https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/lib/ai.js')
-            .then(response => response.text())
-            .then(code => {
-              // 替換關鍵變數
-              let templateCode = code
-                .replace(/OPENROUTER_API_KEY\s*=\s*"[^"]*"/, `OPENROUTER_API_KEY = "${apiKey}"`)
-                .replace(/MODEL\s*=\s*"[^"]*"/, `MODEL = "${model}"`)
-                .replace(/API_URL\s*=\s*"[^"]*"/, `API_URL = "${apiUrl}"`)
-                .replace(/const defaultSystemPrompt\s*=\s*"[^"]*"/, `const defaultSystemPrompt = "${defaultSystemPrompt}"`)
-                .replace(/const userSystemPrompts\s*=\s*\{\}/, `const userSystemPrompts = ${userSystemPromptsFormat ? '{/* ' + userSystemPromptsFormat + ' */}' : '{}'}`);
+            // 獲取 AI 範本代碼並進行替換
+            fetch(
+              "https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/lib/ai.js"
+            )
+              .then((response) => response.text())
+              .then((code) => {
+                // 替換關鍵變數
+                let templateCode = code
+                  .replace(
+                    /OPENROUTER_API_KEY\s*=\s*"[^"]*"/,
+                    `OPENROUTER_API_KEY = "${apiKey}"`
+                  )
+                  .replace(/MODEL\s*=\s*"[^"]*"/, `MODEL = "${model}"`)
+                  .replace(/API_URL\s*=\s*"[^"]*"/, `API_URL = "${apiUrl}"`)
+                  .replace(
+                    /const defaultSystemPrompt\s*=\s*"[^"]*"/,
+                    `const defaultSystemPrompt = "${defaultSystemPrompt}"`
+                  )
+                  .replace(
+                    /const userSystemPrompts\s*=\s*\{\}/,
+                    `const userSystemPrompts = ${
+                      userSystemPromptsFormat
+                        ? "{/* " + userSystemPromptsFormat + " */}"
+                        : "{}"
+                    }`
+                  );
 
-              // 提取函數體部分並設置到 CodeMirror 編輯器
-              if (codeMirrorEditor) {
-                codeMirrorEditor.setValue(templateCode);
-              } else {
-                document.getElementById('response-content').value = templateCode;
-              }
+                // 提取函數體部分並設置到 CodeMirror 編輯器
+                if (codeMirrorEditor) {
+                  codeMirrorEditor.setValue(templateCode);
+                } else {
+                  document.getElementById("response-content").value =
+                    templateCode;
+                }
 
-              // 關閉模態窗口
-              document.getElementById('template-modal').style.display = 'none';
-            })
-            .catch(error => {
-              console.error('獲取範本失敗:', error);
-              alert('獲取範本失敗，請檢查網絡連接');
-            });
-        });
+                // 關閉模態窗口
+                document.getElementById("template-modal").style.display =
+                  "none";
+              })
+              .catch((error) => {
+                console.error("獲取範本失敗:", error);
+                alert("獲取範本失敗，請檢查網絡連接");
+              });
+          });
 
         function updatePageLanguage() {
           const t = translations[currentLang];
-          
+
           // Update nav
-          document.querySelector('.nav-logo h2').textContent = t['nav-title'];
-          document.querySelector('[data-section="home"]').textContent = t['nav-home'];
-          document.querySelector('[data-section="groups"]').textContent = t['nav-groups'];
-          document.querySelector('[data-section="contacts"]').textContent = t['nav-contacts'];
-          document.querySelector('[data-section="commands"]').textContent = t['nav-commands'];
-          document.querySelector('[data-section="console"]').textContent = t['nav-console'];
+          document.querySelector(".nav-logo h2").textContent = t["nav-title"];
+          document.querySelector('[data-section="home"]').textContent =
+            t["nav-home"];
+          document.querySelector('[data-section="groups"]').textContent =
+            t["nav-groups"];
+          document.querySelector('[data-section="contacts"]').textContent =
+            t["nav-contacts"];
+          document.querySelector('[data-section="commands"]').textContent =
+            t["nav-commands"];
+          document.querySelector('[data-section="console"]').textContent =
+            t["nav-console"];
 
           // Update sections
-          document.querySelector('#home h2').textContent = t['home-title'];
-          document.querySelector('#groups h2').textContent = t['groups-title'];
-          document.querySelector('#contacts h2').textContent = t['contacts-title'];
-          document.querySelector('#commands h2').textContent = t['commands-title'];
-          document.querySelector('#console h2').textContent = t['console-title'];
+          document.querySelector("#home h2").textContent = t["home-title"];
+          document.querySelector("#groups h2").textContent = t["groups-title"];
+          document.querySelector("#contacts h2").textContent =
+            t["contacts-title"];
+          document.querySelector("#commands h2").textContent =
+            t["commands-title"];
+          document.querySelector("#console h2").textContent =
+            t["console-title"];
 
           // Update placeholders
-          document.querySelector('#group-name').placeholder = t['group-name-placeholder'];
-          document.querySelector('#contact-prefix').placeholder = t['contact-prefix-placeholder'];
-          document.querySelector('#contact-number').placeholder = t['contact-number-placeholder'];
-          document.querySelector('#contact-name').placeholder = t['contact-name-placeholder'];
+          document.querySelector("#group-name").placeholder =
+            t["group-name-placeholder"];
+          document.querySelector("#contact-prefix").placeholder =
+            t["contact-prefix-placeholder"];
+          document.querySelector("#contact-number").placeholder =
+            t["contact-number-placeholder"];
+          document.querySelector("#contact-name").placeholder =
+            t["contact-name-placeholder"];
 
           // Update buttons
-          document.querySelector('#toggle-bot').textContent = isConnected ? t['bot-stop'] : t['bot-start'];
-          document.querySelectorAll('.btn-danger').forEach(btn => btn.textContent = t['delete-btn']);
+          document.querySelector("#toggle-bot").textContent = isConnected
+            ? t["bot-stop"]
+            : t["bot-start"];
+          document
+            .querySelectorAll(".btn-danger")
+            .forEach((btn) => (btn.textContent = t["delete-btn"]));
 
           // Update status text
-          if (document.querySelector('#bot-status').classList.contains('online')) {
-            document.querySelector('#bot-status').textContent = t['status-online'];
+          if (
+            document.querySelector("#bot-status").classList.contains("online")
+          ) {
+            document.querySelector("#bot-status").textContent =
+              t["status-online"];
           } else {
-            document.querySelector('#bot-status').textContent = t['status-offline'];
+            document.querySelector("#bot-status").textContent =
+              t["status-offline"];
           }
-          
+
           // Update terminal section
-          document.querySelector('#terminal-section h3').textContent = t['terminal-title'];
-          document.querySelector('#terminal-input').placeholder = t['terminal-placeholder'];
-          document.querySelector('#terminal-form button').textContent = t['execute-btn'];
+          document.querySelector("#terminal-section h3").textContent =
+            t["terminal-title"];
+          document.querySelector("#terminal-input").placeholder =
+            t["terminal-placeholder"];
+          document.querySelector("#terminal-form button").textContent =
+            t["execute-btn"];
         }
 
-        document.getElementById('lang-toggle').onclick = function() {
-          currentLang = currentLang === 'zh' ? 'en' : 'zh';
-          document.getElementById('lang-icon').src = "https://fonts.gstatic.com/s/i/materialicons/translate/v1/24px.svg";
+        document.getElementById("lang-toggle").onclick = function () {
+          currentLang = currentLang === "zh" ? "en" : "zh";
+          document.getElementById("lang-icon").src =
+            "https://fonts.gstatic.com/s/i/materialicons/translate/v1/24px.svg";
           updatePageLanguage();
         };
 
         // 深淺色模式切換
-        let isDark = localStorage.getItem('theme') === 'dark';
+        let isDark = localStorage.getItem("theme") === "dark";
         const root = document.documentElement;
         if (isDark) {
-          root.setAttribute('data-theme', 'dark');
-          document.getElementById('theme-icon').src = "https://fonts.gstatic.com/s/i/materialicons/light_mode/v1/24px.svg";
+          root.setAttribute("data-theme", "dark");
+          document.getElementById("theme-icon").src =
+            "https://fonts.gstatic.com/s/i/materialicons/light_mode/v1/24px.svg";
         }
-        
-        document.getElementById('theme-toggle').onclick = function() {
+
+        document.getElementById("theme-toggle").onclick = function () {
           isDark = !isDark;
           if (isDark) {
-            root.setAttribute('data-theme', 'dark');
-            document.getElementById('theme-icon').src = "https://fonts.gstatic.com/s/i/materialicons/light_mode/v1/24px.svg";
-            localStorage.setItem('theme', 'dark');
+            root.setAttribute("data-theme", "dark");
+            document.getElementById("theme-icon").src =
+              "https://fonts.gstatic.com/s/i/materialicons/light_mode/v1/24px.svg";
+            localStorage.setItem("theme", "dark");
           } else {
-            root.removeAttribute('data-theme');
-            document.getElementById('theme-icon').src = "https://fonts.gstatic.com/s/i/materialicons/dark_mode/v1/24px.svg";
-            localStorage.setItem('theme', 'light');
+            root.removeAttribute("data-theme");
+            document.getElementById("theme-icon").src =
+              "https://fonts.gstatic.com/s/i/materialicons/dark_mode/v1/24px.svg";
+            localStorage.setItem("theme", "light");
           }
         };
 
         // 下載/更新 HTML 並 F5
-        const updateBtn = document.getElementById('update-html-btn');
-        updateBtn.onclick = async function() {
+        const updateBtn = document.getElementById("update-html-btn");
+        updateBtn.onclick = async function () {
           updateBtn.disabled = true;
-          updateBtn.textContent = currentLang === 'zh' ? '下載中...' : 'Updating...';
+          updateBtn.textContent =
+            currentLang === "zh" ? "下載中..." : "Updating...";
           try {
-            const res = await fetch('/api/update-html', { method: 'POST' });
+            const res = await fetch("/api/update-html", { method: "POST" });
             const data = await res.json();
             if (data.success) {
-              updateBtn.textContent = currentLang === 'zh' ? '完成，重新整理中...' : 'Done, refreshing...';
+              updateBtn.textContent =
+                currentLang === "zh"
+                  ? "完成，重新整理中..."
+                  : "Done, refreshing...";
               setTimeout(() => location.reload(), 1200);
             } else {
-              updateBtn.textContent = data.error || '失敗';
-              setTimeout(() => { updateBtn.textContent = currentLang === 'zh' ? '下載/更新 HTML 並重新整理' : 'Update HTML & Refresh'; updateBtn.disabled = false; }, 2000);
+              updateBtn.textContent = data.error || "失敗";
+              setTimeout(() => {
+                updateBtn.textContent =
+                  currentLang === "zh"
+                    ? "下載/更新 HTML 並重新整理"
+                    : "Update HTML & Refresh";
+                updateBtn.disabled = false;
+              }, 2000);
             }
           } catch (e) {
-            updateBtn.textContent = '錯誤';
-            setTimeout(() => { updateBtn.textContent = currentLang === 'zh' ? '下載/更新 HTML 並重新整理' : 'Update HTML & Refresh'; updateBtn.disabled = false; }, 2000);
+            updateBtn.textContent = "錯誤";
+            setTimeout(() => {
+              updateBtn.textContent =
+                currentLang === "zh"
+                  ? "下載/更新 HTML 並重新整理"
+                  : "Update HTML & Refresh";
+              updateBtn.disabled = false;
+            }, 2000);
           }
         };
       });
