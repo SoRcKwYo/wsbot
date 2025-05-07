@@ -153,10 +153,6 @@ class WhatsAppBot {
             "--disable-notifications",
             "--window-size=1280,720",
           ],
-          executablePath:
-            process.platform === "darwin"
-              ? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-              : null,
           ignoreHTTPSErrors: true,
           defaultViewport: null,
           timeout: 120000,
