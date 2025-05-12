@@ -1173,8 +1173,15 @@ app.put("/api/commands/:id", async (req, res) => {
         await fs.mkdir(funcDir, { recursive: true });
       }
       const funcPath = path.join(funcDir, `${id}.js`);
-      const code = `module.exports = async function(msg, client) {\n${commandData.response.content}\n}`;
-      await fs.writeFile(funcPath, code, "utf8");
+
+
+      // 檢查內容是否已經包含 module.exports
+      let code = commandData.response.content;
+      if (!code.includes("module.exports")) {
+        // 包裝成 module.exports = async function(msg, client) { ... }
+        code = `module.exports = async function(msg, client) {\n${code}\n}`;
+      }
+       await fs.writeFile(funcPath, code, "utf8");
       // 存檔案路徑代替原始內容
       const originalContent = commandData.response.content;
       commandData.response.content = `functions/${id}.js`;
