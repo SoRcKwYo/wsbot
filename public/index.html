@@ -47,6 +47,11 @@
         --text-secondary: rgba(0, 0, 0, 0.6);
         --border-radius: 8px;
         --spacing: 8px;
+        --border-color: #e0e0e0;
+        --input-bg: #fff;
+        --input-border: #c8e6c9;
+        --tag-bg: #e8f5e9;
+        --tag-color: #388e3c;
       }
 
       :root[data-theme="dark"] {
@@ -60,6 +65,11 @@
         --surface: #1e1e1e;
         --text-primary: rgba(255, 255, 255, 0.87);
         --text-secondary: rgba(255, 255, 255, 0.6);
+        --border-color: rgba(255, 255, 255, 0.1);
+        --input-bg: #2c2c2c;
+        --input-border: rgba(255, 255, 255, 0.2);
+        --tag-bg: rgba(129, 199, 132, 0.2);
+        --tag-color: #a5d6a7;
       }
 
       @keyframes qr-spin {
@@ -180,7 +190,6 @@
         border-radius: var(--border-radius);
         font-size: 1rem;
         transition: border-color 0.2s;
-        background: var(--surface);
         margin: 8px 0;
       }
 
@@ -642,6 +651,36 @@
       }
       #target-modal .btn-danger:hover {
         background: #b71c1c;
+      }
+
+      :root[data-theme="dark"] #target-modal .modal-content {
+        background: var(--surface);
+        color: var(--text-primary);
+      }
+      
+      :root[data-theme="dark"] #target-modal #modal-list {
+        background: var(--surface);
+        border-color: var(--border-color);
+      }
+      
+      :root[data-theme="dark"] #target-modal #modal-list label {
+        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+      }
+      
+      :root[data-theme="dark"] #target-modal #modal-list label:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      
+      :root[data-theme="dark"] #target-modal #target-search {
+        background: var(--input-bg);
+        color: var(--text-primary);
+        border-color: var(--input-border);
+      }
+
+      :root[data-theme="dark"] .tag {
+        background: var(--tag-bg);
+        color: var(--tag-color);
       }
     </style>
   </head>
@@ -2276,7 +2315,6 @@ const axios = require('axios');
             <div
               class="modal-content"
               style="
-                background: #fff;
                 padding: 24px 20px;
                 border-radius: 10px;
                 min-width: 340px;
@@ -4038,22 +4076,32 @@ const axios = require('axios');
           root.setAttribute("data-theme", "dark");
           document.getElementById("theme-icon").src =
             "https://fonts.gstatic.com/s/i/materialicons/light_mode/v1/24px.svg";
+          document.getElementById("theme-toggle").style.background = "#333";
+        } else {
+          root.removeAttribute("data-theme");
+          document.getElementById("theme-icon").src =
+            "https://fonts.gstatic.com/s/i/materialicons/dark_mode/v1/24px.svg";
+          document.getElementById("theme-toggle").style.background = "#fff";
         }
 
-        document.getElementById("theme-toggle").onclick = function () {
+        document.getElementById("theme-toggle").addEventListener("click", function() {
           isDark = !isDark;
           if (isDark) {
             root.setAttribute("data-theme", "dark");
             document.getElementById("theme-icon").src =
               "https://fonts.gstatic.com/s/i/materialicons/light_mode/v1/24px.svg";
+            document.getElementById("theme-icon").style.filter = "invert(1)";
+            document.getElementById("theme-toggle").style.background = "#333";
             localStorage.setItem("theme", "dark");
           } else {
             root.removeAttribute("data-theme");
             document.getElementById("theme-icon").src =
               "https://fonts.gstatic.com/s/i/materialicons/dark_mode/v1/24px.svg";
+            document.getElementById("theme-icon").style.filter = "";
+            document.getElementById("theme-toggle").style.background = "#fff";
             localStorage.setItem("theme", "light");
           }
-        };
+        });
 
         // 下載/更新 HTML 並 F5
         const updateBtn = document.getElementById("update-html-btn");
