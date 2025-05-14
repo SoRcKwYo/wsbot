@@ -33,6 +33,55 @@
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+    <!-- 程式碼搜尋功能 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/jump-to-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.css"
+    />
+
+    <!-- 程式碼摺疊功能 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/brace-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/comment-fold.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/fold/foldgutter.min.css"
+    />
+
+    <!-- 程式碼提示和自動完成 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/javascript-hint.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css"
+    />
+
+    <!-- 括號匹配和自動關閉 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+
+    <!-- 程式碼註解功能 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+
+    <!-- 代碼檢查 (linting) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/lint/lint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/lint/javascript-lint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jshint/2.13.5/jshint.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/lint/lint.min.css"
+    />
+
+    <!-- 活動行高亮 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+
+    <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@2.8.8/parser-babel.js"></script>
     <style>
       :root {
         --primary: #4caf50;
@@ -105,6 +154,76 @@
         padding: 0;
         box-sizing: border-box;
         font-family: "Roboto", sans-serif;
+      }
+
+      .cm-toolbar {
+        display: flex;
+        align-items: center;
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-bottom: none;
+        border-top-left-radius: var(--border-radius);
+        border-top-right-radius: var(--border-radius);
+        padding: 4px 8px;
+      }
+
+      .cm-btn {
+        background: transparent;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        margin-right: 4px;
+        transition: background-color 0.2s;
+      }
+
+      .cm-btn:hover {
+        background: var(--hover-bg, rgba(0, 0, 0, 0.08));
+      }
+
+      :root[data-theme="dark"] .cm-btn {
+        color: var(--text-primary);
+      }
+
+      :root[data-theme="dark"] .cm-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .cm-notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 16px;
+        border-radius: 4px;
+        background: #333;
+        color: white;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        transform: translateY(100px);
+        opacity: 0;
+        transition: transform 0.3s, opacity 0.3s;
+      }
+
+      .cm-notification.show {
+        transform: translateY(0);
+        opacity: 1;
+      }
+
+      .cm-notification.success {
+        background: var(--success);
+      }
+
+      .cm-notification.error {
+        background: var(--error);
+      }
+
+      /* 調整 CodeMirror 邊框，讓 toolbar 合理整合 */
+      .cm-toolbar + .CodeMirror {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
       }
 
       .CodeMirror {
@@ -2715,8 +2834,121 @@ const axios = require('axios');
           matchBrackets: true,
           autoCloseBrackets: true,
           styleActiveLine: true,
+          lint: {
+            esversion: 11,
+            asi: true,
+            browser: true,
+          },
+          gutters: [
+            "CodeMirror-lint-markers",
+            "CodeMirror-linenumbers",
+            "CodeMirror-foldgutter",
+            "CodeMirror-emoji-markers", // 新增表情符號標記
+          ],
+          foldGutter: true,
         });
         codeMirrorEditor.setSize("100%", "240px");
+        codeMirrorEditor.setOption("extraKeys", {
+          "Ctrl-F": "findPersistent", // 保留給使用外接鍵盤的用戶
+          "Cmd-F": "findPersistent", // Mac標準搜尋快捷鍵
+          "Cmd-G": "findNext", // Mac標準尋找下一個
+          "Shift-Cmd-G": "findPrev", // Mac標準尋找上一個
+          "Cmd-/": "toggleComment", // Mac標準切換註解
+          "Cmd-Z": "undo", // Mac標準撤銷
+          "Shift-Cmd-Z": "redo", // Mac標準重做
+          "Cmd-[": "indentLess", // 減少縮排
+          "Cmd-]": "indentMore", // 增加縮排
+          "Cmd-A": "selectAll", // 全選
+          "Cmd-D": "deleteLine", // 刪除整行
+          "Option-Up": "swapLineUp", // 上移一行
+          "Option-Down": "swapLineDown", // 下移一行
+          F11: function (cm) {
+            // 全螢幕切換
+            cm.setOption("fullScreen", !cm.getOption("fullScreen"));
+          },
+          Esc: function (cm) {
+            // 退出全螢幕
+            if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
+          },
+        });
+        const toolbar = document.createElement("div");
+        toolbar.className = "cm-toolbar";
+        toolbar.innerHTML = `
+  <button title="搜尋 (Cmd+F)" class="cm-btn cm-search">
+    <span class="material-icons" style="font-size: 18px;">search</span>
+  </button>
+  <button title="格式化程式碼" class="cm-btn cm-format">
+    <span class="material-icons" style="font-size: 18px;">format_align_left</span>
+  </button>
+`;
+
+        // 插入到 CodeMirror 元素前面
+        const cmElement = codeMirrorEditor.getWrapperElement();
+        cmElement.parentNode.insertBefore(toolbar, cmElement);
+
+        // 添加搜索按鈕點擊事件
+        toolbar
+          .querySelector(".cm-search")
+          .addEventListener("click", function () {
+            CodeMirror.commands.findPersistent(codeMirrorEditor);
+          });
+        // 在 setupCodeMirror 函數中添加格式化按鈕事件
+        toolbar
+          .querySelector(".cm-format")
+          .addEventListener("click", function () {
+            formatCode();
+          });
+
+        // 添加格式化功能
+        function formatCode() {
+          try {
+            const code = codeMirrorEditor.getValue();
+            const formattedCode = prettier.format(code, {
+              parser: "babel",
+              plugins: prettierPlugins,
+              semi: true,
+              singleQuote: false,
+              tabWidth: 2,
+              printWidth: 80,
+            });
+
+            // 獲取當前游標位置
+            const cursor = codeMirrorEditor.getCursor();
+
+            // 設置格式化後的代碼
+            codeMirrorEditor.setValue(formattedCode);
+
+            // 嘗試恢復游標位置
+            try {
+              codeMirrorEditor.setCursor(cursor);
+            } catch (e) {
+              // 如果出錯，則將游標放在開頭
+              codeMirrorEditor.setCursor({ line: 0, ch: 0 });
+            }
+
+            // 顯示成功提示
+            showNotification("程式碼已格式化", "success");
+          } catch (err) {
+            console.error("格式化代碼失敗:", err);
+            showNotification("格式化失敗: " + err.message, "error");
+          }
+        }
+        function showNotification(message, type = "info") {
+          const notification = document.createElement("div");
+          notification.className = `cm-notification ${type}`;
+          notification.textContent = message;
+          document.body.appendChild(notification);
+
+          setTimeout(() => {
+            notification.classList.add("show");
+            setTimeout(() => {
+              notification.classList.remove("show");
+              setTimeout(() => {
+                document.body.removeChild(notification);
+              }, 300);
+            }, 2000);
+          }, 10);
+        }
       }
 
       function destroyCodeMirror() {
@@ -3594,6 +3826,12 @@ const axios = require('axios');
         const responseType = document.getElementById("response-type").value;
         let responseContent = document.getElementById("response-content").value;
         if (responseType === "function" && codeMirrorEditor) {
+          // 格式化代碼
+          const totalLines = codeMirrorEditor.lineCount();
+          codeMirrorEditor.autoFormatRange(
+            { line: 0, ch: 0 },
+            { line: totalLines, ch: 0 }
+          );
           responseContent = codeMirrorEditor.getValue();
         }
         const fileInput = document.getElementById("response-file");
