@@ -107,6 +107,43 @@
         font-family: "Roboto", sans-serif;
       }
 
+      .CodeMirror {
+        resize: both;
+        overflow: none;
+        min-height: 120px;
+        min-width: 200px;
+        border: 1px solid var(--input-border);
+        border-radius: var(--border-radius);
+        max-height: 600px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: border-color 0.2s;
+      }
+
+      .CodeMirror:focus-within {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+      }
+
+      :root[data-theme="dark"] .CodeMirror {
+        background-color: var(--input-bg);
+        color: var(--text-primary);
+        border-color: var(--input-border);
+      }
+
+      :root[data-theme="dark"] .CodeMirror-gutters {
+        background-color: #1e1e1e;
+        border-color: #2c2c2c;
+      }
+
+      :root[data-theme="dark"] .CodeMirror-cursor {
+        border-color: #fff;
+      }
+
+      :root[data-theme="dark"] .cm-s-material.CodeMirror {
+        background-color: var(--input-bg);
+        color: var(--text-primary);
+      }
+
       body {
         background-color: var(--background);
         color: var(--text-primary);
@@ -657,21 +694,21 @@
         background: var(--surface);
         color: var(--text-primary);
       }
-      
+
       :root[data-theme="dark"] #target-modal #modal-list {
         background: var(--surface);
         border-color: var(--border-color);
       }
-      
+
       :root[data-theme="dark"] #target-modal #modal-list label {
         border-color: rgba(255, 255, 255, 0.1);
         color: var(--text-primary);
       }
-      
+
       :root[data-theme="dark"] #target-modal #modal-list label:hover {
         background: rgba(255, 255, 255, 0.05);
       }
-      
+
       :root[data-theme="dark"] #target-modal #target-search {
         background: var(--input-bg);
         color: var(--text-primary);
@@ -4084,24 +4121,26 @@ const axios = require('axios');
           document.getElementById("theme-toggle").style.background = "#fff";
         }
 
-        document.getElementById("theme-toggle").addEventListener("click", function() {
-          isDark = !isDark;
-          if (isDark) {
-            root.setAttribute("data-theme", "dark");
-            document.getElementById("theme-icon").src =
-              "https://fonts.gstatic.com/s/i/materialicons/light_mode/v1/24px.svg";
-            document.getElementById("theme-icon").style.filter = "invert(1)";
-            document.getElementById("theme-toggle").style.background = "#333";
-            localStorage.setItem("theme", "dark");
-          } else {
-            root.removeAttribute("data-theme");
-            document.getElementById("theme-icon").src =
-              "https://fonts.gstatic.com/s/i/materialicons/dark_mode/v1/24px.svg";
-            document.getElementById("theme-icon").style.filter = "";
-            document.getElementById("theme-toggle").style.background = "#fff";
-            localStorage.setItem("theme", "light");
-          }
-        });
+        document
+          .getElementById("theme-toggle")
+          .addEventListener("click", function () {
+            isDark = !isDark;
+            if (isDark) {
+              root.setAttribute("data-theme", "dark");
+              document.getElementById("theme-icon").src =
+                "https://fonts.gstatic.com/s/i/materialicons/light_mode/v1/24px.svg";
+              document.getElementById("theme-icon").style.filter = "invert(1)";
+              document.getElementById("theme-toggle").style.background = "#333";
+              localStorage.setItem("theme", "dark");
+            } else {
+              root.removeAttribute("data-theme");
+              document.getElementById("theme-icon").src =
+                "https://fonts.gstatic.com/s/i/materialicons/dark_mode/v1/24px.svg";
+              document.getElementById("theme-icon").style.filter = "";
+              document.getElementById("theme-toggle").style.background = "#fff";
+              localStorage.setItem("theme", "light");
+            }
+          });
 
         // 下載/更新 HTML 並 F5
         const updateBtn = document.getElementById("update-html-btn");
