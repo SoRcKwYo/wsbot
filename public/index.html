@@ -2425,9 +2425,8 @@ const axios = require('axios');
               - 接收 msg 參數
               - 使用 async/await
               - 只用 require (不要用 import)
-              - 功能: [描述你想要的功能]
-              - 回傳文字或用 msg.reply()回覆</pre
-              >
+              - msg.reply()回覆
+              - 功能: [描述你想要的功能]</pre>
             </div>
           </div>
 
@@ -2871,6 +2870,7 @@ const axios = require('axios');
             if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
           },
         });
+
         const toolbar = document.createElement("div");
         toolbar.className = "cm-toolbar";
         toolbar.innerHTML = `
@@ -2955,6 +2955,12 @@ const axios = require('axios');
         if (codeMirrorEditor) {
           codeMirrorEditor.toTextArea();
           codeMirrorEditor = null;
+
+          // 移除相關的 toolbar
+          const existingToolbar = document.querySelector(".cm-toolbar");
+          if (existingToolbar) {
+            existingToolbar.remove();
+          }
         }
       }
 
@@ -3826,13 +3832,30 @@ const axios = require('axios');
         const responseType = document.getElementById("response-type").value;
         let responseContent = document.getElementById("response-content").value;
         if (responseType === "function" && codeMirrorEditor) {
-          // 格式化代碼
-          const totalLines = codeMirrorEditor.lineCount();
-          codeMirrorEditor.autoFormatRange(
-            { line: 0, ch: 0 },
-            { line: totalLines, ch: 0 }
-          );
-          responseContent = codeMirrorEditor.getValue();
+          try {
+            // 使用 prettier 而非不存在的 autoFormatRange 方法格式化程式碼
+            const code = codeMirrorEditor.getValue();
+
+            // 使用 prettier 格式化
+            const formattedCode = prettier.format(code, {
+              parser: "babel",
+              plugins: prettierPlugins,
+              semi: true,
+              singleQuote: false,
+              tabWidth: 2,
+              printWidth: 80,
+            });
+
+            // 更新編輯器內容
+            codeMirrorEditor.setValue(formattedCode);
+
+            // 獲取格式化後的內容
+            responseContent = codeMirrorEditor.getValue();
+          } catch (err) {
+            console.error("格式化代碼失敗:", err);
+            // 格式化失敗時仍然使用原始代碼
+            responseContent = codeMirrorEditor.getValue();
+          }
         }
         const fileInput = document.getElementById("response-file");
 
@@ -3934,7 +3957,11 @@ const axios = require('axios');
           });
           if (response.ok) {
             // 清空表單
-            document.getElementById("response-content").value = "";
+            if (responseType === "function" && codeMirrorEditor) {
+              codeMirrorEditor.setValue(""); // 清空 CodeMirror 編輯器
+            } else {
+              document.getElementById("response-content").value = ""; // 清空一般文字輸入框
+            }
             fileInput.value = "";
             currentTriggers = [];
             renderTriggers();
@@ -3952,6 +3979,7 @@ const axios = require('axios');
               .getElementById("response-type")
               .dispatchEvent(new Event("change"));
             await initializeData();
+            alert("指令儲存成功");
           } else {
             const errorData = await response.json();
             alert(
