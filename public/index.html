@@ -2426,7 +2426,8 @@ const axios = require('axios');
               - 使用 async/await
               - 只用 require (不要用 import)
               - msg.reply()回覆
-              - 功能: [描述你想要的功能]</pre>
+              - 功能: [描述你想要的功能]</pre
+              >
             </div>
           </div>
 
@@ -3627,18 +3628,40 @@ const axios = require('axios');
       }
 
       document.getElementById("open-target-modal").onclick = function () {
-        document.getElementById("target-modal").style.display = "flex";
+        const modal = document.getElementById("target-modal");
+        modal.style.display = "flex";
+
+        // 防止背景滾動
+        document.body.style.overflow = "hidden";
+
         renderTargetModal("group");
       };
 
       document.getElementById("modal-cancel").onclick = function () {
         document.getElementById("target-modal").style.display = "none";
+
+        // 恢復背景滾動
+        document.body.style.overflow = "";
       };
 
       document.getElementById("modal-confirm").onclick = function () {
         document.getElementById("target-modal").style.display = "none";
+
+        // 恢復背景滾動
+        document.body.style.overflow = "";
+
         renderTargetTags();
       };
+
+      // 也為整個模態窗口添加點擊事件，當點擊背景時關閉
+      document
+        .getElementById("target-modal")
+        .addEventListener("click", function (event) {
+          if (event.target === this) {
+            this.style.display = "none";
+            document.body.style.overflow = "";
+          }
+        });
 
       function renderTargetModal(tab) {
         // 初始顯示為群組
@@ -3649,17 +3672,33 @@ const axios = require('axios');
         const modalSelectedTags = document.getElementById(
           "modal-selected-tags"
         );
+        const modalContent = document.querySelector(
+          "#target-modal .modal-content"
+        );
+
+        // 阻止滾輪事件穿透
+        if (!modalContent.hasAttribute("data-wheel-handler-added")) {
+          modalContent.addEventListener("wheel", function (event) {
+            event.stopPropagation();
+          });
+          modalContent.setAttribute("data-wheel-handler-added", "true");
+        }
+
+        // 保存當前搜尋框的值（如果存在）
+        const currentSearchValue = document.getElementById("target-search")
+          ? document.getElementById("target-search").value
+          : window.lastSearchValue || "";
 
         // 渲染標籤和搜尋欄
         modalHeader.innerHTML = `
-          <button id="tab-group" class="modal-tab ${
-            tab === "group" ? "active" : ""
-          }">群組</button>
-          <button id="tab-contact" class="modal-tab ${
-            tab === "contact" ? "active" : ""
-          }">聯絡人</button>
-          <input id="target-search" type="text" placeholder="搜尋名稱..." style="flex:1;padding:6px 10px;border-radius:4px;border:1px solid #ccc;" />
-        `;
+    <button id="tab-group" class="modal-tab ${
+      tab === "group" ? "active" : ""
+    }">群組</button>
+    <button id="tab-contact" class="modal-tab ${
+      tab === "contact" ? "active" : ""
+    }">聯絡人</button>
+    <input id="target-search" type="text" placeholder="搜尋名稱..." style="flex:1;padding:6px 10px;border-radius:4px;border:1px solid #ccc;" value="${currentSearchValue}" />
+  `;
 
         // 添加標籤點擊事件
         document.getElementById("tab-group").onclick = function () {
@@ -3669,47 +3708,25 @@ const axios = require('axios');
           renderTargetModal("contact");
         };
 
-        // 添加搜尋功能
-        document.getElementById("target-search").oninput = function () {
-          renderTargetModal(tab);
-        };
-
-        // 根據當前標籤選擇顯示項目列表
-        let items = tab === "group" ? currentGroups : currentContacts;
-
-        // 如果有搜尋文字則過濾
+        // 搜尋功能 - 只有在輸入結束後才觸發過濾，避免實時渲染導致的輸入問題
         const searchInput = document.getElementById("target-search");
-        if (searchInput && searchInput.value) {
-          const search = searchInput.value.trim().toLowerCase();
-          items = items.filter((item) =>
-            item.name.toLowerCase().includes(search)
-          );
-        }
 
-        // 生成項目列表 HTML
-        modalList.innerHTML =
-          items.length > 0
-            ? items
-                .map((item) => {
-                  const type = tab;
-                  const checked = selectedTargets.some(
-                    (t) => t.type === type && t.id === item.id
-                  );
-                  return `<label style="display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;border-bottom:1px solid #e0e0e0;">
-            <input type="checkbox" ${
-              checked ? "checked" : ""
-            } onchange="toggleTargetSelect('${type}','${item.id}','${
-                    item.name ? item.name.replace(/'/g, "&#39;") : item.id
-                  }')" />
-            <span>${item.name || item.id}${
-                    type === "contact" && item.number ? ` (${item.number})` : ""
-                  }</span>
-          </label>`;
-                })
-                .join("")
-            : `<div style="padding:16px;color:#777;text-align:center;">沒有${
-                tab === "group" ? "群組" : "聯絡人"
-              }</div>`;
+        // 使用 keyup 事件替代 input 事件，並添加延遲處理
+        searchInput.addEventListener(
+          "keyup",
+          debounce(function () {
+            window.lastSearchValue = searchInput.value;
+            filterItems(tab);
+          }, 300)
+        );
+
+        // 從輸入恢復焦點問題（讓用戶可以持續輸入）
+        const focusPos = searchInput.value.length;
+        searchInput.focus();
+        searchInput.setSelectionRange(focusPos, focusPos);
+
+        // 初始過濾項目
+        filterItems(tab);
 
         // 更新已選擇的標籤
         modalSelectedTags.innerHTML = selectedTargets.length
@@ -3724,6 +3741,60 @@ const axios = require('axios');
               )
               .join("")
           : "";
+
+        // 內部函數：過濾項目並更新列表
+        function filterItems(tabType) {
+          // 根據當前標籤選擇顯示項目列表
+          let items = tabType === "group" ? currentGroups : currentContacts;
+
+          // 如果有搜尋文字則過濾
+          const search = searchInput.value.trim().toLowerCase();
+          if (search) {
+            items = items.filter((item) =>
+              (item.name || "").toLowerCase().includes(search)
+            );
+          }
+
+          // 生成項目列表 HTML
+          modalList.innerHTML =
+            items.length > 0
+              ? items
+                  .map((item) => {
+                    const type = tabType;
+                    const checked = selectedTargets.some(
+                      (t) => t.type === type && t.id === item.id
+                    );
+                    return `<label style="display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;border-bottom:1px solid #e0e0e0;">
+                <input type="checkbox" ${
+                  checked ? "checked" : ""
+                } onchange="toggleTargetSelect('${type}','${item.id}','${
+                      item.name ? item.name.replace(/'/g, "&#39;") : item.id
+                    }')" />
+                <span>${item.name || item.id}${
+                      type === "contact" && item.number
+                        ? ` (${item.number})`
+                        : ""
+                    }</span>
+              </label>`;
+                  })
+                  .join("")
+              : `<div style="padding:16px;color:#777;text-align:center;">沒有${
+                  tabType === "group" ? "群組" : "聯絡人"
+                }</div>`;
+        }
+      }
+
+      // 添加 debounce 函數來減少搜尋觸發頻率
+      function debounce(func, wait) {
+        let timeout;
+        return function () {
+          const context = this;
+          const args = arguments;
+          clearTimeout(timeout);
+          timeout = setTimeout(function () {
+            func.apply(context, args);
+          }, wait);
+        };
       }
 
       window.toggleTargetSelect = function (type, id, name) {
