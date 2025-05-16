@@ -1097,63 +1097,43 @@ app.get("/api/version", (req, res) => {
 // 檢查是否有新版本的API
 app.get("/api/check-update", async (req, res) => {
   try {
-    // 從 GitHub 獲取最新的 index.html 文件
+    // 從 GitHub 獲取最新的 index.html 文件時間戳
     const response = await fetch(
-      `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/index.html`
+      `https://api.github.com/repos/${githubRepo}/commits?path=public/index.html&sha=${githubBranch}&per_page=1`
     );
 
     if (!response.ok) {
       throw new Error(`GitHub API 請求失敗: ${response.status}`);
     }
 
-    const remoteHtmlContent = await response.text();
+    const data = await response.json();
 
-    // 從遠端 HTML 中提取版本號
-    const remoteVersionMatch = remoteHtmlContent.match(
-      /<!-- version: ([0-9.]+) -->/
-    );
-    const remoteVersion = remoteVersionMatch ? remoteVersionMatch[1] : "0.0.0";
+    if (!Array.isArray(data) || data.length === 0) {
+      return res.json({ hasUpdate: false });
+    }
 
-    // 讀取本地 HTML 文件
+    const latestCommit = data[0];
+    const latestCommitDate = new Date(latestCommit.commit.committer.date);
+
+    // 獲取本地文件的修改時間
     const localFilePath = path.join(__dirname, "public", "index.html");
-    const localHtmlContent = await fs.readFile(localFilePath, "utf8");
+    const stats = await fs.stat(localFilePath);
+    const localFileDate = new Date(stats.mtime);
 
-    // 從本地 HTML 中提取版本號
-    const localVersionMatch = localHtmlContent.match(
-      /<!-- version: ([0-9.]+) -->/
-    );
-    const localVersion = localVersionMatch ? localVersionMatch[1] : "0.0.0";
-
-    // 比較版本號
-    const hasUpdate = compareVersions(remoteVersion, localVersion) > 0;
+    // 比較時間戳
+    const hasUpdate = latestCommitDate > localFileDate;
 
     res.json({
       hasUpdate,
-      localVersion,
-      remoteVersion,
-      latestCommitSha: remoteVersion, // 使用版本號替代 commit SHA
+      localVersion: localFileDate.toISOString(),
+      remoteVersion: latestCommitDate.toISOString(),
+      latestCommitSha: latestCommit.sha.slice(0, 7), // 短 SHA 作為版本標識
     });
   } catch (error) {
     console.error("檢查更新時出錯:", error);
     res.status(500).json({ error: "檢查更新時出錯", details: error.message });
   }
 });
-
-// 版本比較函數
-function compareVersions(v1, v2) {
-  const parts1 = v1.split(".").map(Number);
-  const parts2 = v2.split(".").map(Number);
-
-  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
-    const part1 = i < parts1.length ? parts1[i] : 0;
-    const part2 = i < parts2.length ? parts2[i] : 0;
-
-    if (part1 > part2) return 1;
-    if (part1 < part2) return -1;
-  }
-
-  return 0;
-}
 
 // 清除日誌
 app.post("/api/logs/clear", (req, res) => {

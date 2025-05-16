@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- version: 1.0.9 -->
+<!-- version: 1.0.1 -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -4664,23 +4664,32 @@ const axios = require('axios');
       }
 
       // 版本檢測功能
-      let currentVersion = "";
+      let currentVersionSha = "";
       let updateCheckInterval;
 
       // 初始化版本顯示
       async function initVersion() {
         try {
+          // 獲取本地版本號
+          const localPath = window.location.pathname;
+          const localTimestamp = new Date().toISOString().split("T")[0];
           const versionElement = document.getElementById("version-number");
 
-          // 從 HTML 注釋中提取版本號
-          const htmlContent = document.documentElement.innerHTML;
-          const versionMatch = htmlContent.match(
-            new RegExp("<!-- version: ([0-9.]+) -->")
-          );
-          currentVersion = versionMatch ? versionMatch[1] : "1.0.0";
-
           // 設置初始版本顯示
-          versionElement.textContent = `v${currentVersion}`;
+          versionElement.textContent = `v${localTimestamp}`;
+          currentVersionSha = localTimestamp;
+
+          // 從伺服器獲取更精確的版本資訊
+          const response = await fetch("/api/check-update");
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.latestCommitSha) {
+              // 更新為 commit SHA 的短版本
+              currentVersionSha = data.latestCommitSha;
+              versionElement.textContent = `v${currentVersionSha}`;
+            }
+          }
 
           // 開始定期檢查更新
           startVersionCheck();
@@ -4718,30 +4727,27 @@ const axios = require('axios');
           if (data.hasUpdate) {
             // 有更新時在版本號後添加 "!" 號
             if (!versionElement.textContent.includes("!")) {
-              versionElement.textContent = `v${currentVersion} !`;
+              versionElement.textContent = `v${currentVersionSha} !`;
               versionElement.style.color = "var(--error)";
               versionElement.style.fontWeight = "700";
 
               // 震動動畫效果
               versionElement.style.animation = "version-shake 0.5s ease";
               // 定義震動動畫
-              if (!document.getElementById("version-shake-animation")) {
-                const style = document.createElement("style");
-                style.id = "version-shake-animation";
-                style.textContent = `
-            @keyframes version-shake {
-              0%, 100% { transform: translateX(0); }
-              20%, 60% { transform: translateX(-3px); }
-              40%, 80% { transform: translateX(3px); }
-            }
-          `;
-                document.head.appendChild(style);
-              }
+              const style = document.createElement("style");
+              style.textContent = `
+          @keyframes version-shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-3px); }
+            40%, 80% { transform: translateX(3px); }
+          }
+        `;
+              document.head.appendChild(style);
             }
           } else {
             // 沒有更新時恢復正常顯示
             if (versionElement.textContent.includes("!")) {
-              versionElement.textContent = `v${currentVersion}`;
+              versionElement.textContent = `v${currentVersionSha}`;
               versionElement.style.color = "var(--text-secondary)";
               versionElement.style.fontWeight = "500";
               versionElement.style.animation = "";
@@ -4769,8 +4775,11 @@ const axios = require('axios');
 
           // 更新成功後重置版本檢查
           setTimeout(() => {
-            location.reload(); // 重新載入頁面以獲取新版本
-          }, 1000);
+            const versionElement = document.getElementById("version-number");
+            versionElement.textContent = `v${currentVersionSha}`;
+            versionElement.style.color = "var(--text-secondary)";
+            versionElement.style.fontWeight = "500";
+          }, 500);
         };
       });
     </script>
