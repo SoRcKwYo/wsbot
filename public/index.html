@@ -2467,36 +2467,38 @@
               id="function-help"
               style="
                 display: none;
-                color: #388e3c;
-                background: #e8f5e9;
-                border-radius: 6px;
-                padding: 12px;
-                margin-top: 8px;
-                font-size: 0.95em;
+                margin-top: 10px;
+                font-size: 0.9em;
+                color: #666;
+                background: #f9f9f9;
+                padding: 10px;
+                border-radius: 4px;
+                border: 1px solid #eee;
               "
             >
-              <strong>【函式指令使用說明】</strong><br />
-              1. 直接填寫 <b>async function(msg)</b> 的主體內容，例如：<br />
+              <strong>【Function 指令說明】</strong><br />
+              1. 範例：
               <pre
                 style="
-                  background: #f1f8e9;
+                  background: #eee;
                   border-radius: 4px;
-                  padding: 8px;
-                  margin: 6px 0;
+                  padding: 6px;
+                  margin: 4px 0;
                 "
               >
 const axios = require('axios');
-              const res = await axios.get('https://api.github.com');
-              return res.data;</pre
+const res = await axios.get('https://api.github.com');
+return res.data;</pre
               >
-              2. <b>msg</b> 參數即為 WhatsApp message 物件，可用
-              <code>msg.reply()</code> 或直接 <code>return</code> 字串。<br />
+              2. <b>msg</b> 和 <b>client</b> 參數可用，例如
+              <code>msg.reply()</code> 或
+              <code>client.sendMessage(...)</code>。<br />
               3. 如需第三方套件，請先於主機 <code>npm install</code>，並用
               <code>require</code> 載入。<br />
               4. <b>不能</b>使用 import，只能 require。<br />
               5. 你寫的內容會自動包裝成
-              <code>module.exports = async function(msg) { ... }</code> 並儲存於
-              <code>data/functions/指令ID.js</code>。<br /><br />
+              <code>module.exports = async function(msg, client) { ... }</code>
+              並儲存於 <code>data/functions/指令ID.js</code>。<br /><br />
 
               <strong>【AI提示詞範例】</strong><br />
               在詢問 AI 時，可以這樣描述你要的功能:<br />
@@ -2509,12 +2511,12 @@ const axios = require('axios');
                 "
               >
 請幫我寫一個 WhatsApp bot function:
-              - 使用 node.js
-              - 接收 msg 參數
-              - 使用 async/await
-              - 只用 require (不要用 import)
-              - msg.reply()回覆
-              - 功能: [描述你想要的功能]</pre
+- 使用 node.js
+- 接收 msg 和 client 參數
+- 使用 async/await
+- 只用 require (不要用 import)
+- msg.reply() 或 client.sendMessage() 回覆
+- 功能: [描述你想要的功能]</pre
               >
             </div>
           </div>
@@ -3714,44 +3716,44 @@ const axios = require('axios');
         container.innerHTML = currentTriggers
           .map(
             (trigger, index) => `
-  <div class="trigger-item">
-      <span>${trigger.keyword || ""}${
+<div class="trigger-item">
+    <span>${trigger.keyword || ""}${
               trigger.isRegex
                 ? ' <span style="color:#388e3c;">[Regex]</span>'
                 : ""
             }</span>
-      <span>${trigger.toLowerCase ? "忽略大小寫" : ""}</span>
-      <span>${trigger.startsWith ? "開頭匹配" : ""}</span>
-      <span>${trigger.quotedMsg ? "引用訊息" : ""}</span>
-      <span>${trigger.hasMedia ? "圖片" : ""}</span>
-      <span>${
-        trigger.hasReaction ? `表情反應 (${trigger.reaction})` : ""
-      }</span>
-      <span>${
-        trigger.timeRange
-          ? `特定時段 (${trigger.startTime} - ${trigger.endTime})`
-          : ""
-      }</span>
-      <span>${
-        trigger.autoTrigger
-          ? `自動觸發 (每 ${formatAutoInterval(trigger.autoInterval)})`
-          : ""
-      }</span>
-      <button class="btn btn-danger" onclick="removeTrigger(${index})">刪除</button>
-  </div>
-  `
+    ${trigger.toLowerCase ? `<span>忽略大小寫</span>` : ""}
+    ${trigger.startsWith ? `<span>開頭匹配</span>` : ""}
+    ${trigger.quotedMsg ? `<span>引用訊息</span>` : ""}
+    ${trigger.hasMedia ? `<span>圖片</span>` : ""}
+    ${trigger.hasReaction ? `<span>表情反應 (${trigger.reaction})</span>` : ""}
+    ${
+      trigger.timeRange
+        ? `<span>特定時段 (${trigger.startTime} - ${trigger.endTime})</span>`
+        : ""
+    }
+    ${
+      trigger.autoTrigger
+        ? `<span>自動觸發 (每 ${formatAutoInterval(
+            trigger.autoInterval
+          )})</span>`
+        : ""
+    }
+    <button class="btn btn-danger" onclick="removeTrigger(${index})">刪除</button>
+</div>
+`
           )
           .join("");
+      }
 
-        // 格式化自動觸發間隔為人類可讀格式
-        function formatAutoInterval(interval) {
-          if (!interval) return "";
-          let parts = [];
-          if (interval.hours > 0) parts.push(`${interval.hours} 小時`);
-          if (interval.minutes > 0) parts.push(`${interval.minutes} 分鐘`);
-          if (interval.seconds > 0) parts.push(`${interval.seconds} 秒`);
-          return parts.length > 0 ? parts.join(" ") : "0 秒";
-        }
+      // 格式化自動觸發間隔為人類可讀格式
+      function formatAutoInterval(interval) {
+        if (!interval) return "";
+        let parts = [];
+        if (interval.hours > 0) parts.push(`${interval.hours} 小時`);
+        if (interval.minutes > 0) parts.push(`${interval.minutes} 分鐘`);
+        if (interval.seconds > 0) parts.push(`${interval.seconds} 秒`);
+        return parts.length > 0 ? parts.join(" ") : "0 秒";
       }
 
       function removeTrigger(index) {
@@ -3999,23 +4001,25 @@ const axios = require('axios');
         // 填入回應內容
         setTimeout(async () => {
           if (command.response.type === "function" && codeMirrorEditor) {
-            // 讀取 js 檔案內容（去除 module.exports 包裝）
             try {
               const res = await fetch(
                 `/data/functions/${command.id}.js?_=${Date.now()}`
               );
               if (res.ok) {
                 let jsText = await res.text();
-                // 移除 module.exports = async function(msg) { ... }
-                jsText = jsText.replace(
-                  /^module\.exports\s*=\s*async function\s*\(msg\)\s*{([\s\S]*)}$/m,
-                  (m, body) =>
-                    body
-                      .trim()
-                      .replace(/\n}$/, "")
-                      .replace(/^\s*|\s*$/g, "")
+                const match = jsText.match(
+                  /^module\.exports\s*=\s*async function\s*\(msg,\s*client\)\s*{([\s\S]*?)}$/m
                 );
-                codeMirrorEditor.setValue(jsText.trim());
+                if (match && match[1]) {
+                  // 提取函數體並去除首尾多餘的空白和可能的尾部大括號
+                  let bodyContent = match[1];
+                  // 移除尾部可能的單獨的 '}' 和之前的換行符
+                  bodyContent = bodyContent.replace(/\s*}\s*$/, "").trim();
+                  codeMirrorEditor.setValue(bodyContent);
+                } else {
+                  // 如果不匹配，可能直接是函數體，或者格式不對，直接設置原始文本
+                  codeMirrorEditor.setValue(jsText.trim());
+                }
               } else {
                 codeMirrorEditor.setValue(command.response.content || "");
               }
@@ -4059,7 +4063,7 @@ const axios = require('axios');
             // 使用 prettier 格式化
             const formattedCode = prettier.format(code, {
               parser: "babel",
-              plugins: prettierPlugins,
+              plugins: [prettierPlugins.babel],
               semi: true,
               singleQuote: false,
               tabWidth: 2,
@@ -4680,6 +4684,10 @@ const axios = require('axios');
 
         // 下載/更新 HTML 並 F5
         const updateBtn = document.getElementById("update-html-btn");
+        // 只在按鈕不是禁用/加載狀態時更新其文本
+        if (!updateBtn.disabled) {
+          updateBtn.innerHTML = `<img src="https://fonts.gstatic.com/s/i/materialicons/refresh/v1/24px.svg" alt="Update" style="width: 22px; height: 22px; filter: invert(1)" />`;
+        }
         updateBtn.onclick = async function () {
           updateBtn.disabled = true;
           updateBtn.textContent =

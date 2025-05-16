@@ -474,12 +474,6 @@ class WhatsAppBot {
       }
       console.log("收到表情反應原始資料:", JSON.stringify(reaction, null, 2));
 
-      /*       // 忽略自己發送的表情反應
-      if (reaction.senderId === this.client.info.wid._serialized) {
-        console.log("忽略自己發送的表情反應");
-        return;
-      } */
-
       // 獲取必要資訊
       const emoji = reaction.reaction;
       const messageId =
