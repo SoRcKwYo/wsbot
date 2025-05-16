@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- version: 1.0.9 -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -931,6 +932,20 @@
           style="width: 22px; height: 22px; filter: invert(1)"
         />
       </button>
+
+      <!-- 新增版本號顯示元素 -->
+      <div
+        id="version-number"
+        style="
+          font-size: 0.8rem;
+          text-align: center;
+          margin-top: 5px;
+          color: var(--text-secondary);
+          font-weight: 500;
+        "
+      >
+        v1.0.0
+      </div>
     </div>
 
     <main class="main-content">
@@ -1066,7 +1081,7 @@
                     type="number"
                     name="autoHours"
                     min="0"
-                    style="width: 160px; text-align: center;"
+                    style="width: 160px; text-align: center"
                     placeholder="時"
                     value="0"
                   />
@@ -1076,7 +1091,7 @@
                     name="autoMinutes"
                     min="0"
                     max="59"
-                    style="width: 160px; text-align: center;"
+                    style="width: 160px; text-align: center"
                     placeholder="分"
                     value="0"
                   />
@@ -1086,10 +1101,9 @@
                     name="autoSeconds"
                     min="0"
                     max="59"
-                    style="width: 160px; text-align: center;"
+                    style="width: 160px; text-align: center"
                     placeholder="秒"
                     value="0"
-                    
                   />
                   <span>秒</span>
                 </div>
@@ -4648,6 +4662,117 @@ const axios = require('axios');
           autoTriggerSelector.style.display = this.checked ? "block" : "none";
         });
       }
+
+      // 版本檢測功能
+      let currentVersion = "";
+      let updateCheckInterval;
+
+      // 初始化版本顯示
+      async function initVersion() {
+        try {
+          const versionElement = document.getElementById("version-number");
+
+          // 從 HTML 注釋中提取版本號
+          const htmlContent = document.documentElement.innerHTML;
+          const versionMatch = htmlContent.match(
+            new RegExp("<!-- version: ([0-9.]+) -->")
+          );
+          currentVersion = versionMatch ? versionMatch[1] : "1.0.0";
+
+          // 設置初始版本顯示
+          versionElement.textContent = `v${currentVersion}`;
+
+          // 開始定期檢查更新
+          startVersionCheck();
+        } catch (error) {
+          console.error("初始化版本號失敗:", error);
+        }
+      }
+
+      // 開始定期檢查更新
+      function startVersionCheck() {
+        // 先清除可能存在的舊定時器
+        if (updateCheckInterval) {
+          clearInterval(updateCheckInterval);
+        }
+
+        // 設定每分鐘檢查一次
+        updateCheckInterval = setInterval(checkUpdate, 60000);
+
+        // 立即執行一次檢查
+        checkUpdate();
+      }
+
+      // 檢查是否有更新
+      async function checkUpdate() {
+        try {
+          const response = await fetch("/api/check-update");
+
+          if (!response.ok) {
+            throw new Error(`檢查更新失敗: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const versionElement = document.getElementById("version-number");
+
+          if (data.hasUpdate) {
+            // 有更新時在版本號後添加 "!" 號
+            if (!versionElement.textContent.includes("!")) {
+              versionElement.textContent = `v${currentVersion} !`;
+              versionElement.style.color = "var(--error)";
+              versionElement.style.fontWeight = "700";
+
+              // 震動動畫效果
+              versionElement.style.animation = "version-shake 0.5s ease";
+              // 定義震動動畫
+              if (!document.getElementById("version-shake-animation")) {
+                const style = document.createElement("style");
+                style.id = "version-shake-animation";
+                style.textContent = `
+            @keyframes version-shake {
+              0%, 100% { transform: translateX(0); }
+              20%, 60% { transform: translateX(-3px); }
+              40%, 80% { transform: translateX(3px); }
+            }
+          `;
+                document.head.appendChild(style);
+              }
+            }
+          } else {
+            // 沒有更新時恢復正常顯示
+            if (versionElement.textContent.includes("!")) {
+              versionElement.textContent = `v${currentVersion}`;
+              versionElement.style.color = "var(--text-secondary)";
+              versionElement.style.fontWeight = "500";
+              versionElement.style.animation = "";
+            }
+          }
+        } catch (error) {
+          console.error("檢查更新失敗:", error);
+        }
+      }
+
+      // 當DOM加載完成後初始化版本顯示
+      document.addEventListener("DOMContentLoaded", () => {
+        // 其他現有的 DOMContentLoaded 事件處理...
+
+        // 初始化版本顯示
+        initVersion();
+
+        // 添加更新按鈕點擊事件：更新後重置版本狀態
+        const updateBtn = document.getElementById("update-html-btn");
+        const originalClickHandler = updateBtn.onclick;
+        updateBtn.onclick = async function (event) {
+          if (originalClickHandler) {
+            await originalClickHandler.call(this, event);
+          }
+
+          // 更新成功後重置版本檢查
+          setTimeout(() => {
+            location.reload(); // 重新載入頁面以獲取新版本
+          }, 1000);
+        };
+      });
     </script>
   </body>
 </html>

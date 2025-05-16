@@ -1039,6 +1039,13 @@ let currentQrCode = null;
 let logHistory = [];
 const maxLogEntries = 1000;
 
+// 當前版本號，可以存在某個配置文件或環境變量中
+const currentVersion = "1.0.0";
+
+// Github 相關資訊
+const githubRepo = "SoRcKwYo/wsbot"; // 根據您的GitHub用戶名和倉庫名修改
+const githubBranch = "main"; // 您的主要分支名稱
+
 // 添加一個單獨的函數用於向前端發送日誌
 function addLogEntry(level, message) {
   const timestamp = new Date().toISOString();
@@ -1082,6 +1089,71 @@ app.get("/api/logs", (req, res) => {
 
   res.json(filteredLogs);
 });
+
+app.get("/api/version", (req, res) => {
+  res.json({ version: currentVersion });
+});
+
+// 檢查是否有新版本的API
+app.get("/api/check-update", async (req, res) => {
+  try {
+    // 從 GitHub 獲取最新的 index.html 文件
+    const response = await fetch(
+      `https://raw.githubusercontent.com/${githubRepo}/${githubBranch}/public/index.html`
+    );
+
+    if (!response.ok) {
+      throw new Error(`GitHub API 請求失敗: ${response.status}`);
+    }
+
+    const remoteHtmlContent = await response.text();
+
+    // 從遠端 HTML 中提取版本號
+    const remoteVersionMatch = remoteHtmlContent.match(
+      /<!-- version: ([0-9.]+) -->/
+    );
+    const remoteVersion = remoteVersionMatch ? remoteVersionMatch[1] : "0.0.0";
+
+    // 讀取本地 HTML 文件
+    const localFilePath = path.join(__dirname, "public", "index.html");
+    const localHtmlContent = await fs.readFile(localFilePath, "utf8");
+
+    // 從本地 HTML 中提取版本號
+    const localVersionMatch = localHtmlContent.match(
+      /<!-- version: ([0-9.]+) -->/
+    );
+    const localVersion = localVersionMatch ? localVersionMatch[1] : "0.0.0";
+
+    // 比較版本號
+    const hasUpdate = compareVersions(remoteVersion, localVersion) > 0;
+
+    res.json({
+      hasUpdate,
+      localVersion,
+      remoteVersion,
+      latestCommitSha: remoteVersion, // 使用版本號替代 commit SHA
+    });
+  } catch (error) {
+    console.error("檢查更新時出錯:", error);
+    res.status(500).json({ error: "檢查更新時出錯", details: error.message });
+  }
+});
+
+// 版本比較函數
+function compareVersions(v1, v2) {
+  const parts1 = v1.split(".").map(Number);
+  const parts2 = v2.split(".").map(Number);
+
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const part1 = i < parts1.length ? parts1[i] : 0;
+    const part2 = i < parts2.length ? parts2[i] : 0;
+
+    if (part1 > part2) return 1;
+    if (part1 < part2) return -1;
+  }
+
+  return 0;
+}
 
 // 清除日誌
 app.post("/api/logs/clear", (req, res) => {
