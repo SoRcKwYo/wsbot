@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- version: 1.0.1 -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -1116,6 +1115,13 @@
                   設置為 0 時 0 分 0 秒 將無法觸發，請至少設置 1 秒以上
                 </div>
               </div>
+              <label class="switch-label">
+                <span>使用正規表達式</span>
+                <span class="switch">
+                  <input type="checkbox" name="isRegex" />
+                  <span class="slider"></span>
+                </span>
+              </label>
               <label class="switch-label">
                 <span>圖片</span>
                 <span class="switch">
@@ -3569,6 +3575,9 @@ const axios = require('axios');
         const triggerInput = document.querySelector(
           '#trigger-conditions input[type="text"]'
         );
+        const isRegex = document.querySelector(
+          '#trigger-conditions input[name="isRegex"]'
+        );
         const toLowerCase = document.querySelector(
           '#trigger-conditions input[name="toLowerCase"]'
         );
@@ -3602,6 +3611,15 @@ const axios = require('axios');
         const autoSeconds = document.querySelector('input[name="autoSeconds"]');
 
         const keyword = triggerInput.value.trim();
+
+        if (isRegex.checked && keyword) {
+          try {
+            new RegExp(keyword); // 驗證正規表達式是否有效
+          } catch (err) {
+            alert("無效的正規表達式");
+            return;
+          }
+        }
 
         // 檢查是否有任何觸發條件
         if (
@@ -3640,6 +3658,7 @@ const axios = require('axios');
 
         const newTrigger = {
           keyword,
+          isRegex: isRegex.checked,
           toLowerCase: toLowerCase.checked,
           startsWith: startsWith.checked,
           quotedMsg: quotedMsg.checked,
@@ -3666,6 +3685,7 @@ const axios = require('axios');
         currentTriggers.push(newTrigger);
 
         // 重置自動觸發表單
+        isRegex.checked = false;
         triggerInput.value = "";
         toLowerCase.checked = false;
         startsWith.checked = false;
