@@ -4007,19 +4007,16 @@ return res.data;</pre
               );
               if (res.ok) {
                 let jsText = await res.text();
-                const match = jsText.match(
-                  /^module\.exports\s*=\s*async function\s*\(msg,\s*client\)\s*{([\s\S]*?)}$/m
+                // 移除 module.exports = async function(msg) { ... }
+                jsText = jsText.replace(
+                  /^module\.exports\s*=\s*async function\s*\(msg\)\s*{([\s\S]*)}$/m,
+                  (m, body) =>
+                    body
+                      .trim()
+                      .replace(/\n}$/, "")
+                      .replace(/^\s*|\s*$/g, "")
                 );
-                if (match && match[1]) {
-                  // 提取函數體並去除首尾多餘的空白和可能的尾部大括號
-                  let bodyContent = match[1];
-                  // 移除尾部可能的單獨的 '}' 和之前的換行符
-                  bodyContent = bodyContent.replace(/\s*}\s*$/, "").trim();
-                  codeMirrorEditor.setValue(bodyContent);
-                } else {
-                  // 如果不匹配，可能直接是函數體，或者格式不對，直接設置原始文本
-                  codeMirrorEditor.setValue(jsText.trim());
-                }
+                codeMirrorEditor.setValue(jsText.trim());
               } else {
                 codeMirrorEditor.setValue(command.response.content || "");
               }
