@@ -4222,10 +4222,59 @@ const axios = require('axios');
         <div class="list-item">
             <div>
                 <strong>觸發條件：</strong>
+                <ul style="list-style-type: disc; margin-left: 20px; padding-left: 0;">
                     ${command.triggers
-                      .map((t) => (t.quotedMsg ? "(reply)" : t.keyword))
-                      .join(", ")}
-                <div class="text-gray-500">
+                      .map((t) => {
+                        let triggerDesc = [];
+                        if (t.keyword) {
+                          triggerDesc.push(
+                            `關鍵詞: "${t.keyword}"${
+                              t.isRegex ? " (正則)" : ""
+                            }`
+                          );
+                        }
+                        if (t.quotedMsg) {
+                          triggerDesc.push("引用訊息");
+                        }
+                        if (t.hasMedia) {
+                          triggerDesc.push("包含圖片/媒體");
+                        }
+                        if (t.hasReaction) {
+                          triggerDesc.push(`表情反應: ${t.reaction}`);
+                        }
+                        if (t.timeRange) {
+                          triggerDesc.push(
+                            `特定時段: ${t.startTime} - ${t.endTime}`
+                          );
+                        }
+                        if (t.autoTrigger && t.autoInterval) {
+                          const interval = t.autoInterval;
+                          let intervalParts = [];
+                          if (interval.hours > 0)
+                            intervalParts.push(`${interval.hours}小時`);
+                          if (interval.minutes > 0)
+                            intervalParts.push(`${interval.minutes}分鐘`);
+                          if (interval.seconds > 0)
+                            intervalParts.push(`${interval.seconds}秒`);
+                          triggerDesc.push(
+                            `自動觸發 (每 ${intervalParts.join(" ") || "0秒"})`
+                          );
+                        }
+
+                        let modifiers = [];
+                        if (t.toLowerCase) modifiers.push("忽略大小寫");
+                        if (t.startsWith) modifiers.push("開頭匹配");
+                        if (modifiers.length > 0) {
+                          triggerDesc.push(`(${modifiers.join(", ")})`);
+                        }
+
+                        return `<li>${
+                          triggerDesc.join(", ") || "未設定任何條件"
+                        }</li>`;
+                      })
+                      .join("")}
+                </ul>
+                <div class="text-gray-500" style="margin-top: 4px;">
                     <strong>回應類型：</strong>${command.response.type}
                 </div>
                 <div class="text-gray-500">
