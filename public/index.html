@@ -1035,6 +1035,74 @@
                 </span>
               </label>
               <label class="switch-label">
+                <span>自動觸發</span>
+                <span class="switch">
+                  <input type="checkbox" name="autoTrigger" />
+                  <span class="slider"></span>
+                </span>
+              </label>
+              <!-- 自動觸發設定選擇器，默認隱藏，勾選自動觸發後顯示 -->
+              <div
+                id="auto-trigger-selector"
+                style="
+                  display: none;
+                  margin-top: 10px;
+                  border-top: 1px solid #e0e0e0;
+                  padding-top: 10px;
+                "
+              >
+                <div style="font-size: 0.9em; margin-bottom: 8px; color: #666">
+                  設定觸發間隔:
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                    margin-bottom: 8px;
+                  "
+                >
+                  <input
+                    type="number"
+                    name="autoHours"
+                    min="0"
+                    style="width: 160px; text-align: center;"
+                    placeholder="時"
+                    value="0"
+                  />
+                  <span>時</span>
+                  <input
+                    type="number"
+                    name="autoMinutes"
+                    min="0"
+                    max="59"
+                    style="width: 160px; text-align: center;"
+                    placeholder="分"
+                    value="0"
+                  />
+                  <span>分</span>
+                  <input
+                    type="number"
+                    name="autoSeconds"
+                    min="0"
+                    max="59"
+                    style="width: 160px; text-align: center;"
+                    placeholder="秒"
+                    value="0"
+                    
+                  />
+                  <span>秒</span>
+                </div>
+                <div style="font-size: 0.85em; color: #666; margin-top: 5px">
+                  <i
+                    class="material-icons"
+                    style="font-size: 14px; vertical-align: middle"
+                    >info</i
+                  >
+                  設置為 0 時 0 分 0 秒 將無法觸發，請至少設置 1 秒以上
+                </div>
+              </div>
+              <label class="switch-label">
                 <span>圖片</span>
                 <span class="switch">
                   <input type="checkbox" name="hasMedia" />
@@ -3514,6 +3582,10 @@ const axios = require('axios');
         const selectedEmojiValue = document.getElementById(
           "selected-emoji-value"
         );
+        const autoTrigger = document.querySelector('input[name="autoTrigger"]');
+        const autoHours = document.querySelector('input[name="autoHours"]');
+        const autoMinutes = document.querySelector('input[name="autoMinutes"]');
+        const autoSeconds = document.querySelector('input[name="autoSeconds"]');
 
         const keyword = triggerInput.value.trim();
 
@@ -3523,10 +3595,24 @@ const axios = require('axios');
           !quotedMsg.checked &&
           !hasMedia.checked &&
           !hasReaction.checked &&
-          !timeRange.checked
+          !timeRange.checked &&
+          !autoTrigger.checked
         ) {
-          alert("請輸入觸發關鍵詞或勾選引用訊息/圖片/表情反應/特定時段");
+          alert("請輸入觸發關鍵詞或勾選其他觸發條件");
           return;
+        }
+
+        // 檢查自動觸發時間是否有效
+        if (autoTrigger.checked) {
+          const hours = parseInt(autoHours.value) || 0;
+          const minutes = parseInt(autoMinutes.value) || 0;
+          const seconds = parseInt(autoSeconds.value) || 0;
+          const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+          if (totalSeconds <= 0) {
+            alert("自動觸發時間必須大於 0 秒");
+            return;
+          }
         }
 
         // 檢查表情反應是否選擇表情符號
@@ -3548,6 +3634,14 @@ const axios = require('axios');
           timeRange: timeRange.checked,
           startTime: timeRange.checked ? startTime.value : null,
           endTime: timeRange.checked ? endTime.value : null,
+          autoTrigger: autoTrigger.checked,
+          autoInterval: autoTrigger.checked
+            ? {
+                hours: parseInt(autoHours.value) || 0,
+                minutes: parseInt(autoMinutes.value) || 0,
+                seconds: parseInt(autoSeconds.value) || 0,
+              }
+            : null,
         };
 
         // 如果有表情反應則添加表情符號
@@ -3557,6 +3651,7 @@ const axios = require('axios');
 
         currentTriggers.push(newTrigger);
 
+        // 重置自動觸發表單
         triggerInput.value = "";
         toLowerCase.checked = false;
         startsWith.checked = false;
@@ -3569,6 +3664,11 @@ const axios = require('axios');
         selectedEmojiValue.textContent = "無";
         document.getElementById("time-range-selector").style.display = "none";
         document.getElementById("reaction-selector").style.display = "none";
+        autoTrigger.checked = false;
+        autoHours.value = "0";
+        autoMinutes.value = "0";
+        autoSeconds.value = "0";
+        document.getElementById("auto-trigger-selector").style.display = "none";
 
         renderTriggers();
       }
@@ -3580,29 +3680,44 @@ const axios = require('axios');
         container.innerHTML = currentTriggers
           .map(
             (trigger, index) => `
-        <div class="trigger-item">
-            <span>${trigger.keyword}${
+  <div class="trigger-item">
+      <span>${trigger.keyword || ""}${
               trigger.isRegex
                 ? ' <span style="color:#388e3c;">[Regex]</span>'
                 : ""
             }</span>
-            <span>${trigger.toLowerCase ? "忽略大小寫" : ""}</span>
-            <span>${trigger.startsWith ? "開頭匹配" : ""}</span>
-            <span>${trigger.quotedMsg ? "引用訊息" : ""}</span>
-            <span>${trigger.hasMedia ? "圖片" : ""}</span>
-            <span>${
-              trigger.hasReaction ? `表情反應 (${trigger.reaction})` : ""
-            }</span>
-            <span>${
-              trigger.timeRange
-                ? `特定時段 (${trigger.startTime} - ${trigger.endTime})`
-                : ""
-            }</span>
-            <button class="btn btn-danger" onclick="removeTrigger(${index})">刪除</button>
-        </div>
-    `
+      <span>${trigger.toLowerCase ? "忽略大小寫" : ""}</span>
+      <span>${trigger.startsWith ? "開頭匹配" : ""}</span>
+      <span>${trigger.quotedMsg ? "引用訊息" : ""}</span>
+      <span>${trigger.hasMedia ? "圖片" : ""}</span>
+      <span>${
+        trigger.hasReaction ? `表情反應 (${trigger.reaction})` : ""
+      }</span>
+      <span>${
+        trigger.timeRange
+          ? `特定時段 (${trigger.startTime} - ${trigger.endTime})`
+          : ""
+      }</span>
+      <span>${
+        trigger.autoTrigger
+          ? `自動觸發 (每 ${formatAutoInterval(trigger.autoInterval)})`
+          : ""
+      }</span>
+      <button class="btn btn-danger" onclick="removeTrigger(${index})">刪除</button>
+  </div>
+  `
           )
           .join("");
+
+        // 格式化自動觸發間隔為人類可讀格式
+        function formatAutoInterval(interval) {
+          if (!interval) return "";
+          let parts = [];
+          if (interval.hours > 0) parts.push(`${interval.hours} 小時`);
+          if (interval.minutes > 0) parts.push(`${interval.minutes} 分鐘`);
+          if (interval.seconds > 0) parts.push(`${interval.seconds} 秒`);
+          return parts.length > 0 ? parts.join(" ") : "0 秒";
+        }
       }
 
       function removeTrigger(index) {
@@ -3952,7 +4067,8 @@ const axios = require('axios');
             trigger.keyword ||
             trigger.quotedMsg ||
             trigger.hasMedia ||
-            trigger.timeRange
+            trigger.timeRange ||
+            trigger.autoTrigger
           ) {
             hasValidTrigger = true;
           }
@@ -4519,6 +4635,19 @@ const axios = require('axios');
 
       // Initial load
       updateToggleButton();
+
+      const autoTriggerCheckbox = document.querySelector(
+        'input[name="autoTrigger"]'
+      );
+      const autoTriggerSelector = document.getElementById(
+        "auto-trigger-selector"
+      );
+
+      if (autoTriggerCheckbox && autoTriggerSelector) {
+        autoTriggerCheckbox.addEventListener("change", function () {
+          autoTriggerSelector.style.display = this.checked ? "block" : "none";
+        });
+      }
     </script>
   </body>
 </html>

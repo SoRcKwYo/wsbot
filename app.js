@@ -35,6 +35,95 @@ class WhatsAppBot {
         console.error("自動清理臨時檔案失敗:", error)
       );
     }, 3600000); // 每小時清理
+
+    // 新增自動觸發定時器集合
+    this.autoTriggerTimers = new Map();
+  }
+
+  // 新增初始化自動觸發功能的方法
+  initAutoTriggers() {
+    // 清除所有現有的自動觸發定時器
+    for (const timer of this.autoTriggerTimers.values()) {
+      clearInterval(timer);
+    }
+    this.autoTriggerTimers.clear();
+
+    // 檢查每個指令是否有自動觸發條件
+    for (const command of this.activeCommands.values()) {
+      for (const trigger of command.triggers || []) {
+        if (trigger.autoTrigger && trigger.autoInterval) {
+          const { hours = 0, minutes = 0, seconds = 0 } = trigger.autoInterval;
+          const totalMs = (hours * 3600 + minutes * 60 + seconds) * 1000;
+
+          if (totalMs <= 0) continue; // 跳過無效的時間設定
+
+          console.log(
+            `為指令 '${
+              command.name || command.id
+            }' 設定自動觸發: ${hours}小時 ${minutes}分鐘 ${seconds}秒`
+          );
+
+          // 為每個目標設定自動觸發
+          for (const target of command.targets) {
+            const timerId = setInterval(async () => {
+              try {
+                if (!this.isInitialized || this.isShuttingDown) return;
+
+                const chatId = target.id;
+                console.log(
+                  `執行自動觸發指令: ${command.name || command.id} 至 ${chatId}`
+                );
+
+                // 創建模擬消息對象，用於處理自動觸發
+                const simulatedMsg = {
+                  type: "autoTrigger",
+                  from: this.client?.info?.wid?._serialized || "system",
+                  to: chatId,
+                  id: {
+                    _serialized: `auto_${Date.now()}_${Math.random()
+                      .toString(36)
+                      .substring(2, 10)}`,
+                    fromMe: true,
+                    remote: chatId,
+                  },
+                  reply: async (content) => {
+                    try {
+                      await this.client.sendMessage(chatId, content);
+                      return true;
+                    } catch (err) {
+                      console.error("自動觸發回覆失敗:", err);
+                      return false;
+                    }
+                  },
+                  getChat: async () => {
+                    try {
+                      return await this.client.getChatById(chatId);
+                    } catch (error) {
+                      console.error("獲取聊天失敗:", error);
+                      return {
+                        id: { _serialized: chatId },
+                        isGroup: chatId.includes("@g.us"),
+                      };
+                    }
+                  },
+                };
+
+                // 執行指令回應
+                await this.sendResponse(command, simulatedMsg);
+              } catch (error) {
+                console.error("自動觸發執行失敗:", error);
+              }
+            }, totalMs);
+
+            // 儲存定時器ID，以便將來清理
+            const timerKey = `${command.id}_${target.id}`;
+            this.autoTriggerTimers.set(timerKey, timerId);
+          }
+        }
+      }
+    }
+
+    console.log(`已設定 ${this.autoTriggerTimers.size} 個自動觸發定時器`);
   }
 
   async reconnect() {
@@ -94,6 +183,11 @@ class WhatsAppBot {
       if (await this.fileExists(commandsPath)) {
         const commandsData = await fs.readFile(commandsPath, "utf8");
         this.activeCommands = new Map(JSON.parse(commandsData));
+
+        // 加載完指令後初始化自動觸發功能
+        if (this.isInitialized) {
+          this.initAutoTriggers();
+        }
       }
     } catch (error) {
       console.error("Error loading data:", error);
@@ -315,6 +409,9 @@ class WhatsAppBot {
         }
         console.log("Client is ready to receive messages.");
         await this.updateGroups();
+
+        // WhatsApp 連接成功後初始化自動觸發功能
+        this.initAutoTriggers();
       } catch (error) {
         console.error("Error in ready event:", error);
       }
@@ -535,8 +632,9 @@ class WhatsAppBot {
             const content = trigger.toLowerCase
               ? messageContent.toLowerCase()
               : messageContent;
-              const isReply = hasQuotedMsg;
-              const hasMedia = data.hasMedia || (data._data && data._data.hasMedia);
+            const isReply = hasQuotedMsg;
+            const hasMedia =
+              data.hasMedia || (data._data && data._data.hasMedia);
 
             // 時間範圍檢查
             let isInTimeRange = true;
@@ -567,6 +665,12 @@ class WhatsAppBot {
               if (!isInTimeRange) continue;
             }
 
+            if (data.type === "autoTrigger" && trigger.autoTrigger) {
+              shouldTrigger = true;
+              // 自動觸發消息直接匹配，無需進一步檢查關鍵詞
+              continue;
+            }
+
             // 正則表達式觸發條件
             if (trigger.isRegex) {
               try {
@@ -576,24 +680,28 @@ class WhatsAppBot {
                 );
                 if (regex.test(content)) {
                   // 增強引用消息處理
-                if (trigger.quotedMsg && isReply) {
-                  // 如果需要檢查引用消息的內容，可以在這裡獲取
-                  if (trigger.quotedMsgContains) {
-                    const quotedMsg = await data.getQuotedMessage();
-                    const quotedMsgText = quotedMsg.body;
-                    
-                    // 檢查引用消息是否包含指定內容
-                    if (!quotedMsgText.includes(trigger.quotedMsgContains)) {
-                      continue; // 不匹配，跳過
+                  if (trigger.quotedMsg && isReply) {
+                    // 如果需要檢查引用消息的內容，可以在這裡獲取
+                    if (trigger.quotedMsgContains) {
+                      const quotedMsg = await data.getQuotedMessage();
+                      const quotedMsgText = quotedMsg.body;
+
+                      // 檢查引用消息是否包含指定內容
+                      if (!quotedMsgText.includes(trigger.quotedMsgContains)) {
+                        continue; // 不匹配，跳過
+                      }
                     }
-                  }
-                  shouldTrigger = true;
+                    shouldTrigger = true;
+                  } else if (trigger.hasMedia && hasMedia) shouldTrigger = true;
+                  else if (trigger.timeRange && isInTimeRange)
+                    shouldTrigger = true;
+                  else if (
+                    !trigger.quotedMsg &&
+                    !trigger.hasMedia &&
+                    !trigger.timeRange
+                  )
+                    shouldTrigger = true;
                 }
-                else if (trigger.hasMedia && hasMedia) shouldTrigger = true;
-                else if (trigger.timeRange && isInTimeRange) shouldTrigger = true;
-                else if (!trigger.quotedMsg && !trigger.hasMedia && !trigger.timeRange) 
-                  shouldTrigger = true;
-              }
               } catch (e) {
                 console.log("正則表達式錯誤:", e);
               }
@@ -601,29 +709,33 @@ class WhatsAppBot {
             // 關鍵字觸發條件
             else if (trigger.keyword) {
               const match = trigger.startsWith
-              ? content.startsWith(trigger.keyword)
-              : content.includes(trigger.keyword);
-            if (match) {
-              // 增強引用消息處理
-              if (trigger.quotedMsg && isReply) {
-                // 類似上面的引用消息內容檢查
-                if (trigger.quotedMsgContains) {
-                  const quotedMsg = await data.getQuotedMessage();
-                  const quotedMsgText = quotedMsg.body;
-                  
-                  // 檢查引用消息是否包含指定內容
-                  if (!quotedMsgText.includes(trigger.quotedMsgContains)) {
-                    continue; // 不匹配，跳過
+                ? content.startsWith(trigger.keyword)
+                : content.includes(trigger.keyword);
+              if (match) {
+                // 增強引用消息處理
+                if (trigger.quotedMsg && isReply) {
+                  // 類似上面的引用消息內容檢查
+                  if (trigger.quotedMsgContains) {
+                    const quotedMsg = await data.getQuotedMessage();
+                    const quotedMsgText = quotedMsg.body;
+
+                    // 檢查引用消息是否包含指定內容
+                    if (!quotedMsgText.includes(trigger.quotedMsgContains)) {
+                      continue; // 不匹配，跳過
+                    }
                   }
-                }
-                shouldTrigger = true;
+                  shouldTrigger = true;
+                } else if (trigger.hasMedia && hasMedia) shouldTrigger = true;
+                else if (trigger.timeRange && isInTimeRange)
+                  shouldTrigger = true;
+                else if (
+                  !trigger.quotedMsg &&
+                  !trigger.hasMedia &&
+                  !trigger.timeRange
+                )
+                  shouldTrigger = true;
               }
-              else if (trigger.hasMedia && hasMedia) shouldTrigger = true;
-              else if (trigger.timeRange && isInTimeRange) shouldTrigger = true;
-              else if (!trigger.quotedMsg && !trigger.hasMedia && !trigger.timeRange) 
-                shouldTrigger = true;
             }
-          }
             // 特殊觸發條件（無關鍵詞）
             else {
               if (trigger.quotedMsg && isReply) {
@@ -631,15 +743,14 @@ class WhatsAppBot {
                 if (trigger.quotedMsgContains) {
                   const quotedMsg = await data.getQuotedMessage();
                   const quotedMsgText = quotedMsg.body;
-                  
+
                   // 檢查引用消息是否包含指定內容
                   if (!quotedMsgText.includes(trigger.quotedMsgContains)) {
                     continue; // 不匹配，跳過
                   }
                 }
                 shouldTrigger = true;
-              }
-              else if (trigger.hasMedia && hasMedia) shouldTrigger = true;
+              } else if (trigger.hasMedia && hasMedia) shouldTrigger = true;
               else if (trigger.timeRange && isInTimeRange) shouldTrigger = true;
             }
           }
@@ -704,6 +815,7 @@ class WhatsAppBot {
     const sender = msg.fromMe ? msg.to : msg.from;
     const chat = await msg.getChat();
     const isReaction = msg.type === "reaction"; // 檢查是否為表情反應
+    const isAutoTrigger = msg.type === "autoTrigger"; // 檢查是否為自動觸發消息
 
     try {
       switch (command.response.type) {
@@ -712,7 +824,9 @@ class WhatsAppBot {
           await this.client.sendMessage(
             sender,
             command.response.content,
-            isReaction ? {} : { quotedMessageId: msg.id._serialized }
+            isReaction || isAutoTrigger
+              ? {}
+              : { quotedMessageId: msg.id._serialized }
           );
           break;
         case "image": {
@@ -729,7 +843,9 @@ class WhatsAppBot {
             await this.client.sendMessage(
               sender,
               media,
-              isReaction ? {} : { quotedMessageId: msg.id._serialized }
+              isReaction || isAutoTrigger
+                ? {}
+                : { quotedMessageId: msg.id._serialized }
             );
             console.log("圖片發送成功");
           } catch (error) {
@@ -737,20 +853,24 @@ class WhatsAppBot {
             await this.client.sendMessage(
               sender,
               "圖片發送失敗，請再試一次。",
-              isReaction ? {} : { quotedMessageId: msg.id._serialized }
+              isReaction || isAutoTrigger
+                ? {}
+                : { quotedMessageId: msg.id._serialized }
             );
           }
           break;
         }
         case "video": {
-          // 處理影片，表情反應不使用 quotedMessageId
+          // 處理影片，表情反應或自動觸發不使用 quotedMessageId
           try {
             const videoPath = path.join(this.dataDir, command.response.content);
             const media = MessageMedia.fromFilePath(videoPath);
             await this.client.sendMessage(
               sender,
               media,
-              isReaction ? {} : { quotedMessageId: msg.id._serialized }
+              isReaction || isAutoTrigger
+                ? {}
+                : { quotedMessageId: msg.id._serialized }
             );
             console.log("影片發送成功");
           } catch (error) {
@@ -758,7 +878,9 @@ class WhatsAppBot {
             await this.client.sendMessage(
               sender,
               "影片發送失敗，請再試一次或通知管理員檢查影片檔案大小。",
-              isReaction ? {} : { quotedMessageId: msg.id._serialized }
+              isReaction || isAutoTrigger
+                ? {}
+                : { quotedMessageId: msg.id._serialized }
             );
           }
           break;
@@ -772,7 +894,9 @@ class WhatsAppBot {
               await this.client.sendMessage(
                 sender,
                 result,
-                isReaction ? {} : { quotedMessageId: msg.id._serialized }
+                isReaction || isAutoTrigger
+                  ? {}
+                  : { quotedMessageId: msg.id._serialized }
               );
             }
           } catch (error) {
@@ -780,7 +904,9 @@ class WhatsAppBot {
             await this.client.sendMessage(
               sender,
               `執行函數時發生錯誤: ${error.message}`,
-              isReaction ? {} : { quotedMessageId: msg.id._serialized }
+              isReaction || isAutoTrigger
+                ? {}
+                : { quotedMessageId: msg.id._serialized }
             );
           }
           break;
@@ -793,7 +919,9 @@ class WhatsAppBot {
         await this.client.sendMessage(
           sender,
           "執行指令時出錯，請稍後重試或通知管理員。",
-          isReaction ? {} : { quotedMessageId: msg.id._serialized }
+          isReaction || isAutoTrigger
+            ? {}
+            : { quotedMessageId: msg.id._serialized }
         );
       } catch (e) {
         console.error("發送錯誤通知失敗:", e);
@@ -831,6 +959,13 @@ class WhatsAppBot {
 
   async destroy() {
     this.isShuttingDown = true; // 標記正在關閉
+
+    // 清理所有自動觸發定時器
+    for (const timer of this.autoTriggerTimers.values()) {
+      clearInterval(timer);
+    }
+    this.autoTriggerTimers.clear();
+
     if (this.client) {
       if (this.eventHandlers.has("disconnected")) {
         try {
@@ -1153,6 +1288,11 @@ app.post("/api/commands", async (req, res) => {
     }
     bot.activeCommands.set(commandData.id, commandData);
     await bot.saveData("commands");
+    // 檢查並初始化自動觸發
+    if (bot.isInitialized) {
+      bot.initAutoTriggers();
+    }
+
     res.json({ success: true, command: commandData });
   } catch (error) {
     console.error("添加指令失敗:", error);
@@ -1174,14 +1314,13 @@ app.put("/api/commands/:id", async (req, res) => {
       }
       const funcPath = path.join(funcDir, `${id}.js`);
 
-
       // 檢查內容是否已經包含 module.exports
       let code = commandData.response.content;
       if (!code.includes("module.exports")) {
         // 包裝成 module.exports = async function(msg, client) { ... }
         code = `module.exports = async function(msg, client) {\n${code}\n}`;
       }
-       await fs.writeFile(funcPath, code, "utf8");
+      await fs.writeFile(funcPath, code, "utf8");
       // 存檔案路徑代替原始內容
       const originalContent = commandData.response.content;
       commandData.response.content = `functions/${id}.js`;
@@ -1209,6 +1348,12 @@ app.put("/api/commands/:id", async (req, res) => {
     }
     bot.activeCommands.set(id, commandData);
     await bot.saveData("commands");
+
+    // 檢查並更新自動觸發
+    if (bot.isInitialized) {
+      bot.initAutoTriggers();
+    }
+
     res.json({ success: true, command: commandData });
   } catch (error) {
     console.error("更新指令失敗:", error);
@@ -1238,7 +1383,16 @@ app.delete("/api/contacts/:id", async (req, res) => {
 
 app.delete("/api/commands/:id", async (req, res) => {
   try {
-    bot.activeCommands.delete(req.params.id);
+    // 刪除相關自動觸發定時器
+    const commandId = req.params.id;
+    for (const [timerKey, timer] of bot.autoTriggerTimers.entries()) {
+      if (timerKey.startsWith(`${commandId}_`)) {
+        clearInterval(timer);
+        bot.autoTriggerTimers.delete(timerKey);
+      }
+    }
+
+    bot.activeCommands.delete(commandId);
     await bot.saveData("commands");
     res.json({ success: true });
   } catch (error) {
