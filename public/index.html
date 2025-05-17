@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <title>WhatsApp Bot Control Panel</title>
     <link
       data-default-icon="https://static.whatsapp.net/rsrc.php/v4/yP/r/rYZqPCBaG70.png"
@@ -83,6 +86,7 @@
     <script src="https://unpkg.com/prettier@2.8.8/standalone.js"></script>
     <script src="https://unpkg.com/prettier@2.8.8/parser-babel.js"></script>
     <style>
+      /* :root */
       :root {
         --primary: #4caf50;
         --primary-light: #81c784;
@@ -121,6 +125,79 @@
         --tag-color: #a5d6a7;
       }
 
+      :root[data-theme="dark"] #target-modal .modal-content {
+        background: var(--surface);
+        color: var(--text-primary);
+      }
+
+      :root[data-theme="dark"] #target-modal #modal-list {
+        background: var(--surface);
+        border-color: var(--border-color);
+      }
+
+      :root[data-theme="dark"] #target-modal #modal-list label {
+        border-color: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+      }
+
+      :root[data-theme="dark"] #target-modal #modal-list label:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      :root[data-theme="dark"] #target-modal #target-search {
+        background: var(--input-bg);
+        color: var(--text-primary);
+        border-color: var(--input-border);
+      }
+
+      :root[data-theme="dark"] .tag {
+        background: var(--tag-bg);
+        color: var(--tag-color);
+      }
+
+      :root[data-theme="dark"] .CodeMirror {
+        background-color: var(--input-bg);
+        color: var(--text-primary);
+        border-color: var(--input-border);
+      }
+
+      :root[data-theme="dark"] .CodeMirror-gutters {
+        background-color: #1e1e1e;
+        border-color: #2c2c2c;
+      }
+
+      :root[data-theme="dark"] .CodeMirror-cursor {
+        border-color: #fff;
+      }
+
+      :root[data-theme="dark"] .cm-s-material.CodeMirror {
+        background-color: var(--input-bg);
+        color: var(--text-primary);
+      }
+
+      :root[data-theme="dark"] .cm-btn {
+        color: var(--text-primary);
+      }
+
+      :root[data-theme="dark"] .cm-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      :root[data-theme="dark"] .list-item.disabled-command {
+        opacity: 0.6;
+        background-color: #2a2a2a;
+        border-color: #444;
+      }
+
+      :root[data-theme="dark"] .command-item-top {
+        background-color: rgba(40, 40, 40, 0.5);
+      }
+
+      :root[data-theme="dark"] .command-details ul {
+        background-color: rgba(60, 60, 60, 0.3);
+      }
+      /*  */
+
       @keyframes qr-spin {
         to {
           transform: rotate(360deg);
@@ -140,6 +217,124 @@
         100% {
           content: "";
         }
+      }
+
+      .command-item-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+        padding: 12px 15px;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+      }
+
+      .command-item-top:hover {
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+        transform: translateY(-1px);
+      }
+
+      .command-details {
+        margin: 10px 10px;
+        flex-grow: 1;
+      }
+
+      .command-details ul li {
+        margin-bottom: 4px;
+      }
+
+      /* 優化命令操作按鈕 */
+      .command-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+        margin-right: 20px;
+      }
+
+      .command-enable-switch {
+        margin-right: 5px;
+        transform: scale(0.9);
+      }
+
+      /* 優化指令卡片上的按鈕 */
+      .command-actions .btn {
+        min-width: 60px;
+        padding: 6px 12px;
+        font-weight: 500;
+        border-radius: 30px; /* 更圓潤的按鈕 */
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+      }
+
+      .command-actions .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+      }
+
+      .command-actions .btn-primary {
+        background-color: var(--primary);
+        color: white;
+      }
+
+      .command-actions .btn-danger {
+        background-color: var(--error);
+        color: white;
+      }
+
+      /* 圖標與文字並排顯示的按鈕效果 */
+      .btn-with-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      /* 停用狀態的命令樣式優化 */
+      .list-item.disabled-command {
+        opacity: 0.75;
+        background-color: #f0f0f0;
+        border-color: #ddd;
+        transition: all 0.3s ease;
+      }
+
+      .list-item.disabled-command strong,
+      .list-item.disabled-command .text-gray-500 {
+        text-decoration: line-through;
+        color: var(--text-secondary);
+      }
+
+      /* 拖曳手柄美化 */
+      .command-drag-handle {
+        cursor: grab;
+        margin-right: 10px;
+        color: var(--text-secondary);
+        opacity: 0.6;
+        transition: opacity 0.2s;
+      }
+
+      .command-drag-handle:hover {
+        opacity: 1;
+      }
+
+      /* 拖曳時效果增強 */
+      .list-item.dragging {
+        opacity: 0.7;
+        background: var(--primary-light);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        transform: scale(1.01);
+        z-index: 100;
+      }
+
+      .drag-over-target {
+        border-top: 2px dashed var(--primary);
+        padding-top: 14px; /* 補償邊框增加的高度 */
       }
 
       .loading-text .loading-dots {
@@ -183,14 +378,6 @@
 
       .cm-btn:hover {
         background: var(--hover-bg, rgba(0, 0, 0, 0.08));
-      }
-
-      :root[data-theme="dark"] .cm-btn {
-        color: var(--text-primary);
-      }
-
-      :root[data-theme="dark"] .cm-btn:hover {
-        background: rgba(255, 255, 255, 0.08);
       }
 
       .cm-notification {
@@ -241,26 +428,6 @@
       .CodeMirror:focus-within {
         border-color: var(--primary);
         box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
-      }
-
-      :root[data-theme="dark"] .CodeMirror {
-        background-color: var(--input-bg);
-        color: var(--text-primary);
-        border-color: var(--input-border);
-      }
-
-      :root[data-theme="dark"] .CodeMirror-gutters {
-        background-color: #1e1e1e;
-        border-color: #2c2c2c;
-      }
-
-      :root[data-theme="dark"] .CodeMirror-cursor {
-        border-color: #fff;
-      }
-
-      :root[data-theme="dark"] .cm-s-material.CodeMirror {
-        background-color: var(--input-bg);
-        color: var(--text-primary);
       }
 
       body {
@@ -446,18 +613,20 @@
       }
 
       .list-item {
-        padding: 16px;
-        border: 1px solid rgba(76, 175, 80, 0.12);
-        border-radius: var(--border-radius);
-        margin: 8px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
         transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        padding: 8px;
+      }
+
+      .list-item:hover .command-drag-handle {
+        opacity: 0.9;
       }
 
       .list-item:hover {
-        box-shadow: 0 2px 12px rgba(76, 175, 80, 0.08);
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.12);
         border-color: var(--primary-light);
       }
 
@@ -633,12 +802,14 @@
         background: #256029;
       }
 
+      /* 啟用/停用開關更加圓潤 */
       .switch {
         position: relative;
         display: inline-block;
-        width: 44px;
+        width: 46px;
         height: 24px;
-        margin-right: 8px;
+        margin-right: 12px;
+        vertical-align: middle;
       }
 
       .switch input {
@@ -657,6 +828,7 @@
         background-color: #ccc;
         transition: 0.3s;
         border-radius: 24px;
+        box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.15);
       }
 
       .slider:before {
@@ -669,11 +841,23 @@
         background-color: white;
         transition: 0.3s;
         border-radius: 50%;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+      }
+
+      /* 優化觸發條件顯示區域 */
+      .command-details ul {
+        background-color: rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        padding: 8px 8px 8px 25px;
+        margin: 8px 0;
       }
 
       input:checked + .slider {
         background-color: var(--primary);
+      }
+
+      input:focus + .slider {
+        box-shadow: 0 0 1px var(--primary), inset 0 0 3px rgba(0, 0, 0, 0.2);
       }
 
       input:checked + .slider:before {
@@ -809,34 +993,408 @@
         background: #b71c1c;
       }
 
-      :root[data-theme="dark"] #target-modal .modal-content {
-        background: var(--surface);
-        color: var(--text-primary);
+      .command-editor {
+        margin-bottom: 20px;
       }
 
-      :root[data-theme="dark"] #target-modal #modal-list {
-        background: var(--surface);
-        border-color: var(--border-color);
+      /* 移動端基礎優化 */
+      @media (max-width: 768px) {
+        html,
+        body {
+          width: 100%;
+          max-width: 100vw;
+          overflow-x: hidden;
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        /* 基礎布局調整 */
+        .main-content {
+          width: 100%;
+          margin-left: 0;
+          padding: 12px 12px 70px 12px; /* 上下預留足夠空間給固定導航條 */
+          box-sizing: border-box;
+          overflow-x: hidden;
+        }
+
+        /* 修正體驗 */
+        .section {
+          width: 100%;
+          padding: 15px;
+          margin: 0;
+        }
+
+        .form-group,
+        .list-item,
+        input,
+        select,
+        textarea {
+          width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+
+        /* 確保所有可能導致水平溢出的元素都有適當的約束 */
+        #commands-list .list-item,
+        .command-item-top,
+        .command-actions,
+        .trigger-item,
+        input,
+        select,
+        textarea,
+        .CodeMirror,
+        pre,
+        #console-logs,
+        #terminal-output {
+          max-width: 100%;
+          width: 100%;
+          box-sizing: border-box;
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
+
+        /* 側邊欄轉為底部固定導航 */
+        .nav {
+          width: 100%;
+          height: 60px;
+          bottom: 0;
+          top: auto;
+          display: flex;
+          align-items: center;
+          justify-content: space-around;
+          z-index: 1000;
+          padding: 0;
+          box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-logo {
+          display: none; /* 隱藏標題節省空間 */
+        }
+
+        .nav-items {
+          display: flex;
+          flex-direction: row;
+          width: 100%;
+          padding: 0;
+          margin: 0;
+          justify-content: space-around;
+        }
+
+        .nav-item {
+          flex: 1;
+          margin: 0;
+          padding: 8px 2px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.75rem;
+          gap: 2px;
+          border-radius: 0;
+        }
+
+        /* 添加導航圖標 */
+        .nav-item::before {
+          font-family: "Material Icons";
+          font-size: 20px;
+          margin-bottom: 2px;
+        }
+
+        .nav-item[data-section="home"]::before {
+          content: "home";
+        }
+        .nav-item[data-section="groups"]::before {
+          content: "group";
+        }
+        .nav-item[data-section="contacts"]::before {
+          content: "person";
+        }
+        .nav-item[data-section="commands"]::before {
+          content: "code";
+        }
+        .nav-item[data-section="console"]::before {
+          content: "terminal";
+        }
+
+        .nav-item .material-icons {
+          font-size: 20px;
+        }
+
+        /* 調整指令卡片，提升移動端可讀性 */
+        .command-item-top {
+          flex-direction: column;
+          align-items: stretch;
+          padding: 12px;
+        }
+
+        .command-details {
+          width: 100%;
+          margin: 0;
+          padding: 0 0 10px 0;
+        }
+
+        .command-details ul {
+          padding-right: 5px;
+          margin-right: 5px;
+        }
+
+        /* 修正命令操作按鈕在小螢幕上的布局 */
+        .command-actions {
+          width: 100%;
+          display: grid;
+          grid-template-columns: auto 1fr 1fr;
+          gap: 8px;
+          margin: 0;
+        }
+
+        .command-drag-handle {
+          display: none !important;
+        }
+
+        /* 增大按鈕點擊區域 */
+        .command-actions .btn {
+          min-width: 70px;
+          padding: 10px 15px;
+          margin-bottom: 5px;
+        }
+
+        .switch {
+          transform: scale(1.2); /* 放大開關按鈕提高可點擊性 */
+          margin: 10px 0;
+        }
+
+        /* 觸發條件渲染優化 */
+        .trigger-conditions label.switch-label {
+          display: flex;
+          justify-content: space-between;
+          width: 100%;
+          margin: 8px 0;
+          padding: 8px 5px;
+          background-color: rgba(255, 255, 255, 0.2);
+          border-radius: 8px;
+        }
+
+        :root[data-theme="dark"] .trigger-conditions label.switch-label {
+          background-color: rgba(60, 60, 60, 0.3);
+        }
+
+        /* 優化表單元素 */
+        input,
+        select,
+        textarea {
+          padding: 14px;
+          font-size: 16px; /* 避免iOS自動縮放 */
+        }
+
+        /* 防止模態視窗內容超出 */
+        .modal-content {
+          max-width: calc(100vw - 30px);
+          padding: 15px;
+          box-sizing: border-box;
+        }
+
+        /* 調整模態窗口 */
+        #target-modal .modal-content {
+          width: 92%;
+          max-height: 80vh;
+        }
+
+        #target-modal .modal-tab {
+          font-size: 0.9em;
+          padding: 7px 15px;
+        }
+
+        #target-modal #target-search {
+          width: 100%;
+          margin: 10px 0;
+          margin-left: 0;
+        }
+
+        /* 操作選單固定到底部 */
+        .nav-bottom-actions-floating {
+          position: fixed;
+          right: 18px;
+          bottom: 80px; /* 避免與底部導覽列重疊 */
+          left: auto;
+          flex-direction: column;
+        }
+
+        /* 列表項更易觸控 */
+        .list-item {
+          padding: 15px;
+          margin-bottom: 15px;
+        }
+
+        /* 控制台日誌區域優化 */
+        #console-logs {
+          height: 300px;
+          font-size: 0.8rem;
+        }
+
+        /* 表情選擇器優化 */
+        .emoji-item {
+          font-size: 2.2em !important;
+          padding: 8px !important;
+        }
+
+        /* 表情分類標籤調整 */
+        .emoji-tab {
+          padding: 8px 15px !important;
+          margin: 4px !important;
+        }
+
+        /* 表單分組上下留空間 */
+        .form-group {
+          margin-bottom: 25px;
+        }
+
+        /* 簡化觸發列表樣式，更直觀 */
+        .trigger-item {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .trigger-item button {
+          margin-top: 10px;
+          align-self: flex-end;
+          padding: 8px 15px;
+        }
+
+        /* CodeMirror 移動端適配 */
+        .CodeMirror {
+          height: auto;
+          max-height: 300px;
+          font-size: 14px;
+        }
+
+        /* 放大底部觸發按鈕點擊區域 */
+        .btn {
+          padding: 12px 24px;
+          margin-top: 8px;
+          width: 100%; /* 擴展按鈕寬度 */
+        }
+
+        /* 調整拖曳排序功能 */
+        .list-item.dragging {
+          transform: scale(1.02);
+        }
       }
 
-      :root[data-theme="dark"] #target-modal #modal-list label {
-        border-color: rgba(255, 255, 255, 0.1);
-        color: var(--text-primary);
+      /* 小螢幕設備的特殊調整 */
+      @media (max-width: 480px) {
+        /* 超小螢幕更極致的簡化 */
+        .section {
+          padding: 15px;
+        }
+
+        /* 導航標題顯示最小化 */
+        .nav-item {
+          font-size: 0.7rem;
+        }
+
+        /* 表情選擇器最小化 */
+        .emoji-item {
+          font-size: 1.8em !important;
+          padding: 6px !important;
+        }
+
+        /* 最大化按鈕點擊區域 */
+        .command-actions .btn {
+          flex-grow: 1;
+        }
       }
 
-      :root[data-theme="dark"] #target-modal #modal-list label:hover {
-        background: rgba(255, 255, 255, 0.05);
+      /* 添加浮動操作按鈕，以便快速添加指令 */
+      .floating-action-button {
+        display: none; /* 在桌面版默認隱藏 */
       }
 
-      :root[data-theme="dark"] #target-modal #target-search {
-        background: var(--input-bg);
-        color: var(--text-primary);
-        border-color: var(--input-border);
+      /* 極小螢幕特殊處理 */
+      @media (max-width: 375px) {
+        .section {
+          padding: 10px;
+        }
+
+        h2 {
+          font-size: 1.3rem;
+        }
+
+        .command-actions .btn {
+          padding: 8px 5px;
+          font-size: 0.8rem;
+          min-width: auto;
+        }
+
+        .nav-item {
+          font-size: 0.65rem;
+        }
+
+        .nav-item .material-icons {
+          font-size: 18px;
+        }
+
+        /* 進一步壓縮元素間距 */
+        .form-group {
+          margin-bottom: 15px;
+        }
       }
 
-      :root[data-theme="dark"] .tag {
-        background: var(--tag-bg);
-        color: var(--tag-color);
+      @media (max-width: 768px) {
+        .floating-action-button {
+          display: flex;
+          position: fixed;
+          bottom: 75px;
+          right: 20px;
+          width: 56px;
+          height: 56px;
+          font-size: 24px;
+          box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+          z-index: 100;
+        }
+
+        .floating-action-button:active {
+          transform: scale(0.95);
+        }
+      }
+
+      /* 避免頂部內容被截斷 */
+      @media (max-width: 768px) {
+        body {
+          padding-bottom: 60px; /* 為底部導航欄預留空間 */
+        }
+
+        h2 {
+          font-size: 1.5rem; /* 縮小標題 */
+          margin-bottom: 15px;
+        }
+
+        .status {
+          padding: 6px 15px;
+          font-size: 0.8rem;
+          margin: 10px 0;
+        }
+      }
+
+      /* 優化觸摸區域，避免誤觸 */
+      @media (max-width: 768px) {
+        .trigger-item,
+        .list-item button,
+        .nav-item,
+        .switch-label {
+          touch-action: manipulation;
+        }
+
+        /* 導航底部安全區域(針對全面屏手機) */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+          .nav {
+            padding-bottom: env(safe-area-inset-bottom);
+            height: calc(60px + env(safe-area-inset-bottom));
+          }
+
+          body {
+            padding-bottom: calc(60px + env(safe-area-inset-bottom));
+          }
+        }
       }
     </style>
   </head>
@@ -3141,7 +3699,10 @@ return res.data;</pre
 
           currentGroups = groups;
           currentContacts = contacts;
-          currentCommands = commands;
+          currentCommands = commands.map((cmd) => ({
+            ...cmd,
+            enabled: cmd.enabled === undefined ? true : cmd.enabled,
+          }));
 
           renderGroups();
           renderContacts();
@@ -3254,6 +3815,15 @@ return res.data;</pre
         currentCommands = data.commands;
         renderGroups();
         renderContacts();
+        renderCommands();
+      });
+
+      // 更新 socket.on updateCommands 處理，確保 enabled 屬性存在
+      socket.on("updateCommands", (commands) => {
+        currentCommands = commands.map((cmd) => ({
+          ...cmd,
+          enabled: cmd.enabled === undefined ? true : cmd.enabled,
+        }));
         renderCommands();
       });
 
@@ -4164,6 +4734,10 @@ return res.data;</pre
             content: content,
           },
           targets: selectedTargets,
+          enabled: editingCommandId
+            ? currentCommands.find((cmd) => cmd.id === editingCommandId)
+                ?.enabled ?? true
+            : true,
         };
         try {
           const url = editingCommandId
@@ -4220,80 +4794,98 @@ return res.data;</pre
         container.innerHTML = currentCommands
           .map(
             (command) => `
-        <div class="list-item">
-            <div>
-                <strong>觸發條件：</strong>
-                <ul style="list-style-type: disc; margin-left: 20px; padding-left: 0;">
-                    ${command.triggers
-                      .map((t) => {
-                        let triggerDesc = [];
-                        if (t.keyword) {
-                          triggerDesc.push(
-                            `關鍵詞: "${t.keyword}"${
-                              t.isRegex ? " (正則)" : ""
-                            }`
-                          );
-                        }
-                        if (t.quotedMsg) {
-                          triggerDesc.push("引用訊息");
-                        }
-                        if (t.hasMedia) {
-                          triggerDesc.push("包含圖片/媒體");
-                        }
-                        if (t.hasReaction) {
-                          triggerDesc.push(`表情反應: ${t.reaction}`);
-                        }
-                        if (t.timeRange) {
-                          triggerDesc.push(
-                            `特定時段: ${t.startTime} - ${t.endTime}`
-                          );
-                        }
-                        if (t.autoTrigger && t.autoInterval) {
-                          const interval = t.autoInterval;
-                          let intervalParts = [];
-                          if (interval.hours > 0)
-                            intervalParts.push(`${interval.hours}小時`);
-                          if (interval.minutes > 0)
-                            intervalParts.push(`${interval.minutes}分鐘`);
-                          if (interval.seconds > 0)
-                            intervalParts.push(`${interval.seconds}秒`);
-                          triggerDesc.push(
-                            `自動觸發 (每 ${intervalParts.join(" ") || "0秒"})`
-                          );
-                        }
+    <div class="list-item ${
+      command.enabled === false ? "disabled-command" : ""
+    }" draggable="true" data-command-id="${command.id}">
+        <div class="command-item-top">
+          <span class="command-drag-handle material-icons">drag_indicator</span>
+          <div class="command-details">
+            <strong>觸發條件：</strong>
+            <ul style="list-style-type: disc; margin-left: 20px; padding-left: 0;">
+                ${command.triggers
+                  .map((t) => {
+                    let triggerDesc = [];
+                    if (t.keyword) {
+                      triggerDesc.push(
+                        `關鍵詞: "${t.keyword}"${t.isRegex ? " (正則)" : ""}`
+                      );
+                    }
+                    if (t.quotedMsg) {
+                      triggerDesc.push("引用訊息");
+                    }
+                    if (t.hasMedia) {
+                      triggerDesc.push("包含圖片/媒體");
+                    }
+                    if (t.hasReaction) {
+                      triggerDesc.push(`表情反應: ${t.reaction}`);
+                    }
+                    if (t.timeRange) {
+                      triggerDesc.push(
+                        `特定時段: ${t.startTime} - ${t.endTime}`
+                      );
+                    }
+                    if (t.autoTrigger && t.autoInterval) {
+                      const interval = t.autoInterval;
+                      let intervalParts = [];
+                      if (interval.hours > 0)
+                        intervalParts.push(`${interval.hours}小時`);
+                      if (interval.minutes > 0)
+                        intervalParts.push(`${interval.minutes}分鐘`);
+                      if (interval.seconds > 0)
+                        intervalParts.push(`${interval.seconds}秒`);
+                      triggerDesc.push(
+                        `自動觸發 (每 ${intervalParts.join(" ") || "0秒"})`
+                      );
+                    }
 
-                        let modifiers = [];
-                        if (t.toLowerCase) modifiers.push("忽略大小寫");
-                        if (t.startsWith) modifiers.push("開頭匹配");
-                        if (modifiers.length > 0) {
-                          triggerDesc.push(`(${modifiers.join(", ")})`);
-                        }
+                    let modifiers = [];
+                    if (t.toLowerCase) modifiers.push("忽略大小寫");
+                    if (t.startsWith) modifiers.push("開頭匹配");
+                    if (modifiers.length > 0) {
+                      triggerDesc.push(`(${modifiers.join(", ")})`);
+                    }
 
-                        return `<li>${
-                          triggerDesc.join(", ") || "未設定任何條件"
-                        }</li>`;
-                      })
-                      .join("")}
-                </ul>
-                <div class="text-gray-500" style="margin-top: 4px;">
-                    <strong>回應類型：</strong>${command.response.type}
-                </div>
-                <div class="text-gray-500">
-                    <strong>觸發對象：</strong>${command.targets.length} 個
-                </div>
+                    return `<li>${
+                      triggerDesc.join(", ") || "未設定任何條件"
+                    }</li>`;
+                  })
+                  .join("")}
+           </ul>
+            <div class="text-gray-500" style="margin-top: 4px;">
+                <strong>回應類型：</strong>${command.response.type}
             </div>
-            <div style="display:flex;gap:8px;">
-              <button class="btn btn-primary" onclick="editCommand('${
-                command.id
-              }')">編輯</button>
-              <button class="btn btn-danger" onclick="deleteCommand('${
-                command.id
-              }')">刪除</button>
+            <div class="text-gray-500">
+                <strong>觸發對象：</strong>${command.targets.length} 個
             </div>
+          </div>
+          <div class="command-actions">
+            <label class="switch command-enable-switch" title="${
+              command.enabled === false ? "點擊啟用" : "點擊停用"
+            }">
+              <input type="checkbox" class="command-toggle" ${
+                command.enabled !== false ? "checked" : ""
+              } onchange="toggleCommandEnabled('${command.id}', this.checked)">
+              <span class="slider round"></span>
+            </label>
+            <button class="btn btn-primary btn-with-icon" onclick="editCommand('${
+              command.id
+            }')">
+              <span class="material-icons" style="font-size: 16px;">edit</span>編輯
+            </button>
+            <button class="btn btn-danger btn-with-icon" onclick="deleteCommand('${
+              command.id
+            }')">
+              <span class="material-icons" style="font-size: 16px;">delete</span>刪除
+            </button>
+          </div>
         </div>
-    `
+    </div>
+  `
           )
           .join("");
+
+        // 添加拖曳排序的事件監聽器
+        addDragAndDropListeners();
       }
 
       async function deleteCommand(id) {
@@ -4323,6 +4915,147 @@ return res.data;</pre
           }
         });
       });
+
+      async function toggleCommandEnabled(commandId, isEnabled) {
+        try {
+          // 先在前端進行樂觀更新
+          const commandIndex = currentCommands.findIndex(
+            (cmd) => cmd.id === commandId
+          );
+          if (commandIndex !== -1) {
+            currentCommands[commandIndex].enabled = isEnabled;
+
+            // 更新UI
+            const commandElement = document.querySelector(
+              `.list-item[data-command-id="${commandId}"]`
+            );
+            if (commandElement) {
+              if (isEnabled) {
+                commandElement.classList.remove("disabled-command");
+              } else {
+                commandElement.classList.add("disabled-command");
+              }
+            }
+          }
+
+          // 發送請求到後端
+          const response = await fetch(`/api/commands/${commandId}/enabled`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enabled: isEnabled }),
+          });
+
+          if (!response.ok) {
+            // 如果請求失敗，還原UI變更
+            if (commandIndex !== -1) {
+              currentCommands[commandIndex].enabled = !isEnabled;
+              renderCommands();
+            }
+            throw new Error("無法更新指令狀態");
+          }
+
+          // 請求成功，無需額外處理（我們已經樂觀更新過UI了）
+        } catch (error) {
+          console.error("更新指令狀態時發生錯誤:", error);
+          alert("更新指令狀態失敗: " + error.message);
+        }
+      }
+
+      // 拖曳排序相關變數和函數
+      let draggedItem = null;
+
+      function addDragAndDropListeners() {
+        // 檢測是否為移動設備（小於 769px 寬度）
+        if (window.innerWidth <= 768) {
+          // 在移動設備上不添加拖曳事件
+          return;
+        }
+        const commandItems = document.querySelectorAll(
+          "#commands-list .list-item"
+        );
+        commandItems.forEach((item) => {
+          item.addEventListener("dragstart", handleDragStart);
+          item.addEventListener("dragend", handleDragEnd);
+          item.addEventListener("dragover", handleDragOver);
+          item.addEventListener("dragenter", handleDragEnter);
+          item.addEventListener("dragleave", handleDragLeave);
+          item.addEventListener("drop", handleDrop);
+        });
+      }
+
+      // 添加視窗大小變化監聽，當從移動設備切換到桌面時重新啟用拖曳功能
+      window.addEventListener("resize", function () {
+        if (window.innerWidth > 768) {
+          renderCommands(); // 這會重新添加拖曳功能
+        }
+      });
+
+      function handleDragStart(e) {
+        draggedItem = this;
+        this.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+      }
+
+      function handleDragEnd(e) {
+        this.classList.remove("dragging");
+        clearDragOverStyles();
+      }
+
+      function handleDragOver(e) {
+        if (e.preventDefault) {
+          e.preventDefault(); // 允許放置
+        }
+        e.dataTransfer.dropEffect = "move";
+        return false;
+      }
+
+      function handleDragEnter(e) {
+        if (this !== draggedItem) {
+          this.classList.add("drag-over-target");
+        }
+      }
+
+      function handleDragLeave(e) {
+        this.classList.remove("drag-over-target");
+      }
+
+      function handleDrop(e) {
+        if (e.stopPropagation) {
+          e.stopPropagation(); // 停止冒泡
+        }
+
+        if (draggedItem !== this) {
+          // 獲取拖曳項目和目標的指令ID
+          const draggedId = draggedItem.getAttribute("data-command-id");
+          const targetId = this.getAttribute("data-command-id");
+
+          // 尋找在 currentCommands 中的索引
+          const draggedIndex = currentCommands.findIndex(
+            (cmd) => cmd.id === draggedId
+          );
+          const targetIndex = currentCommands.findIndex(
+            (cmd) => cmd.id === targetId
+          );
+
+          if (draggedIndex !== -1 && targetIndex !== -1) {
+            // 將拖曳的元素從原位置移除，並插入到目標位置
+            const [draggedCommand] = currentCommands.splice(draggedIndex, 1);
+            currentCommands.splice(targetIndex, 0, draggedCommand);
+
+            // 重新渲染列表
+            renderCommands();
+          }
+        }
+
+        clearDragOverStyles();
+        return false;
+      }
+
+      function clearDragOverStyles() {
+        document.querySelectorAll(".drag-over-target").forEach((item) => {
+          item.classList.remove("drag-over-target");
+        });
+      }
 
       // 在 HTML 加載完成後初始化數據
       document.addEventListener("DOMContentLoaded", () => {
@@ -4856,6 +5589,45 @@ return res.data;</pre
           }, 500);
         };
       });
+
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", function () {
+          setTimeout(() => {
+            window.scrollTo(0, 0);
+          }, 100);
+        });
+      });
+
+      function adjustContentHeight() {
+        if (window.innerWidth <= 768) {
+          document.querySelector(
+            ".main-content"
+          ).style.minHeight = `${window.innerHeight}px`;
+        } else {
+          document.querySelector(".main-content").style.minHeight = "auto";
+        }
+      }
+
+      window.addEventListener("resize", adjustContentHeight);
+      window.addEventListener("load", adjustContentHeight);
+
+      // 修正底部導航條遮擋內容的問題
+      function fixBottomPadding() {
+        const bodyStyles = window.getComputedStyle(document.body);
+        const paddingBottom = parseInt(
+          bodyStyles.getPropertyValue("padding-bottom")
+        );
+
+        // 檢測是否有底部安全區域（針對無Home鍵iPhone）
+        let safeAreaBottom = 0;
+        if (CSS.supports("padding-bottom: env(safe-area-inset-bottom)")) {
+          document.body.style.paddingBottom = `calc(60px + env(safe-area-inset-bottom))`;
+        } else {
+          document.body.style.paddingBottom = "60px";
+        }
+      }
+
+      fixBottomPadding();
     </script>
   </body>
 </html>

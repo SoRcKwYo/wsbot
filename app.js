@@ -50,6 +50,7 @@ class WhatsAppBot {
 
     // 檢查每個指令是否有自動觸發條件
     for (const command of this.activeCommands.values()) {
+      if (command.enabled === false) continue;
       for (const trigger of command.triggers || []) {
         if (trigger.autoTrigger && trigger.autoInterval) {
           const { hours = 0, minutes = 0, seconds = 0 } = trigger.autoInterval;
@@ -600,6 +601,8 @@ class WhatsAppBot {
 
       // 檢查每個指令
       for (const command of this.activeCommands.values()) {
+        if (command.enabled === false) continue;
+
         // 檢查目標限制
         const isTargetMatch = command.targets.some((target) => {
           if (isGroup) {
@@ -1294,6 +1297,11 @@ app.post("/api/commands", async (req, res) => {
     const commandData = req.body;
     commandData.id = Date.now().toString();
 
+    // 確保新指令預設為啟用狀態
+    if (commandData.enabled === undefined) {
+      commandData.enabled = true;
+    }
+
     // 如果是 function 指令，寫入 data/functions/{id}.js
     if (commandData.response && commandData.response.type === "function") {
       const funcDir = path.join(__dirname, "data", "functions");
@@ -1351,6 +1359,17 @@ app.put("/api/commands/:id", async (req, res) => {
     const id = req.params.id;
     const commandData = req.body;
     commandData.id = id;
+
+    // 獲取現有指令
+    const existingCommand = bot.activeCommands.get(id);
+    if (!existingCommand) {
+      return res.status(404).json({ message: "Command not found" });
+    }
+
+    // 如果請求中未提供 enabled 屬性，保留原有的設定
+    if (commandData.enabled === undefined) {
+      commandData.enabled = existingCommand.enabled;
+    }
 
     // 如果是 function 指令，寫入 data/functions/{id}.js
     if (commandData.response && commandData.response.type === "function") {
@@ -1587,6 +1606,43 @@ io.on("connection", (socket) => {
       timestamp: new Date().toISOString(),
     },
   });
+});
+
+// 新增 API 端點以切換指令的啟用/停用狀態
+app.patch("/api/commands/:id/enabled", async (req, res) => {
+  try {
+    const commandId = req.params.id;
+    const { enabled } = req.body;
+
+    if (typeof enabled !== "boolean") {
+      return res
+        .status(400)
+        .json({ message: "Invalid 'enabled' value. Must be true or false." });
+    }
+
+    const command = bot.activeCommands.get(commandId);
+    if (!command) {
+      return res.status(404).json({ message: "Command not found" });
+    }
+
+    // 更新指令的啟用狀態
+    command.enabled = enabled;
+    bot.activeCommands.set(commandId, command);
+    await bot.saveData("commands");
+
+    // 如果指令包含自動觸發，需要更新相關定時器
+    if (bot.isInitialized) {
+      bot.initAutoTriggers();
+    }
+
+    // 通知前端更新
+    io.emit("updateCommands", Array.from(bot.activeCommands.values()));
+
+    res.json({ success: true, command });
+  } catch (error) {
+    console.error("更新指令啟用狀態失敗:", error);
+    res.status(500).json({ message: "更新指令啟用狀態失敗: " + error.message });
+  }
 });
 
 // 全局未捕獲異常處理
