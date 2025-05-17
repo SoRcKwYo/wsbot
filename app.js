@@ -563,8 +563,7 @@ class WhatsAppBot {
     if (
       msg.fromMe &&
       (msg.body.startsWith("*Command List*") ||
-        msg._data.isForwarded ||
-        msg._data.quotedMsg)
+        msg._data.isForwarded)
     ) {
       console.log("忽略系統自身發送的幫助信息，避免循環觸發");
       return;

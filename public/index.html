@@ -437,6 +437,13 @@
         display: flex;
       }
 
+      h2 {
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
+
       .nav {
         width: 280px;
         background: var(--surface);
@@ -451,6 +458,10 @@
         text-align: center;
         border-bottom: 1px solid rgba(0, 0, 0, 0.12);
         margin-bottom: var(--spacing);
+        user-select: none; /* 防止整個 section 內容被反白 */
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
       }
 
       .nav-item {
@@ -463,6 +474,10 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        user-select: none; /* 防止整個 section 內容被反白 */
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
       }
 
       .nav-item:hover {
@@ -770,6 +785,10 @@
         flex-direction: column;
         gap: 10px;
         align-items: stretch;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
       }
 
       .nav-action-btn {
@@ -1509,8 +1528,30 @@
       <!-- 首頁 Section，修改 QR 碼容器結構 -->
       <section id="home" class="section active">
         <h2>Bot 控制台</h2>
-        <div class="status offline" id="bot-status">離線</div>
-        <button class="btn btn-primary" id="toggle-bot">啟動 Bot</button>
+        <div
+          class="status offline"
+          id="bot-status"
+          style="
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+          "
+        >
+          離線
+        </div>
+        <button
+          class="btn btn-primary"
+          id="toggle-bot"
+          style="
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+          "
+        >
+          啟動 Bot
+        </button>
         <div
           id="qrcode"
           style="
