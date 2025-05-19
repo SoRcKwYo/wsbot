@@ -6,9 +6,9 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <link rel="manifest" href="/manifest.json" />
     <title>WhatsApp Bot Control Panel</title>
     <link
       data-default-icon="https://static.whatsapp.net/rsrc.php/v4/yP/r/rYZqPCBaG70.png"
@@ -5470,10 +5470,11 @@ return res.data;</pre
             const res = await fetch("/api/update-html", { method: "POST" });
             const data = await res.json();
             if (data.success) {
-              updateBtn.textContent =
-                currentLang === "zh"
-                  ? "完成，重新整理中..."
-                  : "Done, refreshing...";
+              updateBtn.textContent = localStorage.setItem(
+                "just_updated",
+                "true"
+              );
+              updateBtn.textContent = "完成，重新整理中...";
               setTimeout(() => location.reload(), 1200);
             } else {
               updateBtn.textContent = data.error || "失敗";
@@ -5565,6 +5566,15 @@ return res.data;</pre
 
       // 檢查是否有更新
       async function checkUpdate() {
+        // 檢查是否剛更新過
+        if (localStorage.getItem("just_updated") === "true") {
+          localStorage.removeItem("just_updated");
+          const versionElement = document.getElementById("version-number");
+          versionElement.textContent = `v${currentVersionSha}`;
+          versionElement.style.color = "var(--text-secondary)";
+          versionElement.style.fontWeight = "500";
+          return; // 跳過檢查
+        }
         try {
           const response = await fetch("/api/check-update");
 
