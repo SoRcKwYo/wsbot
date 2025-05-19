@@ -12,7 +12,6 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('開始快取資源');
-        return cache.addAll(urlsToCache);
       })
   );
 });
