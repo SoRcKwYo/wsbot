@@ -12,6 +12,53 @@ const existsSync = require("fs").existsSync;
 const rimraf = require("rimraf").sync; // 用於清除目錄
 const { exec } = require("child_process");
 
+const CONFIG = {
+  port: process.env.PORT || 3333,
+  paths: {
+    data: process.env.DATA_DIR || path.join(__dirname, "data"),
+    auth: process.env.AUTH_DIR || path.join(__dirname, "auth"),
+    temp: process.env.TEMP_DIR || path.join(__dirname, "temp"),
+  },
+  github: {
+    repo: "SoRcKwYo/wsbot",
+    branch: "main",
+  },
+  timeouts: {
+    initialization: 60000,
+    shutdown: 5000,
+    cleanup: 3600000,
+  },
+  bot: {
+    maxRetries: 3,
+    reconnectDelay: 5000,
+  },
+  security: {
+    allowedCommands: ["npm", "install", "i"],
+  },
+  delays: {
+    preInit: 2000, // 初始化前延遲
+    postCleanup: 3000, // 清理後延遲
+    reconnect: 1000, // 重連前延遲
+  },
+};
+
+// 添加通用錯誤處理工具函數
+function handleApiError(res, error, operation = "操作") {
+  console.error(`${operation}失敗:`, error);
+  res.status(500).json({ message: `${operation}失敗: ${error.message}` });
+  return false;
+}
+
+function handleEventError(eventName, error) {
+  console.error(`${eventName}事件處理錯誤:`, error);
+  return false;
+}
+
+function handleOperationError(operation, error) {
+  console.error(`${operation}錯誤:`, error);
+  return false;
+}
+
 class WhatsAppBot {
   constructor() {
     this.client = null;
@@ -20,21 +67,20 @@ class WhatsAppBot {
     this.contacts = new Map();
     this.activeCommands = new Map();
     this.eventHandlers = new Map();
-    this.dataDir = process.env.DATA_DIR || path.join(__dirname, "data");
-    this.authDir = process.env.AUTH_DIR || path.join(__dirname, "auth");
-    this.tempDir = process.env.TEMP_DIR || path.join(__dirname, "temp");
-    this.authDir = process.env.AUTH_DIR || path.join(__dirname, "auth");
+    this.dataDir = CONFIG.paths.data;
+    this.authDir = CONFIG.paths.auth;
+    this.tempDir = CONFIG.paths.temp;
     this.sessionDir = path.join(this.authDir, "session-whatsapp-bot");
     this.isShuttingDown = false;
     this.browser = null;
     this.retryCount = 0;
-    this.maxRetries = 3;
+    this.maxRetries = CONFIG.bot.maxRetries;
     // 增加定期清理
     this.cleanupInterval = setInterval(() => {
       this.cleanupTempFiles().catch((error) =>
         console.error("自動清理臨時檔案失敗:", error)
       );
-    }, 3600000); // 每小時清理
+    }, CONFIG.timeouts.cleanup); // 每小時清理
 
     // 新增自動觸發定時器集合
     this.autoTriggerTimers = new Map();
@@ -130,7 +176,9 @@ class WhatsAppBot {
   async reconnect() {
     try {
       await this.destroy();
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) =>
+        setTimeout(resolve, CONFIG.delays.reconnect)
+      );
       this.initialize();
     } catch (error) {
       console.error("Reconnection failed:", error);
@@ -147,17 +195,17 @@ class WhatsAppBot {
         const stats = await fs.stat(filePath);
 
         // 刪除超過1小時的臨時文件
-        if (now - stats.mtime.getTime() > 3600000) {
+        if (now - stats.mtime.getTime() > CONFIG.timeouts.cleanup) {
           await fs.unlink(filePath);
         }
       }
     } catch (error) {
-      console.error("Error cleaning up temp files:", error);
+      return handleOperationError("清理臨時檔案", error);
     }
   }
 
   startCleanupSchedule() {
-    setInterval(() => this.cleanupTempFiles(), 3600000); // 每小時執行一次
+    setInterval(() => this.cleanupTempFiles(), CONFIG.timeouts.cleanup);
   }
 
   async loadData() {
@@ -191,7 +239,7 @@ class WhatsAppBot {
         }
       }
     } catch (error) {
-      console.error("Error loading data:", error);
+      return handleOperationError("加載數據", error);
     }
   }
 
@@ -220,7 +268,7 @@ class WhatsAppBot {
         JSON.stringify(Array.from(data.entries()), null, 2)
       );
     } catch (error) {
-      console.error(`Error saving ${type}:`, error);
+      return handleOperationError(`保存 ${type} 數據`, error);
     }
   }
 
@@ -259,14 +307,19 @@ class WhatsAppBot {
         fs.mkdir(functionDir, { recursive: true });
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) =>
+        setTimeout(resolve, CONFIG.delays.preInit)
+      );
 
       this.setupEventHandlers();
       console.log("開始初始化 WhatsApp 客戶端...");
 
       const initPromise = this.client.initialize();
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("初始化超時")), 60000);
+        setTimeout(
+          () => reject(new Error("初始化超時")),
+          CONFIG.timeouts.initialization
+        );
       });
 
       await Promise.race([initPromise, timeoutPromise]);
@@ -302,14 +355,16 @@ class WhatsAppBot {
         }
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await new Promise((resolve) =>
+        setTimeout(resolve, CONFIG.delays.postCleanup)
+      );
     } catch (error) {
       console.error("清理過程出錯:", error);
     }
   }
 
   async handleInitializationError(error) {
-    console.error("初始化失敗:", error);
+    console.error(handleOperationError("初始化", error));
 
     // 確保完整清理
     await this.cleanup();
@@ -414,7 +469,7 @@ class WhatsAppBot {
         // WhatsApp 連接成功後初始化自動觸發功能
         this.initAutoTriggers();
       } catch (error) {
-        console.error("Error in ready event:", error);
+        return handleEventError("ready", error);
       }
     });
 
@@ -427,7 +482,7 @@ class WhatsAppBot {
         }
         await this.handleDisconnect(reason);
       } catch (error) {
-        console.error("Error handling disconnect:", error);
+        return handleEventError("disconnected", error);
       }
     });
 
@@ -459,12 +514,12 @@ class WhatsAppBot {
       console.log("Groups updated successfully.");
     } catch (error) {
       if (!this.isShuttingDown) {
-        console.error("Error updating groups:", error);
+        return handleOperationError("更新群組", error);
       }
     }
   }
 
-  // 處理表情反應（將調用 processMessageOrReaction）
+  // 處理表情反應
   async handleReaction(reaction) {
     if (this.isShuttingDown || !reaction) return;
     try {
@@ -551,19 +606,18 @@ class WhatsAppBot {
       // 使用統一的處理函數處理此表情反應
       await this.processMessageOrReaction(simulatedMsg);
     } catch (error) {
-      console.error("處理表情反應時出錯:", error);
+      return handleOperationError("處理表情反應", error);
     }
   }
 
-  // 處理消息（將調用 processMessageOrReaction）
+  // 處理消息
   async handleMessage(msg) {
     if (this.isShuttingDown) return;
 
     // 特殊處理：忽略系統自身發送的幫助信息
     if (
       msg.fromMe &&
-      (msg.body.startsWith("*Command List*") ||
-        msg._data.isForwarded)
+      (msg.body.startsWith("*Command List*") || msg._data.isForwarded)
     ) {
       console.log("忽略系統自身發送的幫助信息，避免循環觸發");
       return;
@@ -777,16 +831,22 @@ class WhatsAppBot {
         }
       }
     } catch (error) {
-      console.error("處理消息/表情反應時出錯:", error);
+      return handleOperationError("處理消息或表情反應", error);
     }
   }
 
   async handleDisconnect(reason) {
-    // 只有在非用戶主動退出時才嘗試重新連接
-    if (reason !== "user" && this.retryCount < this.maxRetries) {
-      console.log("Attempting to reconnect...");
-      await new Promise((resolve) => setTimeout(resolve, 5000));
-      await this.initialize();
+    try {
+      // 只有在非用戶主動退出時才嘗試重新連接
+      if (reason !== "user" && this.retryCount < this.maxRetries) {
+        console.log("Attempting to reconnect...");
+        await new Promise((resolve) =>
+          setTimeout(resolve, CONFIG.timeouts.shutdown)
+        );
+        await this.initialize();
+      }
+    } catch (error) {
+      return handleOperationError("重新連接", error);
     }
   }
 
@@ -795,15 +855,31 @@ class WhatsAppBot {
     if (!existsSync(funcPath)) {
       return "找不到對應的 function 指令檔案。";
     }
+
     try {
-      // 清除 require 快取，確保每次都載入最新內容
-      delete require.cache[require.resolve(funcPath)];
-      const fn = require(funcPath);
-      if (typeof fn !== "function") return "function 檔案未正確導出函式。";
-      // 支援 async function
-      return await fn(msg, this.client);
+      // 檢查檔案是否已修改
+      const stats = await fs.stat(funcPath);
+      const lastModified = stats.mtime.getTime();
+
+      // 只在必要時刷新緩存
+      if (
+        !this.functionCache[id] ||
+        this.functionCache[id].lastModified < lastModified
+      ) {
+        delete require.cache[require.resolve(funcPath)];
+        this.functionCache[id] = {
+          fn: require(funcPath),
+          lastModified: lastModified,
+        };
+      }
+
+      if (typeof this.functionCache[id].fn !== "function") {
+        return "function 檔案未正確導出函式。";
+      }
+
+      return await this.functionCache[id].fn(msg, this.client);
     } catch (e) {
-      return `執行 function 指令時發生錯誤：${e.message}`;
+      return handleOperationError("執行動態函數", e);
     }
   }
 
@@ -927,7 +1003,10 @@ class WhatsAppBot {
 
   async searchGroup(name) {
     if (!this.isInitialized) {
-      throw new Error("WhatsApp client not initialized");
+      return handleOperationError(
+        "搜尋群組",
+        new Error("WhatsApp client not initialized")
+      );
     }
 
     const chats = await this.client.getChats();
@@ -1086,6 +1165,22 @@ app.get("/api/logs", (req, res) => {
   res.json(filteredLogs);
 });
 
+app.get("/health/detailed", (req, res) => {
+  const memUsage = process.memoryUsage();
+  res.json({
+    uptime: process.uptime(),
+    memory: {
+      rss: `${Math.round(memUsage.rss / 1024 / 1024)} MB`,
+      heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)} MB`,
+      heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)} MB`,
+    },
+    stats: {
+      commands: bot.activeCommands.size,
+      groups: bot.groups.size,
+    },
+  });
+});
+
 app.get("/api/version", (req, res) => {
   res.json({ version: currentVersion });
 });
@@ -1126,8 +1221,7 @@ app.get("/api/check-update", async (req, res) => {
       latestCommitSha: latestCommit.sha.slice(0, 7), // 短 SHA 作為版本標識
     });
   } catch (error) {
-    console.error("檢查更新時出錯:", error);
-    res.status(500).json({ error: "檢查更新時出錯", details: error.message });
+    return handleApiError(res, error, "檢查更新");
   }
 });
 
@@ -1162,7 +1256,7 @@ bot.on("qr", async (qrData) => {
 
         // 如果尚未成功連接，5秒後重發 QR 碼
         if (attempts < 3 && !bot.client?.info) {
-          setTimeout(() => emitQR(attempts + 1), 5000);
+          setTimeout(() => emitQR(attempts + 1), CONFIG.timeouts.shutdown);
         }
       };
 
@@ -1216,11 +1310,7 @@ app.get("/api/commands", async (req, res) => {
     const commands = Array.from(bot.activeCommands.values());
     res.json(commands);
   } catch (error) {
-    console.error("Error fetching commands:", error);
-    res.status(500).json({
-      error: true,
-      message: "獲取指令列表失敗",
-    });
+    return handleApiError(res, error, "添加指令");
   }
 });
 
@@ -1247,8 +1337,7 @@ app.get("/api/commands/:id", async (req, res) => {
 
     res.json(command);
   } catch (error) {
-    console.error("獲取指令詳情失敗:", error);
-    res.status(500).json({ message: "獲取指令詳情失敗: " + error.message });
+    return handleApiError(res, error, "更新指令");
   }
 });
 
@@ -1287,7 +1376,7 @@ app.post("/api/contacts", async (req, res) => {
     await bot.saveData("contacts");
     res.json({ success: true, contact: contactData });
   } catch (error) {
-    res.status(500).json({ message: "添加聯絡人失敗" });
+    return handleApiError(res, error, "添加聯絡人");
   }
 });
 
@@ -1348,8 +1437,7 @@ app.post("/api/commands", async (req, res) => {
 
     res.json({ success: true, command: commandData });
   } catch (error) {
-    console.error("添加指令失敗:", error);
-    res.status(500).json({ message: "添加指令失敗: " + error.message });
+    return handleApiError(res, error, "添加指令");
   }
 });
 
@@ -1420,8 +1508,7 @@ app.put("/api/commands/:id", async (req, res) => {
 
     res.json({ success: true, command: commandData });
   } catch (error) {
-    console.error("更新指令失敗:", error);
-    res.status(500).json({ message: "更新指令失敗: " + error.message });
+    return handleApiError(res, error, "更新指令");
   }
 });
 
@@ -1431,7 +1518,7 @@ app.delete("/api/groups/:id", async (req, res) => {
     await bot.saveData("groups");
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ message: "刪除群組失敗" });
+    return handleApiError(res, error, "刪除群組");
   }
 });
 
@@ -1441,7 +1528,7 @@ app.delete("/api/contacts/:id", async (req, res) => {
     await bot.saveData("contacts");
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ message: "刪除聯絡人失敗" });
+    return handleApiError(res, error, "刪除聯絡人");
   }
 });
 
@@ -1460,7 +1547,7 @@ app.delete("/api/commands/:id", async (req, res) => {
     await bot.saveData("commands");
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ message: "刪除指令失敗" });
+    return handleApiError(res, error, "刪除指令");
   }
 });
 
@@ -1468,10 +1555,14 @@ app.delete("/api/commands/:id", async (req, res) => {
 app.post("/api/terminal", async (req, res) => {
   try {
     let { command } = req.body;
-    // 更嚴格的命令格式檢查
-    if (
-      !/^npm\s+(i|install)\s+[@\w\-\/]+(\s+[@\w\-\/]+)*$/.test(command.trim())
-    ) {
+    // 使用CONFIG中的白名單檢查
+    const isAllowedCommand = CONFIG.security.allowedCommands.some(
+      (cmd) =>
+        command.trim().startsWith(`npm ${cmd}`) ||
+        command.trim() === `npm ${cmd}`
+    );
+
+    if (!isAllowedCommand) {
       return res.json({
         error: "只允許執行 npm install 指令，且不能包含特殊符號。",
       });
@@ -1506,52 +1597,70 @@ app.post("/api/terminal", async (req, res) => {
 app.post("/api/update-html", async (req, res) => {
   const { exec } = require("child_process");
   const baseDir = path.join(__dirname, "public");
-  const githubBase = "https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/public";
-  
+  const githubBase =
+    "https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/public";
+
   try {
     // 創建下載多個文件的 Promise 陣列
     const downloads = [
       // 下載 index.html
       new Promise((resolve, reject) => {
-        exec(`curl -o "${path.join(baseDir, "index.html")}" "${githubBase}/index.html"`, (err, stdout, stderr) => {
-          if (err) reject(stderr || err.message);
-          else resolve("index.html 已更新");
-        });
+        exec(
+          `curl -o "${path.join(
+            baseDir,
+            "index.html"
+          )}" "${githubBase}/index.html"`,
+          (err, stdout, stderr) => {
+            if (err) reject(stderr || err.message);
+            else resolve("index.html 已更新");
+          }
+        );
       }),
-      
+
       // 下載 sw.js
       new Promise((resolve, reject) => {
-        exec(`curl -o "${path.join(baseDir, "sw.js")}" "${githubBase}/sw.js"`, (err, stdout, stderr) => {
-          if (err) reject(stderr || err.message);
-          else resolve("sw.js 已更新");
-        });
+        exec(
+          `curl -o "${path.join(baseDir, "sw.js")}" "${githubBase}/sw.js"`,
+          (err, stdout, stderr) => {
+            if (err) reject(stderr || err.message);
+            else resolve("sw.js 已更新");
+          }
+        );
       }),
-      
+
       // 下載 manifest.json
       new Promise((resolve, reject) => {
-        exec(`curl -o "${path.join(baseDir, "manifest.json")}" "${githubBase}/manifest.json"`, (err, stdout, stderr) => {
-          if (err) reject(stderr || err.message);
-          else resolve("manifest.json 已更新");
-        });
-      })
+        exec(
+          `curl -o "${path.join(
+            baseDir,
+            "manifest.json"
+          )}" "${githubBase}/manifest.json"`,
+          (err, stdout, stderr) => {
+            if (err) reject(stderr || err.message);
+            else resolve("manifest.json 已更新");
+          }
+        );
+      }),
     ];
-    
+
     // 執行所有下載任務
     const results = await Promise.allSettled(downloads);
-    
+
     // 檢查結果
-    const successful = results.filter(r => r.status === 'fulfilled').map(r => r.value);
-    const failed = results.filter(r => r.status === 'rejected').map(r => r.reason);
-    
+    const successful = results
+      .filter((r) => r.status === "fulfilled")
+      .map((r) => r.value);
+    const failed = results
+      .filter((r) => r.status === "rejected")
+      .map((r) => r.reason);
+
     res.json({
       success: failed.length === 0,
       updated: successful,
-      failed: failed.length > 0 ? failed : null
+      failed: failed.length > 0 ? failed : null,
     });
-    
   } catch (error) {
-    console.error("更新文件失敗:", error);
-    return res.json({ error: error.message });
+    return handleApiError(res, error, "更新指令");
   }
 });
 
@@ -1581,7 +1690,9 @@ io.on("connection", (socket) => {
         if (bot.client) {
           try {
             await bot.destroy();
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) =>
+              setTimeout(resolve, CONFIG.delays.reconnect)
+            );
           } catch (error) {
             console.warn("清理現有客戶端警告:", error);
           }
@@ -1600,7 +1711,9 @@ io.on("connection", (socket) => {
         // 等待 QR code 生成或已連接
         let attempts = 0;
         while (!qrReceived && !bot.client?.info && attempts < 30) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await new Promise((resolve) =>
+            setTimeout(resolve, CONFIG.delays.reconnect)
+          );
           attempts++;
         }
 
@@ -1617,7 +1730,7 @@ io.on("connection", (socket) => {
         socket.emit("ready");
       }
     } catch (error) {
-      console.error("Bot 初始化失敗:", error);
+      handleEventError("connect-bot", error);
       socket.emit("error", `初始化失敗: ${error.message}`);
       io.emit("qr-loading", false);
 
@@ -1678,8 +1791,7 @@ app.patch("/api/commands/:id/enabled", async (req, res) => {
 
     res.json({ success: true, command });
   } catch (error) {
-    console.error("更新指令啟用狀態失敗:", error);
-    res.status(500).json({ message: "更新指令啟用狀態失敗: " + error.message });
+    return handleApiError(res, error, "更新指令");
   }
 });
 
@@ -1713,7 +1825,7 @@ process.on("SIGINT", async () => {
     setTimeout(() => {
       console.log("強制退出");
       process.exit(1);
-    }, 5000);
+    }, CONFIG.timeouts.shutdown);
   } catch (error) {
     console.error("關閉時發生錯誤:", error);
     process.exit(1);
@@ -1724,7 +1836,7 @@ process.on("SIGINT", async () => {
 const startServer = async () => {
   await bot.loadData();
 
-  const PORT = process.env.PORT || 3333;
+  const PORT = process.env.PORT || CONFIG.port;
   server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
