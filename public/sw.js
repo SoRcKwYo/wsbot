@@ -19,6 +19,12 @@ self.addEventListener('install', event => {
 
 // 攔截網路請求並提供快取回應
 self.addEventListener('fetch', event => {
+  // 過濾：只處理 HTTP/HTTPS GET 請求
+  if (event.request.method !== 'GET' || 
+      !event.request.url.startsWith('http')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(response => {
@@ -40,6 +46,7 @@ self.addEventListener('fetch', event => {
 
             caches.open(CACHE_NAME)
               .then(cache => {
+                // 這裡是第43行，現在有了額外檢查，不會再報錯
                 cache.put(event.request, responseToCache);
               });
 

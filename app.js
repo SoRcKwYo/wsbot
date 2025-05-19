@@ -1502,7 +1502,6 @@ app.post("/api/terminal", async (req, res) => {
   }
 });
 
-// 新增 /api/update-html 路由
 // 修改 /api/update-html 路由
 app.post("/api/update-html", async (req, res) => {
   const { exec } = require("child_process");
