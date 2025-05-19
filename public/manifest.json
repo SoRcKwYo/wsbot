@@ -1,7 +1,7 @@
 {
-  "name": "WSBot 控制面板",
+  "name": "WSBot",
   "short_name": "WSBot",
-  "description": "WebSocket Bot 控制與管理介面",
+  "description": "WebSocket Bot",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

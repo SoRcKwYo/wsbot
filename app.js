@@ -1503,17 +1503,57 @@ app.post("/api/terminal", async (req, res) => {
 });
 
 // 新增 /api/update-html 路由
+// 修改 /api/update-html 路由
 app.post("/api/update-html", async (req, res) => {
   const { exec } = require("child_process");
-  const htmlPath = path.join(__dirname, "public", "index.html");
-  const url =
-    "https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/public/index.html";
-  exec(`curl -o "${htmlPath}" "${url}"`, (err, stdout, stderr) => {
-    if (err) {
-      return res.json({ error: stderr || err.message });
-    }
-    res.json({ success: true });
-  });
+  const baseDir = path.join(__dirname, "public");
+  const githubBase = "https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/public";
+  
+  try {
+    // 創建下載多個文件的 Promise 陣列
+    const downloads = [
+      // 下載 index.html
+      new Promise((resolve, reject) => {
+        exec(`curl -o "${path.join(baseDir, "index.html")}" "${githubBase}/index.html"`, (err, stdout, stderr) => {
+          if (err) reject(stderr || err.message);
+          else resolve("index.html 已更新");
+        });
+      }),
+      
+      // 下載 sw.js
+      new Promise((resolve, reject) => {
+        exec(`curl -o "${path.join(baseDir, "sw.js")}" "${githubBase}/sw.js"`, (err, stdout, stderr) => {
+          if (err) reject(stderr || err.message);
+          else resolve("sw.js 已更新");
+        });
+      }),
+      
+      // 下載 manifest.json
+      new Promise((resolve, reject) => {
+        exec(`curl -o "${path.join(baseDir, "manifest.json")}" "${githubBase}/manifest.json"`, (err, stdout, stderr) => {
+          if (err) reject(stderr || err.message);
+          else resolve("manifest.json 已更新");
+        });
+      })
+    ];
+    
+    // 執行所有下載任務
+    const results = await Promise.allSettled(downloads);
+    
+    // 檢查結果
+    const successful = results.filter(r => r.status === 'fulfilled').map(r => r.value);
+    const failed = results.filter(r => r.status === 'rejected').map(r => r.reason);
+    
+    res.json({
+      success: failed.length === 0,
+      updated: successful,
+      failed: failed.length > 0 ? failed : null
+    });
+    
+  } catch (error) {
+    console.error("更新文件失敗:", error);
+    return res.json({ error: error.message });
+  }
 });
 
 // Socket.io connection handling

@@ -5669,6 +5669,15 @@ return res.data;</pre
       }
 
       fixBottomPadding();
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js") // 使用相對路徑
+            .then((reg) => console.log("Service Worker 註冊成功:", reg.scope))
+            .catch((err) => console.log("Service Worker 註冊失敗:", err));
+        });
+      }
     </script>
   </body>
 </html>
