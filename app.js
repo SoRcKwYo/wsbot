@@ -39,6 +39,14 @@ class WhatsAppBot {
     this.autoTriggerTimers = new Map();
   }
 
+  normalizeWhatsAppId(userId) {
+    if (!userId || typeof userId !== "string") return userId;
+
+    // 匹配 WhatsApp ID 標準格式和多設備格式
+    // 將 85298765432:3@c.us 轉換為 85298765432@c.us
+    return userId.replace(/^([^:]+)(?::.+)?(@c\.us|@g\.us)$/, "$1$2");
+  }
+
   // 新增初始化自動觸發功能的方法
   initAutoTriggers() {
     // 清除所有現有的自動觸發定時器
@@ -561,8 +569,7 @@ class WhatsAppBot {
     // 特殊處理：忽略系統自身發送的幫助信息
     if (
       msg.fromMe &&
-      (msg.body.startsWith("*Command List*") ||
-        msg._data.isForwarded)
+      (msg.body.startsWith("*Command List*") || msg._data.isForwarded)
     ) {
       console.log("忽略系統自身發送的幫助信息，避免循環觸發");
       return;
@@ -578,6 +585,17 @@ class WhatsAppBot {
       // 確定是消息還是表情反應
       const isReaction = data.type === "reaction";
       let chat;
+
+      // 標準化發送者 ID (新增)
+      if (data.from) {
+        data.from = this.normalizeWhatsAppId(data.from);
+      }
+      if (data.sender) {
+        data.sender = this.normalizeWhatsAppId(data.sender);
+      }
+      if (data.author) {
+        data.author = this.normalizeWhatsAppId(data.author);
+      }
 
       if (isReaction) {
         // 表情反應
@@ -790,6 +808,16 @@ class WhatsAppBot {
   }
 
   async runDynamicFunction(id, msg) {
+    if (msg.from) {
+      msg.from = this.normalizeWhatsAppId(msg.from);
+    }
+    if (msg.to) {
+      msg.to = this.normalizeWhatsAppId(msg.to);
+    }
+    if (msg.author) {
+      msg.author = this.normalizeWhatsAppId(msg.author);
+    }
+
     const funcPath = path.join(this.dataDir, "functions", `${id}.js`);
     if (!existsSync(funcPath)) {
       return "找不到對應的 function 指令檔案。";
@@ -1505,49 +1533,68 @@ app.post("/api/terminal", async (req, res) => {
 app.post("/api/update-html", async (req, res) => {
   const { exec } = require("child_process");
   const baseDir = path.join(__dirname, "public");
-  const githubBase = "https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/public";
-  
+  const githubBase =
+    "https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/public";
+
   try {
     // 創建下載多個文件的 Promise 陣列
     const downloads = [
       // 下載 index.html
       new Promise((resolve, reject) => {
-        exec(`curl -o "${path.join(baseDir, "index.html")}" "${githubBase}/index.html"`, (err, stdout, stderr) => {
-          if (err) reject(stderr || err.message);
-          else resolve("index.html 已更新");
-        });
+        exec(
+          `curl -o "${path.join(
+            baseDir,
+            "index.html"
+          )}" "${githubBase}/index.html"`,
+          (err, stdout, stderr) => {
+            if (err) reject(stderr || err.message);
+            else resolve("index.html 已更新");
+          }
+        );
       }),
-      
+
       // 下載 sw.js
       new Promise((resolve, reject) => {
-        exec(`curl -o "${path.join(baseDir, "sw.js")}" "${githubBase}/sw.js"`, (err, stdout, stderr) => {
-          if (err) reject(stderr || err.message);
-          else resolve("sw.js 已更新");
-        });
+        exec(
+          `curl -o "${path.join(baseDir, "sw.js")}" "${githubBase}/sw.js"`,
+          (err, stdout, stderr) => {
+            if (err) reject(stderr || err.message);
+            else resolve("sw.js 已更新");
+          }
+        );
       }),
-      
+
       // 下載 manifest.json
       new Promise((resolve, reject) => {
-        exec(`curl -o "${path.join(baseDir, "manifest.json")}" "${githubBase}/manifest.json"`, (err, stdout, stderr) => {
-          if (err) reject(stderr || err.message);
-          else resolve("manifest.json 已更新");
-        });
-      })
+        exec(
+          `curl -o "${path.join(
+            baseDir,
+            "manifest.json"
+          )}" "${githubBase}/manifest.json"`,
+          (err, stdout, stderr) => {
+            if (err) reject(stderr || err.message);
+            else resolve("manifest.json 已更新");
+          }
+        );
+      }),
     ];
-    
+
     // 執行所有下載任務
     const results = await Promise.allSettled(downloads);
-    
+
     // 檢查結果
-    const successful = results.filter(r => r.status === 'fulfilled').map(r => r.value);
-    const failed = results.filter(r => r.status === 'rejected').map(r => r.reason);
-    
+    const successful = results
+      .filter((r) => r.status === "fulfilled")
+      .map((r) => r.value);
+    const failed = results
+      .filter((r) => r.status === "rejected")
+      .map((r) => r.reason);
+
     res.json({
       success: failed.length === 0,
       updated: successful,
-      failed: failed.length > 0 ? failed : null
+      failed: failed.length > 0 ? failed : null,
     });
-    
   } catch (error) {
     console.error("更新文件失敗:", error);
     return res.json({ error: error.message });
