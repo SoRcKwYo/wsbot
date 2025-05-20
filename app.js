@@ -565,9 +565,28 @@ class WhatsAppBot {
   // 處理消息（將調用 processMessageOrReaction）
   async handleMessage(msg) {
     if (this.isShuttingDown) return;
+
+    // 1. 先獲取聊天對象
+    let chat;
+    try {
+      chat = await msg.getChat();
+    } catch (error) {
+      console.error("獲取聊天對象失敗:", error);
+      chat = { isGroup: msg.from.includes("@g.us") }; // 備用方案
+    }
+
+    // 2. 標準化 ID
+    const normalizedFrom = this.normalizeWhatsAppId(msg.from);
+    const normalizedAuthor = msg.author
+      ? this.normalizeWhatsAppId(msg.author)
+      : undefined;
+
+    // 3. 輸出完整日誌
     console.log("消息來源詳情:", {
       from: msg.from,
+      normalizedFrom,
       author: msg.author,
+      normalizedAuthor,
       fromMe: msg.fromMe,
       isGroup: chat.isGroup,
     });
@@ -575,7 +594,8 @@ class WhatsAppBot {
     // 特殊處理：忽略系統自身發送的幫助信息
     if (
       msg.fromMe &&
-      (msg.body.startsWith("*Command List*") || msg._data.isForwarded)
+      (msg.body.startsWith("*Command List*") ||
+        (msg._data && msg._data.isForwarded))
     ) {
       console.log("忽略系統自身發送的幫助信息");
       return;
