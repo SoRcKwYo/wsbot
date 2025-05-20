@@ -12,23 +12,6 @@ const existsSync = require("fs").existsSync;
 const rimraf = require("rimraf").sync; // 用於清除目錄
 const { exec } = require("child_process");
 
-// 添加通用錯誤處理工具函數
-function handleApiError(res, error, operation = "操作") {
-  console.error(`${operation}失敗:`, error);
-  res.status(500).json({ message: `${operation}失敗: ${error.message}` });
-  return false;
-}
-
-function handleEventError(eventName, error) {
-  console.error(`${eventName}事件處理錯誤:`, error);
-  return false;
-}
-
-function handleOperationError(operation, error) {
-  console.error(`${operation}錯誤:`, error);
-  return false;
-}
-
 class WhatsAppBot {
   constructor() {
     this.client = null;
@@ -168,7 +151,7 @@ class WhatsAppBot {
         }
       }
     } catch (error) {
-      return handleOperationError("清理臨時檔案", error);
+      console.error("Error cleaning up temp files:", error);
     }
   }
 
@@ -207,7 +190,7 @@ class WhatsAppBot {
         }
       }
     } catch (error) {
-      return handleOperationError("加載數據", error);
+      console.error("Error loading data:", error);
     }
   }
 
@@ -236,7 +219,7 @@ class WhatsAppBot {
         JSON.stringify(Array.from(data.entries()), null, 2)
       );
     } catch (error) {
-      return handleOperationError(`保存 ${type} 數據`, error);
+      console.error(`Error saving ${type}:`, error);
     }
   }
 
@@ -325,7 +308,7 @@ class WhatsAppBot {
   }
 
   async handleInitializationError(error) {
-    console.error(handleOperationError("初始化", error));
+    console.error("初始化失敗:", error);
 
     // 確保完整清理
     await this.cleanup();
@@ -430,7 +413,7 @@ class WhatsAppBot {
         // WhatsApp 連接成功後初始化自動觸發功能
         this.initAutoTriggers();
       } catch (error) {
-        return handleEventError("ready", error);
+        console.error("Error in ready event:", error);
       }
     });
 
@@ -443,7 +426,7 @@ class WhatsAppBot {
         }
         await this.handleDisconnect(reason);
       } catch (error) {
-        return handleEventError("disconnected", error);
+        console.error("Error handling disconnect:", error);
       }
     });
 
@@ -475,12 +458,12 @@ class WhatsAppBot {
       console.log("Groups updated successfully.");
     } catch (error) {
       if (!this.isShuttingDown) {
-        return handleOperationError("更新群組", error);
+        console.error("Error updating groups:", error);
       }
     }
   }
 
-  // 處理表情反應
+  // 處理表情反應（將調用 processMessageOrReaction）
   async handleReaction(reaction) {
     if (this.isShuttingDown || !reaction) return;
     try {
@@ -567,18 +550,19 @@ class WhatsAppBot {
       // 使用統一的處理函數處理此表情反應
       await this.processMessageOrReaction(simulatedMsg);
     } catch (error) {
-      return handleOperationError("處理表情反應", error);
+      console.error("處理表情反應時出錯:", error);
     }
   }
 
-  // 處理消息
+  // 處理消息（將調用 processMessageOrReaction）
   async handleMessage(msg) {
     if (this.isShuttingDown) return;
 
     // 特殊處理：忽略系統自身發送的幫助信息
     if (
       msg.fromMe &&
-      (msg.body.startsWith("*Command List*") || msg._data.isForwarded)
+      (msg.body.startsWith("*Command List*") ||
+        msg._data.isForwarded)
     ) {
       console.log("忽略系統自身發送的幫助信息，避免循環觸發");
       return;
@@ -792,20 +776,16 @@ class WhatsAppBot {
         }
       }
     } catch (error) {
-      return handleOperationError("處理消息或表情反應", error);
+      console.error("處理消息/表情反應時出錯:", error);
     }
   }
 
   async handleDisconnect(reason) {
-    try {
-      // 只有在非用戶主動退出時才嘗試重新連接
-      if (reason !== "user" && this.retryCount < this.maxRetries) {
-        console.log("Attempting to reconnect...");
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        await this.initialize();
-      }
-    } catch (error) {
-      return handleOperationError("重新連接", error);
+    // 只有在非用戶主動退出時才嘗試重新連接
+    if (reason !== "user" && this.retryCount < this.maxRetries) {
+      console.log("Attempting to reconnect...");
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await this.initialize();
     }
   }
 
@@ -814,31 +794,15 @@ class WhatsAppBot {
     if (!existsSync(funcPath)) {
       return "找不到對應的 function 指令檔案。";
     }
-
     try {
-      // 檢查檔案是否已修改
-      const stats = await fs.stat(funcPath);
-      const lastModified = stats.mtime.getTime();
-
-      // 只在必要時刷新緩存
-      if (
-        !this.functionCache[id] ||
-        this.functionCache[id].lastModified < lastModified
-      ) {
-        delete require.cache[require.resolve(funcPath)];
-        this.functionCache[id] = {
-          fn: require(funcPath),
-          lastModified: lastModified,
-        };
-      }
-
-      if (typeof this.functionCache[id].fn !== "function") {
-        return "function 檔案未正確導出函式。";
-      }
-
-      return await this.functionCache[id].fn(msg, this.client);
+      // 清除 require 快取，確保每次都載入最新內容
+      delete require.cache[require.resolve(funcPath)];
+      const fn = require(funcPath);
+      if (typeof fn !== "function") return "function 檔案未正確導出函式。";
+      // 支援 async function
+      return await fn(msg, this.client);
     } catch (e) {
-      return handleOperationError("執行動態函數", e);
+      return `執行 function 指令時發生錯誤：${e.message}`;
     }
   }
 
@@ -962,10 +926,7 @@ class WhatsAppBot {
 
   async searchGroup(name) {
     if (!this.isInitialized) {
-      return handleOperationError(
-        "搜尋群組",
-        new Error("WhatsApp client not initialized")
-      );
+      throw new Error("WhatsApp client not initialized");
     }
 
     const chats = await this.client.getChats();
@@ -1164,7 +1125,8 @@ app.get("/api/check-update", async (req, res) => {
       latestCommitSha: latestCommit.sha.slice(0, 7), // 短 SHA 作為版本標識
     });
   } catch (error) {
-    return handleApiError(res, error, "檢查更新");
+    console.error("檢查更新時出錯:", error);
+    res.status(500).json({ error: "檢查更新時出錯", details: error.message });
   }
 });
 
@@ -1253,7 +1215,11 @@ app.get("/api/commands", async (req, res) => {
     const commands = Array.from(bot.activeCommands.values());
     res.json(commands);
   } catch (error) {
-    return handleApiError(res, error, "添加指令");
+    console.error("Error fetching commands:", error);
+    res.status(500).json({
+      error: true,
+      message: "獲取指令列表失敗",
+    });
   }
 });
 
@@ -1280,7 +1246,8 @@ app.get("/api/commands/:id", async (req, res) => {
 
     res.json(command);
   } catch (error) {
-    return handleApiError(res, error, "更新指令");
+    console.error("獲取指令詳情失敗:", error);
+    res.status(500).json({ message: "獲取指令詳情失敗: " + error.message });
   }
 });
 
@@ -1319,7 +1286,7 @@ app.post("/api/contacts", async (req, res) => {
     await bot.saveData("contacts");
     res.json({ success: true, contact: contactData });
   } catch (error) {
-    return handleApiError(res, error, "添加聯絡人");
+    res.status(500).json({ message: "添加聯絡人失敗" });
   }
 });
 
@@ -1380,7 +1347,8 @@ app.post("/api/commands", async (req, res) => {
 
     res.json({ success: true, command: commandData });
   } catch (error) {
-    return handleApiError(res, error, "添加指令");
+    console.error("添加指令失敗:", error);
+    res.status(500).json({ message: "添加指令失敗: " + error.message });
   }
 });
 
@@ -1451,7 +1419,8 @@ app.put("/api/commands/:id", async (req, res) => {
 
     res.json({ success: true, command: commandData });
   } catch (error) {
-    return handleApiError(res, error, "更新指令");
+    console.error("更新指令失敗:", error);
+    res.status(500).json({ message: "更新指令失敗: " + error.message });
   }
 });
 
@@ -1461,7 +1430,7 @@ app.delete("/api/groups/:id", async (req, res) => {
     await bot.saveData("groups");
     res.json({ success: true });
   } catch (error) {
-    return handleApiError(res, error, "刪除群組");
+    res.status(500).json({ message: "刪除群組失敗" });
   }
 });
 
@@ -1471,7 +1440,7 @@ app.delete("/api/contacts/:id", async (req, res) => {
     await bot.saveData("contacts");
     res.json({ success: true });
   } catch (error) {
-    return handleApiError(res, error, "刪除聯絡人");
+    res.status(500).json({ message: "刪除聯絡人失敗" });
   }
 });
 
@@ -1490,7 +1459,7 @@ app.delete("/api/commands/:id", async (req, res) => {
     await bot.saveData("commands");
     res.json({ success: true });
   } catch (error) {
-    return handleApiError(res, error, "刪除指令");
+    res.status(500).json({ message: "刪除指令失敗" });
   }
 });
 
@@ -1536,70 +1505,52 @@ app.post("/api/terminal", async (req, res) => {
 app.post("/api/update-html", async (req, res) => {
   const { exec } = require("child_process");
   const baseDir = path.join(__dirname, "public");
-  const githubBase =
-    "https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/public";
-
+  const githubBase = "https://raw.githubusercontent.com/SoRcKwYo/wsbot/main/public";
+  
   try {
     // 創建下載多個文件的 Promise 陣列
     const downloads = [
       // 下載 index.html
       new Promise((resolve, reject) => {
-        exec(
-          `curl -o "${path.join(
-            baseDir,
-            "index.html"
-          )}" "${githubBase}/index.html"`,
-          (err, stdout, stderr) => {
-            if (err) reject(stderr || err.message);
-            else resolve("index.html 已更新");
-          }
-        );
+        exec(`curl -o "${path.join(baseDir, "index.html")}" "${githubBase}/index.html"`, (err, stdout, stderr) => {
+          if (err) reject(stderr || err.message);
+          else resolve("index.html 已更新");
+        });
       }),
-
+      
       // 下載 sw.js
       new Promise((resolve, reject) => {
-        exec(
-          `curl -o "${path.join(baseDir, "sw.js")}" "${githubBase}/sw.js"`,
-          (err, stdout, stderr) => {
-            if (err) reject(stderr || err.message);
-            else resolve("sw.js 已更新");
-          }
-        );
+        exec(`curl -o "${path.join(baseDir, "sw.js")}" "${githubBase}/sw.js"`, (err, stdout, stderr) => {
+          if (err) reject(stderr || err.message);
+          else resolve("sw.js 已更新");
+        });
       }),
-
+      
       // 下載 manifest.json
       new Promise((resolve, reject) => {
-        exec(
-          `curl -o "${path.join(
-            baseDir,
-            "manifest.json"
-          )}" "${githubBase}/manifest.json"`,
-          (err, stdout, stderr) => {
-            if (err) reject(stderr || err.message);
-            else resolve("manifest.json 已更新");
-          }
-        );
-      }),
+        exec(`curl -o "${path.join(baseDir, "manifest.json")}" "${githubBase}/manifest.json"`, (err, stdout, stderr) => {
+          if (err) reject(stderr || err.message);
+          else resolve("manifest.json 已更新");
+        });
+      })
     ];
-
+    
     // 執行所有下載任務
     const results = await Promise.allSettled(downloads);
-
+    
     // 檢查結果
-    const successful = results
-      .filter((r) => r.status === "fulfilled")
-      .map((r) => r.value);
-    const failed = results
-      .filter((r) => r.status === "rejected")
-      .map((r) => r.reason);
-
+    const successful = results.filter(r => r.status === 'fulfilled').map(r => r.value);
+    const failed = results.filter(r => r.status === 'rejected').map(r => r.reason);
+    
     res.json({
       success: failed.length === 0,
       updated: successful,
-      failed: failed.length > 0 ? failed : null,
+      failed: failed.length > 0 ? failed : null
     });
+    
   } catch (error) {
-    return handleApiError(res, error, "更新指令");
+    console.error("更新文件失敗:", error);
+    return res.json({ error: error.message });
   }
 });
 
@@ -1665,7 +1616,7 @@ io.on("connection", (socket) => {
         socket.emit("ready");
       }
     } catch (error) {
-      handleEventError("connect-bot", error);
+      console.error("Bot 初始化失敗:", error);
       socket.emit("error", `初始化失敗: ${error.message}`);
       io.emit("qr-loading", false);
 
@@ -1726,7 +1677,8 @@ app.patch("/api/commands/:id/enabled", async (req, res) => {
 
     res.json({ success: true, command });
   } catch (error) {
-    return handleApiError(res, error, "更新指令");
+    console.error("更新指令啟用狀態失敗:", error);
+    res.status(500).json({ message: "更新指令啟用狀態失敗: " + error.message });
   }
 });
 
