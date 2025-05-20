@@ -12,36 +12,6 @@ const existsSync = require("fs").existsSync;
 const rimraf = require("rimraf").sync; // 用於清除目錄
 const { exec } = require("child_process");
 
-const CONFIG = {
-  port: process.env.PORT || 3333,
-  paths: {
-    data: process.env.DATA_DIR || path.join(__dirname, "data"),
-    auth: process.env.AUTH_DIR || path.join(__dirname, "auth"),
-    temp: process.env.TEMP_DIR || path.join(__dirname, "temp"),
-  },
-  github: {
-    repo: "SoRcKwYo/wsbot",
-    branch: "main",
-  },
-  timeouts: {
-    initialization: 60000,
-    shutdown: 5000,
-    cleanup: 3600000,
-  },
-  bot: {
-    maxRetries: 3,
-    reconnectDelay: 5000,
-  },
-  security: {
-    allowedCommands: ["npm", "install", "i"],
-  },
-  delays: {
-    preInit: 2000, // 初始化前延遲
-    postCleanup: 3000, // 清理後延遲
-    reconnect: 1000, // 重連前延遲
-  },
-};
-
 // 添加通用錯誤處理工具函數
 function handleApiError(res, error, operation = "操作") {
   console.error(`${operation}失敗:`, error);
@@ -67,20 +37,20 @@ class WhatsAppBot {
     this.contacts = new Map();
     this.activeCommands = new Map();
     this.eventHandlers = new Map();
-    this.dataDir = CONFIG.paths.data;
-    this.authDir = CONFIG.paths.auth;
-    this.tempDir = CONFIG.paths.temp;
+    this.dataDir = process.env.DATA_DIR || path.join(__dirname, "data");
+    this.authDir = process.env.AUTH_DIR || path.join(__dirname, "auth");
+    this.tempDir = process.env.TEMP_DIR || path.join(__dirname, "temp");
     this.sessionDir = path.join(this.authDir, "session-whatsapp-bot");
     this.isShuttingDown = false;
     this.browser = null;
     this.retryCount = 0;
-    this.maxRetries = CONFIG.bot.maxRetries;
+    this.maxRetries = 3;
     // 增加定期清理
     this.cleanupInterval = setInterval(() => {
       this.cleanupTempFiles().catch((error) =>
         console.error("自動清理臨時檔案失敗:", error)
       );
-    }, CONFIG.timeouts.cleanup); // 每小時清理
+    }, 3600000); // 每小時清理
 
     // 新增自動觸發定時器集合
     this.autoTriggerTimers = new Map();
@@ -176,9 +146,7 @@ class WhatsAppBot {
   async reconnect() {
     try {
       await this.destroy();
-      await new Promise((resolve) =>
-        setTimeout(resolve, CONFIG.delays.reconnect)
-      );
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       this.initialize();
     } catch (error) {
       console.error("Reconnection failed:", error);
@@ -195,7 +163,7 @@ class WhatsAppBot {
         const stats = await fs.stat(filePath);
 
         // 刪除超過1小時的臨時文件
-        if (now - stats.mtime.getTime() > CONFIG.timeouts.cleanup) {
+        if (now - stats.mtime.getTime() > 3600000) {
           await fs.unlink(filePath);
         }
       }
@@ -205,7 +173,7 @@ class WhatsAppBot {
   }
 
   startCleanupSchedule() {
-    setInterval(() => this.cleanupTempFiles(), CONFIG.timeouts.cleanup);
+    setInterval(() => this.cleanupTempFiles(), 3600000); // 每小時執行一次
   }
 
   async loadData() {
@@ -307,19 +275,14 @@ class WhatsAppBot {
         fs.mkdir(functionDir, { recursive: true });
       }
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, CONFIG.delays.preInit)
-      );
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       this.setupEventHandlers();
       console.log("開始初始化 WhatsApp 客戶端...");
 
       const initPromise = this.client.initialize();
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(
-          () => reject(new Error("初始化超時")),
-          CONFIG.timeouts.initialization
-        );
+        setTimeout(() => reject(new Error("初始化超時")), 60000);
       });
 
       await Promise.race([initPromise, timeoutPromise]);
@@ -355,9 +318,7 @@ class WhatsAppBot {
         }
       }
 
-      await new Promise((resolve) =>
-        setTimeout(resolve, CONFIG.delays.postCleanup)
-      );
+      await new Promise((resolve) => setTimeout(resolve, 3000));
     } catch (error) {
       console.error("清理過程出錯:", error);
     }
@@ -840,9 +801,7 @@ class WhatsAppBot {
       // 只有在非用戶主動退出時才嘗試重新連接
       if (reason !== "user" && this.retryCount < this.maxRetries) {
         console.log("Attempting to reconnect...");
-        await new Promise((resolve) =>
-          setTimeout(resolve, CONFIG.timeouts.shutdown)
-        );
+        await new Promise((resolve) => setTimeout(resolve, 5000));
         await this.initialize();
       }
     } catch (error) {
@@ -1165,22 +1124,6 @@ app.get("/api/logs", (req, res) => {
   res.json(filteredLogs);
 });
 
-app.get("/health/detailed", (req, res) => {
-  const memUsage = process.memoryUsage();
-  res.json({
-    uptime: process.uptime(),
-    memory: {
-      rss: `${Math.round(memUsage.rss / 1024 / 1024)} MB`,
-      heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)} MB`,
-      heapUsed: `${Math.round(memUsage.heapUsed / 1024 / 1024)} MB`,
-    },
-    stats: {
-      commands: bot.activeCommands.size,
-      groups: bot.groups.size,
-    },
-  });
-});
-
 app.get("/api/version", (req, res) => {
   res.json({ version: currentVersion });
 });
@@ -1256,7 +1199,7 @@ bot.on("qr", async (qrData) => {
 
         // 如果尚未成功連接，5秒後重發 QR 碼
         if (attempts < 3 && !bot.client?.info) {
-          setTimeout(() => emitQR(attempts + 1), CONFIG.timeouts.shutdown);
+          setTimeout(() => emitQR(attempts + 1), 5000);
         }
       };
 
@@ -1555,14 +1498,10 @@ app.delete("/api/commands/:id", async (req, res) => {
 app.post("/api/terminal", async (req, res) => {
   try {
     let { command } = req.body;
-    // 使用CONFIG中的白名單檢查
-    const isAllowedCommand = CONFIG.security.allowedCommands.some(
-      (cmd) =>
-        command.trim().startsWith(`npm ${cmd}`) ||
-        command.trim() === `npm ${cmd}`
-    );
-
-    if (!isAllowedCommand) {
+    // 更嚴格的命令格式檢查
+    if (
+      !/^npm\s+(i|install)\s+[@\w\-\/]+(\s+[@\w\-\/]+)*$/.test(command.trim())
+    ) {
       return res.json({
         error: "只允許執行 npm install 指令，且不能包含特殊符號。",
       });
@@ -1690,9 +1629,7 @@ io.on("connection", (socket) => {
         if (bot.client) {
           try {
             await bot.destroy();
-            await new Promise((resolve) =>
-              setTimeout(resolve, CONFIG.delays.reconnect)
-            );
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           } catch (error) {
             console.warn("清理現有客戶端警告:", error);
           }
@@ -1711,9 +1648,7 @@ io.on("connection", (socket) => {
         // 等待 QR code 生成或已連接
         let attempts = 0;
         while (!qrReceived && !bot.client?.info && attempts < 30) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, CONFIG.delays.reconnect)
-          );
+          await new Promise((resolve) => setTimeout(resolve, 1000));
           attempts++;
         }
 
@@ -1825,7 +1760,7 @@ process.on("SIGINT", async () => {
     setTimeout(() => {
       console.log("強制退出");
       process.exit(1);
-    }, CONFIG.timeouts.shutdown);
+    }, 5000);
   } catch (error) {
     console.error("關閉時發生錯誤:", error);
     process.exit(1);
@@ -1836,7 +1771,7 @@ process.on("SIGINT", async () => {
 const startServer = async () => {
   await bot.loadData();
 
-  const PORT = process.env.PORT || CONFIG.port;
+  const PORT = process.env.PORT || 3333;
   server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
