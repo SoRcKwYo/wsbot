@@ -565,13 +565,19 @@ class WhatsAppBot {
   // 處理消息（將調用 processMessageOrReaction）
   async handleMessage(msg) {
     if (this.isShuttingDown) return;
+    console.log("消息來源詳情:", {
+      from: msg.from,
+      author: msg.author,
+      fromMe: msg.fromMe,
+      isGroup: chat.isGroup,
+    });
 
     // 特殊處理：忽略系統自身發送的幫助信息
     if (
       msg.fromMe &&
       (msg.body.startsWith("*Command List*") || msg._data.isForwarded)
     ) {
-      console.log("忽略系統自身發送的幫助信息，避免循環觸發");
+      console.log("忽略系統自身發送的幫助信息");
       return;
     }
 
