@@ -1143,6 +1143,13 @@ let currentQrCode = null;
 let logHistory = [];
 const maxLogEntries = 1000;
 
+// 建議：增加定期清理機制
+setInterval(() => {
+  if (logHistory.length > maxLogEntries * 0.8) {
+    logHistory = logHistory.slice(-maxLogEntries);
+  }
+}, 300000); // 每5分鐘檢查一次
+
 // 當前版本號，可以存在某個配置文件或環境變量中
 const currentVersion = "1.0.0";
 
