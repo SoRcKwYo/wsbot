@@ -37,27 +37,15 @@ class WhatsAppBot {
 
     // 新增自動觸發定時器集合
     this.autoTriggerTimers = new Map();
-  }
-
-  normalizeWhatsAppId(userId) {
-    if (!userId || typeof userId !== "string") return userId;
-
-    // 匹配 WhatsApp ID 標準格式和多設備格式
-    // 將 85298765432:3@c.us 轉換為 85298765432@c.us
-    return userId.replace(/^([^:]+)(?::.+)?(@c\.us|@g\.us)$/, "$1$2");
+    this.autoTriggerStates = new Map();
   }
 
   // 新增初始化自動觸發功能的方法
   initAutoTriggers() {
-    // 清除所有現有的自動觸發定時器
-    for (const timer of this.autoTriggerTimers.values()) {
-      clearInterval(timer);
-    }
-    this.autoTriggerTimers.clear();
-
     // 檢查每個指令是否有自動觸發條件
     for (const command of this.activeCommands.values()) {
       if (command.enabled === false) continue;
+
       for (const trigger of command.triggers || []) {
         if (trigger.autoTrigger && trigger.autoInterval) {
           const { hours = 0, minutes = 0, seconds = 0 } = trigger.autoInterval;
@@ -73,6 +61,35 @@ class WhatsAppBot {
 
           // 為每個目標設定自動觸發
           for (const target of command.targets) {
+            const timerKey = `${command.id}_${target.id}`;
+
+            // 檢查該定時器是否已經存在且配置未改變
+            const existingState = this.autoTriggerStates.get(timerKey);
+            const currentConfig = {
+              commandId: command.id,
+              targetId: target.id,
+              interval: totalMs,
+              enabled: command.enabled,
+            };
+
+            // 如果定時器已存在且配置相同，跳過重新創建
+            if (
+              existingState &&
+              existingState.interval === totalMs &&
+              existingState.enabled === command.enabled &&
+              this.autoTriggerTimers.has(timerKey)
+            ) {
+              console.log(`定時器 ${timerKey} 已存在且配置未變，跳過重新創建`);
+              continue;
+            }
+
+            // 清除舊的定時器（如果存在）
+            if (this.autoTriggerTimers.has(timerKey)) {
+              clearInterval(this.autoTriggerTimers.get(timerKey));
+              console.log(`清除舊定時器: ${timerKey}`);
+            }
+
+            // 創建新的定時器
             const timerId = setInterval(async () => {
               try {
                 if (!this.isInitialized || this.isShuttingDown) return;
@@ -123,15 +140,85 @@ class WhatsAppBot {
               }
             }, totalMs);
 
-            // 儲存定時器ID，以便將來清理
-            const timerKey = `${command.id}_${target.id}`;
+            // 儲存定時器ID和狀態
             this.autoTriggerTimers.set(timerKey, timerId);
+            this.autoTriggerStates.set(timerKey, {
+              ...currentConfig,
+              createdAt: Date.now(),
+              nextExecution: Date.now() + totalMs,
+            });
+
+            console.log(`新建定時器: ${timerKey}, 間隔: ${totalMs}ms`);
           }
         }
       }
     }
 
-    console.log(`已設定 ${this.autoTriggerTimers.size} 個自動觸發定時器`);
+    // 清理已刪除指令的定時器
+    this.cleanupOrphanedTimers();
+
+    console.log(`目前活躍定時器數量: ${this.autoTriggerTimers.size}`);
+  }
+
+  cleanupOrphanedTimers() {
+    const validTimerKeys = new Set();
+
+    // 收集所有有效的定時器鍵值
+    for (const command of this.activeCommands.values()) {
+      if (command.enabled === false) continue;
+
+      for (const trigger of command.triggers || []) {
+        if (trigger.autoTrigger && trigger.autoInterval) {
+          for (const target of command.targets) {
+            const timerKey = `${command.id}_${target.id}`;
+            validTimerKeys.add(timerKey);
+          }
+        }
+      }
+    }
+
+    // 清理不再需要的定時器
+    for (const [timerKey, timerId] of this.autoTriggerTimers.entries()) {
+      if (!validTimerKeys.has(timerKey)) {
+        clearInterval(timerId);
+        this.autoTriggerTimers.delete(timerKey);
+        this.autoTriggerStates.delete(timerKey);
+        console.log(`清理孤立定時器: ${timerKey}`);
+      }
+    }
+  }
+
+  getAutoTriggerStatus() {
+    const status = [];
+    for (const [timerKey, state] of this.autoTriggerStates.entries()) {
+      const [commandId, targetId] = timerKey.split("_");
+      const command = this.activeCommands.get(commandId);
+
+      status.push({
+        timerKey,
+        commandId,
+        commandName: command?.name || "Unknown",
+        targetId,
+        interval: state.interval,
+        enabled: state.enabled,
+        createdAt: state.createdAt,
+        nextExecution: state.nextExecution,
+        isActive: this.autoTriggerTimers.has(timerKey),
+      });
+    }
+    return status;
+  }
+
+  // 新增方法：手動停止特定定時器
+  stopAutoTrigger(timerKey) {
+    if (this.autoTriggerTimers.has(timerKey)) {
+      clearInterval(this.autoTriggerTimers.get(timerKey));
+      this.autoTriggerTimers.delete(timerKey);
+      this.autoTriggerStates.delete(timerKey);
+      console.log(`手動停止定時器: ${timerKey}`);
+      return true;
+    }
+    return false;
   }
 
   async reconnect() {
@@ -439,15 +526,19 @@ class WhatsAppBot {
     });
 
     // 統一註冊各種消息相關的事件處理
-    this.client.on("message", (msg) => this.handleMessage(msg));
+    this.client.on("message", (msg) => {
+      this.handleMessage(msg);
+    });
+
     this.client.on("message_create", (msg) => {
       if (msg.fromMe) {
         this.handleMessage(msg);
       }
     });
-    this.client.on("message_reaction", (reaction) =>
-      this.handleReaction(reaction)
-    );
+
+    this.client.on("message_reaction", (reaction) => {
+      this.handleReaction(reaction);
+    });
   }
 
   async updateGroups() {
@@ -566,40 +657,24 @@ class WhatsAppBot {
   async handleMessage(msg) {
     if (this.isShuttingDown) return;
 
-    // 1. 先獲取聊天對象
-    let chat;
-    try {
-      chat = await msg.getChat();
-    } catch (error) {
-      console.error("獲取聊天對象失敗:", error);
-      chat = { isGroup: msg.from.includes("@g.us") }; // 備用方案
-    }
-
-    // 2. 標準化 ID
-    const normalizedFrom = this.normalizeWhatsAppId(msg.from);
-    const normalizedAuthor = msg.author
-      ? this.normalizeWhatsAppId(msg.author)
-      : undefined;
-
-    // 3. 輸出完整日誌
-    console.log("消息來源詳情:", {
-      from: msg.from,
-      normalizedFrom,
-      author: msg.author,
-      normalizedAuthor,
-      fromMe: msg.fromMe,
-      isGroup: chat.isGroup,
-    });
-
     // 特殊處理：忽略系統自身發送的幫助信息
     if (
       msg.fromMe &&
-      (msg.body.startsWith("*Command List*") ||
-        (msg._data && msg._data.isForwarded))
+      (msg.body.startsWith("*Command List*") || msg._data.isForwarded)
     ) {
-      console.log("忽略系統自身發送的幫助信息");
+      console.log("忽略系統自身發送的幫助信息，避免循環觸發");
       return;
     }
+    /*     try {
+      const chat = await msg.getChat();
+      const contact = await msg.getContact().number;
+
+      console.log(`電話號碼: ${contact.number}`);
+      console.log(`顯示名稱: ${contact.pushname || contact.name || "無名稱"}`);
+      console.log(`是否儲存在通訊錄: ${contact.isMyContact ? "是" : "否"}`);
+    } catch (error) {
+      console.error("獲取聯絡人資訊失敗:", error);
+    } */
 
     // 使用統一的處理函數處理此消息
     await this.processMessageOrReaction(msg);
@@ -611,17 +686,6 @@ class WhatsAppBot {
       // 確定是消息還是表情反應
       const isReaction = data.type === "reaction";
       let chat;
-
-      // 標準化發送者 ID (新增)
-      if (data.from) {
-        data.from = this.normalizeWhatsAppId(data.from);
-      }
-      if (data.sender) {
-        data.sender = this.normalizeWhatsAppId(data.sender);
-      }
-      if (data.author) {
-        data.author = this.normalizeWhatsAppId(data.author);
-      }
 
       if (isReaction) {
         // 表情反應
@@ -834,16 +898,6 @@ class WhatsAppBot {
   }
 
   async runDynamicFunction(id, msg) {
-    if (msg.from) {
-      msg.from = this.normalizeWhatsAppId(msg.from);
-    }
-    if (msg.to) {
-      msg.to = this.normalizeWhatsAppId(msg.to);
-    }
-    if (msg.author) {
-      msg.author = this.normalizeWhatsAppId(msg.author);
-    }
-
     const funcPath = path.join(this.dataDir, "functions", `${id}.js`);
     if (!existsSync(funcPath)) {
       return "找不到對應的 function 指令檔案。";
@@ -1007,13 +1061,14 @@ class WhatsAppBot {
   }
 
   async destroy() {
-    this.isShuttingDown = true; // 標記正在關閉
+    this.isShuttingDown = true;
 
     // 清理所有自動觸發定時器
     for (const timer of this.autoTriggerTimers.values()) {
       clearInterval(timer);
     }
     this.autoTriggerTimers.clear();
+    this.autoTriggerStates.clear();
 
     if (this.client) {
       if (this.eventHandlers.has("disconnected")) {
@@ -1302,6 +1357,64 @@ app.get("/api/commands/:id", async (req, res) => {
   } catch (error) {
     console.error("獲取指令詳情失敗:", error);
     res.status(500).json({ message: "獲取指令詳情失敗: " + error.message });
+  }
+});
+
+app.get("/api/auto-triggers/status", (req, res) => {
+  try {
+    const status = bot.getAutoTriggerStatus();
+    res.json(status);
+  } catch (error) {
+    console.error("獲取定時器狀態失敗:", error);
+    res.status(500).json({ message: "獲取定時器狀態失敗: " + error.message });
+  }
+});
+
+// 新增 API：手動停止定時器
+app.delete("/api/auto-triggers/:timerKey", (req, res) => {
+  try {
+    const { timerKey } = req.params;
+    const success = bot.stopAutoTrigger(timerKey);
+
+    if (success) {
+      res.json({ success: true, message: `定時器 ${timerKey} 已停止` });
+    } else {
+      res.status(404).json({ message: "找不到指定的定時器" });
+    }
+  } catch (error) {
+    console.error("停止定時器失敗:", error);
+    res.status(500).json({ message: "停止定時器失敗: " + error.message });
+  }
+});
+
+app.post("/api/auto-triggers/:commandId/restart", (req, res) => {
+  try {
+    const { commandId } = req.params;
+    const command = bot.activeCommands.get(commandId);
+
+    if (!command) {
+      return res.status(404).json({ message: "找不到指定的指令" });
+    }
+
+    // 清理該指令的所有定時器
+    for (const [timerKey, timerId] of bot.autoTriggerTimers.entries()) {
+      if (timerKey.startsWith(`${commandId}_`)) {
+        clearInterval(timerId);
+        bot.autoTriggerTimers.delete(timerKey);
+        bot.autoTriggerStates.delete(timerKey);
+      }
+    }
+
+    // 重新初始化該指令的定時器
+    bot.initAutoTriggers();
+
+    res.json({
+      success: true,
+      message: `指令 ${commandId} 的定時器已重新啟動`,
+    });
+  } catch (error) {
+    console.error("重新啟動定時器失敗:", error);
+    res.status(500).json({ message: "重新啟動定時器失敗: " + error.message });
   }
 });
 
