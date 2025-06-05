@@ -542,19 +542,128 @@ class WhatsAppBot {
   }
 
   async updateGroups() {
-    if (this.isShuttingDown) return; // 關閉中則不執行
+    if (this.isShuttingDown) return;
     try {
       const chats = await this.client.getChats();
       const groupChats = chats.filter((chat) => chat.isGroup);
-      groupChats.forEach((group) => {
-        this.groups.set(group.id._serialized, {
-          id: group.id._serialized,
-          name: group.name,
-          description: group.description || "",
-        });
-      });
+
+      for (const group of groupChats) {
+        try {
+          let participants = [];
+          let participantCount = 0;
+
+          // 嘗試多種方法獲取參與者資訊
+          try {
+            // 方法 1: 使用 getParticipants()
+            if (typeof group.getParticipants === "function") {
+              participants = await group.getParticipants();
+            }
+            // 方法 2: 使用 groupMetadata.participants
+            else if (group.groupMetadata && group.groupMetadata.participants) {
+              participants = group.groupMetadata.participants;
+            }
+            // 方法 3: 使用 participants 屬性
+            else if (group.participants) {
+              participants = group.participants;
+            }
+            // 方法 4: 嘗試透過 client 獲取群組資訊
+            else {
+              try {
+                const groupInfo = await this.client.getGroupInfo(
+                  group.id._serialized
+                );
+                participants = groupInfo.participants || [];
+              } catch (clientError) {
+                console.warn(
+                  `無法透過 client 獲取群組 ${group.name} 的參與者:`,
+                  clientError.message
+                );
+              }
+            }
+
+            participantCount = participants.length;
+          } catch (participantError) {
+            console.warn(
+              `獲取群組 ${group.name} 參與者失敗:`,
+              participantError.message
+            );
+            participants = [];
+            participantCount = 0;
+          }
+
+          // 計算在此群組中啟用的指令數量
+          let activeCommandsCount = 0;
+          const groupCommands = [];
+
+          for (const command of this.activeCommands.values()) {
+            if (command.enabled === false) continue;
+
+            const hasGroupTarget = command.targets.some(
+              (target) =>
+                target.type === "group" && target.id === group.id._serialized
+            );
+
+            if (hasGroupTarget) {
+              activeCommandsCount++;
+              groupCommands.push({
+                id: command.id,
+                name: command.name || command.id,
+                type: command.response?.type || "unknown",
+              });
+            }
+          }
+
+          // 簡化的群組資料
+          const groupData = {
+            // 基本資訊
+            id: group.id._serialized,
+            name: group.name,
+            description: group.description || "",
+
+            // 參與者資訊
+            participantCount: participantCount,
+            participants: participants.map((p) => {
+              // 處理不同的參與者物件格式
+              const participantId = p.id
+                ? typeof p.id === "string"
+                  ? p.id
+                  : p.id._serialized
+                : p.user || p.contact || p;
+
+              return {
+                id: participantId,
+                pushname: p.pushname || p.name || null,
+              };
+            }),
+
+            // 指令相關
+            activeCommandsCount: activeCommandsCount,
+            activeCommands: groupCommands,
+          };
+
+          this.groups.set(group.id._serialized, groupData);
+        } catch (groupError) {
+          console.warn(`處理群組 ${group.name} 時出錯:`, groupError.message);
+
+          // 如果出錯，至少保存基本資訊
+          this.groups.set(group.id._serialized, {
+            id: group.id._serialized,
+            name: group.name,
+            description: group.description || "",
+            participantCount: 0,
+            participants: [],
+            activeCommandsCount: 0,
+            activeCommands: [],
+            error: groupError.message,
+          });
+        }
+      }
+
       await this.saveData("groups");
-      console.log("Groups updated successfully.");
+      console.log(`群組更新完成. 總計: ${groupChats.length} 個群組`);
+
+      // 發送更新到前端
+      io.emit("groupUpdate", Array.from(this.groups.values()));
     } catch (error) {
       if (!this.isShuttingDown) {
         console.error("Error updating groups:", error);
