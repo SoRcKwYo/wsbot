@@ -20,6 +20,6 @@
     "puppeteer": "^24.7.2",
     "qrcode": "^1.5.3",
     "socket.io": "^4.7.2",
-    "whatsapp-web.js": "^1.28.0"
+    "whatsapp-web.js": "^1.30.0"
   }
 }
