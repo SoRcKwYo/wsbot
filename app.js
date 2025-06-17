@@ -89,55 +89,22 @@ class WhatsAppBot {
               console.log(`清除舊定時器: ${timerKey}`);
             }
 
+            this.executeAutoTrigger(command, target.id, true)
+              .then(() => {
+                console.log(
+                  `指令 '${command.name || command.id}' 已立即執行一次`
+                );
+              })
+              .catch((error) => {
+                console.error(
+                  `立即執行指令 '${command.name || command.id}' 失敗:`,
+                  error
+                );
+              });
+
             // 創建新的定時器
             const timerId = setInterval(async () => {
-              try {
-                if (!this.isInitialized || this.isShuttingDown) return;
-
-                const chatId = target.id;
-                console.log(
-                  `執行自動觸發指令: ${command.name || command.id} 至 ${chatId}`
-                );
-
-                // 創建模擬消息對象，用於處理自動觸發
-                const simulatedMsg = {
-                  type: "autoTrigger",
-                  from: this.client?.info?.wid?._serialized || "system",
-                  to: chatId,
-                  id: {
-                    _serialized: `auto_${Date.now()}_${Math.random()
-                      .toString(36)
-                      .substring(2, 10)}`,
-                    fromMe: true,
-                    remote: chatId,
-                  },
-                  reply: async (content) => {
-                    try {
-                      await this.client.sendMessage(chatId, content);
-                      return true;
-                    } catch (err) {
-                      console.error("自動觸發回覆失敗:", err);
-                      return false;
-                    }
-                  },
-                  getChat: async () => {
-                    try {
-                      return await this.client.getChatById(chatId);
-                    } catch (error) {
-                      console.error("獲取聊天失敗:", error);
-                      return {
-                        id: { _serialized: chatId },
-                        isGroup: chatId.includes("@g.us"),
-                      };
-                    }
-                  },
-                };
-
-                // 執行指令回應
-                await this.sendResponse(command, simulatedMsg);
-              } catch (error) {
-                console.error("自動觸發執行失敗:", error);
-              }
+              await this.executeAutoTrigger(command, target.id, false);
             }, totalMs);
 
             // 儲存定時器ID和狀態
@@ -146,9 +113,12 @@ class WhatsAppBot {
               ...currentConfig,
               createdAt: Date.now(),
               nextExecution: Date.now() + totalMs,
+              hasExecutedImmediately: true, // 標記已立即執行
             });
 
-            console.log(`新建定時器: ${timerKey}, 間隔: ${totalMs}ms`);
+            console.log(
+              `新建定時器: ${timerKey}, 間隔: ${totalMs}ms (已立即執行一次)`
+            );
           }
         }
       }
@@ -158,6 +128,62 @@ class WhatsAppBot {
     this.cleanupOrphanedTimers();
 
     console.log(`目前活躍定時器數量: ${this.autoTriggerTimers.size}`);
+  }
+
+  // ✅ 新增：統一的自動觸發執行方法
+  async executeAutoTrigger(command, chatId, isImmediate = false) {
+    try {
+      if (!this.isInitialized || this.isShuttingDown) return;
+
+      console.log(
+        `執行自動觸發指令: ${command.name || command.id} 至 ${chatId} ${
+          isImmediate ? "(立即執行)" : "(定時執行)"
+        }`
+      );
+
+      // 創建模擬消息對象，用於處理自動觸發
+      const simulatedMsg = {
+        type: "autoTrigger",
+        isImmediate: isImmediate, // 標記是否為立即執行
+        from: this.client?.info?.wid?._serialized || "system",
+        to: chatId,
+        id: {
+          _serialized: `auto_${Date.now()}_${Math.random()
+            .toString(36)
+            .substring(2, 10)}`,
+          fromMe: true,
+          remote: chatId,
+        },
+        reply: async (content) => {
+          try {
+            await this.client.sendMessage(chatId, content);
+            return true;
+          } catch (err) {
+            console.error("自動觸發回覆失敗:", err);
+            return false;
+          }
+        },
+        getChat: async () => {
+          try {
+            return await this.client.getChatById(chatId);
+          } catch (error) {
+            console.error("獲取聊天失敗:", error);
+            return {
+              id: { _serialized: chatId },
+              isGroup: chatId.includes("@g.us"),
+            };
+          }
+        },
+      };
+
+      // 執行指令回應
+      await this.sendResponse(command, simulatedMsg);
+    } catch (error) {
+      console.error(
+        `自動觸發執行失敗 (${isImmediate ? "立即" : "定時"}):`,
+        error
+      );
+    }
   }
 
   cleanupOrphanedTimers() {
@@ -203,6 +229,7 @@ class WhatsAppBot {
         enabled: state.enabled,
         createdAt: state.createdAt,
         nextExecution: state.nextExecution,
+        hasExecutedImmediately: state.hasExecutedImmediately || false, // ✅ 新增
         isActive: this.autoTriggerTimers.has(timerKey),
       });
     }
@@ -966,14 +993,21 @@ class WhatsAppBot {
     const chat = await msg.getChat();
     const isReaction = msg.type === "reaction"; // 檢查是否為表情反應
     const isAutoTrigger = msg.type === "autoTrigger"; // 檢查是否為自動觸發消息
+    const isImmediate = msg.isImmediate; // ✅ 新增：檢查是否為立即執行
 
     try {
       switch (command.response.type) {
         case "text":
-          // 直接回覆文字訊息，表情反應不使用 quotedMessageId
+          // 可以在文字前加上標記來區分立即執行和定時執行
+          let content = command.response.content;
+          if (isAutoTrigger && isImmediate) {
+            // 如果需要，可以在立即執行的訊息前加上特殊標記
+            // content = `[立即執行] ${content}`;
+          }
+
           await this.client.sendMessage(
             sender,
-            command.response.content,
+            content,
             isReaction || isAutoTrigger
               ? {}
               : { quotedMessageId: msg.id._serialized }
@@ -1036,10 +1070,8 @@ class WhatsAppBot {
           break;
         }
         case "function": {
-          // 處理函數指令
           try {
             const result = await this.runDynamicFunction(command.id, msg);
-            // 如果函數已經處理了回覆，就不需要再執行
             if (result && typeof result === "string") {
               await this.client.sendMessage(
                 sender,
@@ -1048,6 +1080,9 @@ class WhatsAppBot {
                   ? {}
                   : { quotedMessageId: msg.id._serialized }
               );
+            }
+            if (isImmediate) {
+              console.log(`函數指令執行成功 (立即執行)`);
             }
           } catch (error) {
             console.error("執行函數指令錯誤:", error);
