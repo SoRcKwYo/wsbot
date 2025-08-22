@@ -28,16 +28,15 @@ class WhatsAppBot {
     this.browser = null;
     this.retryCount = 0;
     this.maxRetries = 3;
+    this.autoTriggerTimers = new Map(); // 儲存定時器ID
+    this.autoTriggerStates = new Map(); // 儲存定時器狀態
+
     // 增加定期清理
     this.cleanupInterval = setInterval(() => {
       this.cleanupTempFiles().catch((error) =>
         console.error("自動清理臨時檔案失敗:", error)
       );
     }, 3600000); // 每小時清理
-
-    // 新增自動觸發定時器集合
-    this.autoTriggerTimers = new Map();
-    this.autoTriggerStates = new Map();
   }
 
   // 新增初始化自動觸發功能的方法
@@ -187,30 +186,26 @@ class WhatsAppBot {
   }
 
   cleanupOrphanedTimers() {
-    const validTimerKeys = new Set();
+    const activeCommandIds = new Set(this.activeCommands.keys());
+    const orphanedTimers = [];
 
-    // 收集所有有效的定時器鍵值
-    for (const command of this.activeCommands.values()) {
-      if (command.enabled === false) continue;
-
-      for (const trigger of command.triggers || []) {
-        if (trigger.autoTrigger && trigger.autoInterval) {
-          for (const target of command.targets) {
-            const timerKey = `${command.id}_${target.id}`;
-            validTimerKeys.add(timerKey);
-          }
-        }
+    for (const [timerKey, timerId] of this.autoTriggerTimers.entries()) {
+      const [commandId] = timerKey.split("_");
+      if (!activeCommandIds.has(commandId)) {
+        orphanedTimers.push(timerKey);
+        clearInterval(timerId);
       }
     }
 
-    // 清理不再需要的定時器
-    for (const [timerKey, timerId] of this.autoTriggerTimers.entries()) {
-      if (!validTimerKeys.has(timerKey)) {
-        clearInterval(timerId);
-        this.autoTriggerTimers.delete(timerKey);
-        this.autoTriggerStates.delete(timerKey);
-        console.log(`清理孤立定時器: ${timerKey}`);
-      }
+    // 清理孤立的定時器
+    for (const timerKey of orphanedTimers) {
+      this.autoTriggerTimers.delete(timerKey);
+      this.autoTriggerStates.delete(timerKey);
+      console.log(`已清理孤立定時器: ${timerKey}`);
+    }
+
+    if (orphanedTimers.length > 0) {
+      console.log(`清理了 ${orphanedTimers.length} 個孤立定時器`);
     }
   }
 
@@ -526,14 +521,14 @@ class WhatsAppBot {
       try {
         this.isInitialized = true;
         this.retryCount = 0;
+
+        this.initAutoTriggers();
+
         if (this.eventHandlers.has("ready")) {
           await this.eventHandlers.get("ready")();
         }
         console.log("Client is ready to receive messages.");
         await this.updateGroups();
-
-        // WhatsApp 連接成功後初始化自動觸發功能
-        this.initAutoTriggers();
       } catch (error) {
         console.error("Error in ready event:", error);
       }
@@ -1146,8 +1141,9 @@ class WhatsAppBot {
     this.isShuttingDown = true;
 
     // 清理所有自動觸發定時器
-    for (const timer of this.autoTriggerTimers.values()) {
-      clearInterval(timer);
+    for (const [timerKey, timerId] of this.autoTriggerTimers.entries()) {
+      clearInterval(timerId);
+      console.log(`清理自動觸發定時器: ${timerKey}`);
     }
     this.autoTriggerTimers.clear();
     this.autoTriggerStates.clear();
@@ -1281,6 +1277,47 @@ app.get("/api/logs", (req, res) => {
   }
 
   res.json(filteredLogs);
+});
+
+app.get("/api/auto-trigger-status", (req, res) => {
+  try {
+    const status = bot.getAutoTriggerStatus();
+    res.json({ success: true, data: status });
+  } catch (error) {
+    console.error("獲取自動觸發狀態失敗:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post("/api/manual-trigger/:commandId", async (req, res) => {
+  try {
+    const { commandId } = req.params;
+    const command = bot.activeCommands.get(commandId);
+
+    if (!command) {
+      return res.status(404).json({ success: false, error: "指令不存在" });
+    }
+
+    // 手動觸發所有目標
+    const results = [];
+    for (const target of command.targets) {
+      try {
+        await bot.executeAutoTrigger(command, target.id, true);
+        results.push({ targetId: target.id, success: true });
+      } catch (error) {
+        results.push({
+          targetId: target.id,
+          success: false,
+          error: error.message,
+        });
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (error) {
+    console.error("手動觸發失敗:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 app.get("/api/version", (req, res) => {
@@ -1494,7 +1531,7 @@ app.post("/api/auto-triggers/:commandId/restart", (req, res) => {
       }
     }
 
-    // 重新初始化該指令的定時器
+    // 重新初始化該指令的定時
     bot.initAutoTriggers();
 
     res.json({
@@ -1596,6 +1633,7 @@ app.post("/api/commands", async (req, res) => {
     }
     bot.activeCommands.set(commandData.id, commandData);
     await bot.saveData("commands");
+    
     // 檢查並初始化自動觸發
     if (bot.isInitialized) {
       bot.initAutoTriggers();
