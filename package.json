@@ -16,10 +16,17 @@
     "ffprobe": "^1.1.2",
     "mongoose": "^7.5.0",
     "node-fetch": "^3.3.2",
-    "package.json": "^2.0.1",
-    "puppeteer": "^24.7.2",
+    "puppeteer": "^18.2.1",
     "qrcode": "^1.5.3",
     "socket.io": "^4.7.2",
     "whatsapp-web.js": "^1.32.0"
+  },
+  "overrides": {
+    "tar-fs": "3.0.9",
+    "ws": "^8.17.1",
+    "parse-url": "^10.0.3",
+    "tmp": "^0.2.3",
+    "got": "^11.8.5",
+    "gry": "^6.1.1"
   }
 }

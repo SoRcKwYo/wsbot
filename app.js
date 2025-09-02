@@ -363,6 +363,14 @@ class WhatsAppBot {
             "--disable-popup-blocking",
             "--disable-notifications",
             "--window-size=1280,720",
+            // --- 推薦新增的參數 ---
+            '--disable-background-timer-throttling', // 防止後台計時器被節流，對維持WhatsApp連接至關重要
+            '--disable-backgrounding-occluded-windows', // 防止被遮擋的窗口進入後台模式，確保網頁持續運行
+            '--disable-renderer-backgrounding', // 防止渲染器進入後台模式，確保網頁持續運行
+            '--mute-audio', // 靜音，避免不必要的音頻處理
+            '--no-first-run', // 跳過首次運行的歡迎頁面
+            '--no-zygote', // 禁用Zygote進程，在某些沙盒環境中可以提高兼容性
+            '--disable-breakpad', // 禁用崩潰報告，減少不必要的網絡請求
           ],
           ignoreHTTPSErrors: true,
           defaultViewport: null,
@@ -485,9 +493,9 @@ class WhatsAppBot {
             io.emit("qr", qrImageData);
             console.log(`QR Code 已發送到前端 (嘗試 ${attempts + 1})`);
 
-            // 如果尚未成功連接，5秒後重發 QR 碼
+            // 如果尚未成功連接，30秒後重發 QR 碼（延長間隔避免頻繁刷新）
             if (attempts < 3 && !bot.client?.info) {
-              setTimeout(() => emitQR(attempts + 1), 10000);
+              setTimeout(() => emitQR(attempts + 1), 60000);
             }
           };
 
@@ -1377,36 +1385,7 @@ io.on("error", (error) => {
   console.error("Socket.IO Error:", error);
 });
 
-// Setup bot event handlers
-bot.on("qr", async (qrData) => {
-  try {
-    console.log("收到 QR Code 數據");
-    if (qrData) {
-      // 生成 base64 QR code
-      const qrImageData = await qr.toDataURL(qrData, { margin: 2, scale: 10 });
-      currentQrCode = qrImageData;
 
-      // 先發送載入狀態為 false
-      io.emit("qr-loading", false);
-
-      // 確保 QR 碼發送到前端，並增加重試機制
-      const emitQR = (attempts = 0) => {
-        io.emit("qr", qrImageData);
-        console.log(`QR Code 已發送到前端 (嘗試 ${attempts + 1})`);
-
-        // 如果尚未成功連接，5秒後重發 QR 碼
-        if (attempts < 3 && !bot.client?.info) {
-          setTimeout(() => emitQR(attempts + 1), 5000);
-        }
-      };
-
-      emitQR();
-    }
-  } catch (error) {
-    console.error("QR Code 處理失敗:", error);
-    io.emit("qr-loading", false);
-  }
-});
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
