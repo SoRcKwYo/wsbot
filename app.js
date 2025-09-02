@@ -4,12 +4,9 @@ const qr = require("qrcode");
 const socketIo = require("socket.io");
 const http = require("http");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const fs = require("fs").promises;
-const fsSync = require("fs"); // 添加同步版 fs
 const path = require("path");
 const existsSync = require("fs").existsSync;
-const rimraf = require("rimraf").sync; // 用於清除目錄
 const { exec } = require("child_process");
 
 class WhatsAppBot {
@@ -25,7 +22,6 @@ class WhatsAppBot {
     this.tempDir = process.env.TEMP_DIR || path.join(__dirname, "temp");
     this.sessionDir = path.join(this.authDir, "session-whatsapp-bot");
     this.isShuttingDown = false;
-    this.browser = null;
     this.retryCount = 0;
     this.maxRetries = 3;
     this.autoTriggerTimers = new Map(); // 儲存定時器ID
@@ -257,25 +253,31 @@ class WhatsAppBot {
     try {
       const files = await fs.readdir(this.tempDir);
       const now = Date.now();
+      let failedFiles = 0;
 
       for (const file of files) {
-        const filePath = path.join(this.tempDir, file);
-        const stats = await fs.stat(filePath);
+        try {
+          const filePath = path.join(this.tempDir, file);
+          const stats = await fs.stat(filePath);
 
-        // 刪除超過1小時的臨時文件
-        if (now - stats.mtime.getTime() > 3600000) {
-          await fs.unlink(filePath);
+          // 刪除超過1小時的臨時文件
+          if (now - stats.mtime.getTime() > 3600000) {
+            await fs.unlink(filePath);
+          }
+        } catch (fileError) {
+          // 記錄單個檔案處理失敗但繼續執行
+          console.warn(`清理臨時檔案 ${file} 失敗:`, fileError.message);
+          failedFiles++;
         }
+      }
+
+      if (failedFiles > 0) {
+        console.log(`臨時檔案清理完成，${failedFiles} 個檔案清理失敗`);
       }
     } catch (error) {
       console.error("Error cleaning up temp files:", error);
     }
   }
-
-  startCleanupSchedule() {
-    setInterval(() => this.cleanupTempFiles(), 3600000); // 每小時執行一次
-  }
-
   async loadData() {
     try {
       // 確保目錄存在
@@ -311,14 +313,17 @@ class WhatsAppBot {
     }
   }
 
-  async fileExists(path) {
-    try {
-      await fs.access(path);
-      return true;
-    } catch {
-      return false;
-    }
+// 检查文件是否存在的方法
+async fileExists(filepath) {
+  try {
+    // 使用 fs.access() 检查文件是否可访问
+    await fs.access(filepath);
+    return true;
+  } catch {
+    // 如果文件不存在或无法访问则返回 false
+    return false;
   }
+}
 
   async saveData(type) {
     try {
@@ -364,7 +369,7 @@ class WhatsAppBot {
             "--disable-notifications",
             "--window-size=1280,720",
             // --- 推薦新增的參數 ---
-            '--disable-background-timer-throttling', // 防止後台計時器被節流，對維持WhatsApp連接至關重要
+            '--disable-background-timer-throttling', // 防止後台計時器被節流，對維護WhatsApp連接至關重要
             '--disable-backgrounding-occluded-windows', // 防止被遮擋的窗口進入後台模式，確保網頁持續運行
             '--disable-renderer-backgrounding', // 防止渲染器進入後台模式，確保網頁持續運行
             '--mute-audio', // 靜音，避免不必要的音頻處理
@@ -380,7 +385,7 @@ class WhatsAppBot {
 
       const functionDir = path.join(__dirname, "data", "functions");
       if (!existsSync(functionDir)) {
-        fs.mkdir(functionDir, { recursive: true });
+        await fs.mkdir(functionDir, { recursive: true });
       }
 
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -492,6 +497,13 @@ class WhatsAppBot {
           const emitQR = (attempts = 0) => {
             io.emit("qr", qrImageData);
             console.log(`QR Code 已發送到前端 (嘗試 ${attempts + 1})`);
+
+            // 轉發至應用層 QR handler（供 connect-bot 臨時監聽使用）
+            if (this.eventHandlers && this.eventHandlers.has("qr")) {
+              Promise.resolve()
+                .then(() => this.eventHandlers.get("qr")(qrImageData))
+                .catch((e) => console.error("應用層 QR handler 執行失敗:", e));
+            }
 
             // 如果尚未成功連接，30秒後重發 QR 碼（延長間隔避免頻繁刷新）
             if (attempts < 3 && !bot.client?.info) {
@@ -970,7 +982,7 @@ class WhatsAppBot {
     if (reason !== "user" && this.retryCount < this.maxRetries) {
       console.log("Attempting to reconnect...");
       await new Promise((resolve) => setTimeout(resolve, 5000));
-      await this.initialize();
+      await this.reconnect();
     }
   }
 
@@ -1202,7 +1214,7 @@ const io = socketIo(server, {
   pingTimeout: 60000,
   pingInterval: 25000,
   upgradeTimeout: 10000,
-  maxHttpBufferSize: 1e8,
+  maxHttpBufferSize: 1e7,
   path: "/socket.io/",
   connectTimeout: 45000,
   retries: 3,
@@ -1878,30 +1890,42 @@ io.on("connection", (socket) => {
           }
         }
 
-        // 添加專門的 QR code 監聽器
+        // 保存原有的 QR handler
+        const prevQrHandler = bot.eventHandlers.get("qr");
+        
         let qrReceived = false;
-        const qrListener = (qr) => {
-          qrReceived = true;
-          console.log("QR code 已生成並發送");
-        };
-        bot.on("qr", qrListener);
+        try {
+          // 設置臨時 QR code 監聽器
+          const qrListener = (qr) => {
+            qrReceived = true;
+            console.log("QR code 已生成並發送");
+          };
+          bot.on("qr", qrListener);
 
-        await bot.initialize();
+          await bot.initialize();
 
-        // 等待 QR code 生成或已連接
-        let attempts = 0;
-        while (!qrReceived && !bot.client?.info && attempts < 30) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          attempts++;
-        }
+          // 等待 QR code 生成或已連接
+          let attempts = 0;
+          while (!qrReceived && !bot.client?.info && attempts < 30) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            attempts++;
+          }
 
-        if (bot.client?.info) {
-          console.log("Bot 已連接且初始化成功");
-          io.emit("ready", "WhatsApp is ready!");
-        } else if (qrReceived) {
-          console.log("QR code 已準備好掃描");
-        } else {
-          throw new Error("QR code 生成超時");
+          if (bot.client?.info) {
+            console.log("Bot 已連接且初始化成功");
+            io.emit("ready", "WhatsApp is ready!");
+          } else if (qrReceived) {
+            console.log("QR code 已準備好掃描");
+          } else {
+            throw new Error("QR code 生成超時");
+          }
+        } finally {
+          // 恢復原有的 QR handler
+          if (prevQrHandler) {
+            bot.on("qr", prevQrHandler);
+          } else {
+            bot.eventHandlers.delete("qr");
+          }
         }
       } else {
         console.log("Bot 已經初始化");
@@ -1995,6 +2019,9 @@ process.on("SIGINT", async () => {
       bot.isShuttingDown = true;
       await bot.destroy();
     }
+    io.close(() => {
+      console.log("Socket.IO 已關閉");
+    });
     server.close(() => {
       console.log("伺服器已關閉");
       process.exit(0);
